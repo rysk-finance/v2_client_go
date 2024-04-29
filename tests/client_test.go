@@ -6,11 +6,12 @@ import (
 	go100x "go100x/src/client"
 	"go100x/src/constants"
 	"go100x/src/types"
-	"math/rand"
+	"math/big"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/joho/godotenv"
 )
 
@@ -33,7 +34,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test_Get24hrPriceChangeStatistics_NoProduct(t *testing.T) {
-	client := go100x.New100xClient(&types.Client100xConfiguration{
+	client := go100x.NewClient(&types.ClientConfiguration{
 		Env:          constants.TESTNET,
 		PrivateKey:   PRIVATE_KEYS,
 		RpcUrl:       RPC_URL,
@@ -52,7 +53,7 @@ func Test_Get24hrPriceChangeStatistics_NoProduct(t *testing.T) {
 }
 
 func Test_Get24hrPriceChangeStatistics_WithNonExistingProduct(t *testing.T) {
-	client := go100x.New100xClient(&types.Client100xConfiguration{
+	client := go100x.NewClient(&types.ClientConfiguration{
 		Env:          constants.TESTNET,
 		PrivateKey:   PRIVATE_KEYS,
 		RpcUrl:       RPC_URL,
@@ -77,7 +78,7 @@ func Test_Get24hrPriceChangeStatistics_WithNonExistingProduct(t *testing.T) {
 }
 
 func Test_Get24hrPriceChangeStatistics_WithProduct(t *testing.T) {
-	client := go100x.New100xClient(&types.Client100xConfiguration{
+	client := go100x.NewClient(&types.ClientConfiguration{
 		Env:          constants.TESTNET,
 		PrivateKey:   PRIVATE_KEYS,
 		RpcUrl:       RPC_URL,
@@ -96,7 +97,7 @@ func Test_Get24hrPriceChangeStatistics_WithProduct(t *testing.T) {
 }
 
 func Test_GetProduct(t *testing.T) {
-	client := go100x.New100xClient(&types.Client100xConfiguration{
+	client := go100x.NewClient(&types.ClientConfiguration{
 		Env:          constants.TESTNET,
 		PrivateKey:   PRIVATE_KEYS,
 		RpcUrl:       RPC_URL,
@@ -115,7 +116,7 @@ func Test_GetProduct(t *testing.T) {
 }
 
 func Test_GetProductById(t *testing.T) {
-	client := go100x.New100xClient(&types.Client100xConfiguration{
+	client := go100x.NewClient(&types.ClientConfiguration{
 		Env:          constants.TESTNET,
 		PrivateKey:   PRIVATE_KEYS,
 		RpcUrl:       RPC_URL,
@@ -134,7 +135,7 @@ func Test_GetProductById(t *testing.T) {
 }
 
 func Test_GetKlineData(t *testing.T) {
-	client := go100x.New100xClient(&types.Client100xConfiguration{
+	client := go100x.NewClient(&types.ClientConfiguration{
 		Env:          constants.TESTNET,
 		PrivateKey:   PRIVATE_KEYS,
 		RpcUrl:       RPC_URL,
@@ -158,7 +159,7 @@ func Test_GetKlineData(t *testing.T) {
 }
 
 func Test_ListProducts(t *testing.T) {
-	client := go100x.New100xClient(&types.Client100xConfiguration{
+	client := go100x.NewClient(&types.ClientConfiguration{
 		Env:          constants.TESTNET,
 		PrivateKey:   PRIVATE_KEYS,
 		RpcUrl:       RPC_URL,
@@ -177,7 +178,7 @@ func Test_ListProducts(t *testing.T) {
 }
 
 func Test_OrderBook(t *testing.T) {
-	client := go100x.New100xClient(&types.Client100xConfiguration{
+	client := go100x.NewClient(&types.ClientConfiguration{
 		Env:          constants.TESTNET,
 		PrivateKey:   PRIVATE_KEYS,
 		RpcUrl:       RPC_URL,
@@ -200,7 +201,7 @@ func Test_OrderBook(t *testing.T) {
 }
 
 func Test_ServerTime(t *testing.T) {
-	client := go100x.New100xClient(&types.Client100xConfiguration{
+	client := go100x.NewClient(&types.ClientConfiguration{
 		Env:          constants.TESTNET,
 		PrivateKey:   PRIVATE_KEYS,
 		RpcUrl:       RPC_URL,
@@ -219,7 +220,7 @@ func Test_ServerTime(t *testing.T) {
 }
 
 func Test_ApproveRevokeSigner(t *testing.T) {
-	client := go100x.New100xClient(&types.Client100xConfiguration{
+	client := go100x.NewClient(&types.ClientConfiguration{
 		Env:          constants.TESTNET,
 		PrivateKey:   PRIVATE_KEYS,
 		RpcUrl:       RPC_URL,
@@ -228,8 +229,8 @@ func Test_ApproveRevokeSigner(t *testing.T) {
 	})
 
 	res, err := go100x.ApproveRevokeSigner(client, &types.ApproveRevokeSignerRequest{
-		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-		Nonce:          int64(rand.Int31()),
+		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", // vitalik.eth
+		Nonce:          time.Now().UnixMilli(),
 		IsApproved:     false,
 	})
 
@@ -241,8 +242,8 @@ func Test_ApproveRevokeSigner(t *testing.T) {
 	verifyValidJSONResponse(t, res)
 }
 
-func Test_PostLogin(t *testing.T) {
-	client := go100x.New100xClient(&types.Client100xConfiguration{
+func Test_Login(t *testing.T) {
+	client := go100x.NewClient(&types.ClientConfiguration{
 		Env:          constants.TESTNET,
 		PrivateKey:   PRIVATE_KEYS,
 		RpcUrl:       RPC_URL,
@@ -253,7 +254,36 @@ func Test_PostLogin(t *testing.T) {
 	res, err := go100x.Login(client)
 
 	if err != nil {
-		t.Errorf("[Test_PostLogin] Error: %v", err)
+		t.Errorf("[Test_Login] Error: %v", err)
+		return
+	}
+
+	verifyValidJSONResponse(t, res)
+}
+
+func Test_NewOrder(t *testing.T) {
+	client := go100x.NewClient(&types.ClientConfiguration{
+		Env:          constants.TESTNET,
+		PrivateKey:   PRIVATE_KEYS,
+		RpcUrl:       RPC_URL,
+		Timeout:      10 * time.Second,
+		SubAccountId: 1,
+	})
+
+	// Limit buy 1 ETH for 3300 USDB, valid for 1 day
+	res, err := go100x.NewOrder(client, &types.NewOrderRequest{
+		Product:     constants.ETH_PERP,
+		IsBuy:       true,
+		OrderType:   constants.LIMIT,
+		TimeInForce: constants.GTC,
+		Price:       new(big.Int).Mul(big.NewInt(3300), big.NewInt(params.Ether)).String(),
+		Quantity:    new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether)).String(),
+		Expiration:  time.Now().Add(24 * time.Hour).UnixMilli(),
+		Nonce:       time.Now().UnixMilli(),
+	})
+
+	if err != nil {
+		t.Errorf("[Test_NewOrder] Error: %v", err)
 		return
 	}
 
@@ -261,7 +291,7 @@ func Test_PostLogin(t *testing.T) {
 }
 
 func Test_GetSpotBalances(t *testing.T) {
-	client := go100x.New100xClient(&types.Client100xConfiguration{
+	client := go100x.NewClient(&types.ClientConfiguration{
 		Env:          constants.TESTNET,
 		PrivateKey:   PRIVATE_KEYS,
 		RpcUrl:       RPC_URL,

@@ -8,17 +8,19 @@ import (
 )
 
 type Environment string
-type MarginAssetKey string
+type MarginAsset string
 type Endpoint string
 type Interval string
 type Limit int64
+type OrderType int64
+type TimeInForce int64
 
 type Product struct {
 	Symbol string
 	Id     int64
 }
 
-type Client100xConfiguration struct {
+type ClientConfiguration struct {
 	Env          Environment
 	Timeout      time.Duration
 	PrivateKey   string
@@ -26,7 +28,7 @@ type Client100xConfiguration struct {
 	SubAccountId uint8
 }
 
-type Client100x struct {
+type Client struct {
 	BaseUri           string
 	PrivateKey        string
 	Address           string

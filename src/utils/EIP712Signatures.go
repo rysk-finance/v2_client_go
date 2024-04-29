@@ -13,7 +13,7 @@ import (
 )
 
 // SignMessage signs a message using EIP-712 and returns the signature.
-func SignMessage(c *types.Client100x, endpoint types.Endpoint, message interface{}) (string, error) {
+func SignMessage(c *types.Client, endpoint types.Endpoint, message interface{}) (string, error) {
 	// Get the primary type based on the endpoint.
 	primaryType := constants.PRIMARY_TYPE[endpoint]
 
