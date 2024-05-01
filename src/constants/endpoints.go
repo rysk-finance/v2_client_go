@@ -18,7 +18,7 @@ const (
 	ENDPOINT_CANCEL_ALL_OPEN_ORDERS                 types.Endpoint = "openOrders"
 	ENDPOINT_GET_SPOT_BALANCES                      types.Endpoint = "balances"
 	ENDPOINT_GET_PERPETUAL_POSITION                 types.Endpoint = "positionRisk"
-	ENDPOINT_GET_LIST_APPROVED_SIGNERS              types.Endpoint = "approved-signers"
+	ENDPOINT_LIST_APPROVED_SIGNERS                  types.Endpoint = "approved-signers"
 	ENDPOINT_GET_LIST_OPEN_ORDERS                   types.Endpoint = "openOrders"
 	ENDPOINT_GET_LIST_ORDERS                        types.Endpoint = "orders"
 )

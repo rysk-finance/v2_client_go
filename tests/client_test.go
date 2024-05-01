@@ -277,6 +277,16 @@ func Test_GetPerpetualPosition(t *testing.T) {
 	verifyValidJSONResponse("Test_GetPerpetualPosition", t, res)
 }
 
+func Test_ListApproveSigners(t *testing.T) {
+	res, err := go100x.ListApprovedSigners(CLIENT_100_X)
+	if err != nil {
+		t.Errorf("[Test_ListApproveSigners] Error: %v", err)
+		return
+	}
+
+	verifyValidJSONResponse("Test_ListApproveSigners", t, res)
+}
+
 func verifyValidJSONResponse(testName string, t *testing.T, res string) {
 	var data interface{}
 

@@ -90,7 +90,7 @@ func GetProductById(go100XClient *types.Client, id int64) (string, error) {
 	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
-// GetKlineData returns Kline/candlestick bars for a symbol. Klines are uniquely identified by interval(timeframe) and startTime.
+// GetKlineData returns Kline/Candlestick bars for a symbol. Klines are uniquely identified by interval(timeframe) and startTime.
 func GetKlineData(go100XClient *types.Client, params *types.KlineDataRequest) (string, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
@@ -250,7 +250,7 @@ func approveRevokeSigner(go100XClient *types.Client, params *types.ApproveRevoke
 
 // }
 
-// Create a new order on the SubAccount.
+// NewOrder creates a new order on the `SubAccount`.
 func NewOrder(go100XClient *types.Client, params *types.NewOrderRequest) (string, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
@@ -400,7 +400,7 @@ func CancelOrderAndReplace(go100XClient *types.Client, params *types.CancelOrder
 	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
-// Cancel an active order on the `SubAccount`.
+// CancelOrder cancel an active order on the `SubAccount`.
 func CancelOrder(go100XClient *types.Client, params *types.CancelOrderRequest) (string, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
@@ -448,7 +448,7 @@ func CancelOrder(go100XClient *types.Client, params *types.CancelOrderRequest) (
 	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
-// Cancel all active orders on a product.
+// CancelAllOpenOrders cancel all active orders on a product.
 func CancelAllOpenOrders(go100XClient *types.Client, params *types.CancelAllOpenOrdersRequest) (string, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
@@ -492,7 +492,7 @@ func CancelAllOpenOrders(go100XClient *types.Client, params *types.CancelAllOpen
 	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
-// Returns spot balances for sub account id.
+// GetSpotBalances returns spot balances for sub account id.
 func GetSpotBalances(go100XClient *types.Client) (string, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
@@ -531,7 +531,7 @@ func GetSpotBalances(go100XClient *types.Client) (string, error) {
 	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
-// Returns perpetual position for sub account id.
+// GetPerpetualPosition returns perpetual position for sub account id.
 func GetPerpetualPosition(go100XClient *types.Client, product *types.Product) (string, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
@@ -563,8 +563,47 @@ func GetPerpetualPosition(go100XClient *types.Client, product *types.Product) (s
 	query := request.URL.Query()
 	query.Add("account", go100XClient.Address)
 	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
-	query.Add("signature", signature)
 	query.Add("symbol", product.Symbol)
+	query.Add("signature", signature)
+	request.URL.RawQuery = query.Encode()
+
+	// Send HTTP request and return result.
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+}
+
+// ListApprovedSigners returns a list of all approved signers for a `SubAccount`.
+func ListApprovedSigners(go100XClient *types.Client) (string, error) {
+	// Generate EIP712 signature.
+	signature, err := utils.SignMessage(
+		go100XClient,
+		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
+		&struct {
+			Account      string `json:"account"`
+			SubAccountId string `json:"subAccountId"`
+		}{
+			Account:      go100XClient.Address,
+			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// Create HTTP request.
+	request, err := http.NewRequest(
+		http.MethodGet,
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_LIST_APPROVED_SIGNERS),
+		nil,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// Add query parameters and URL encode HTTP request.
+	query := request.URL.Query()
+	query.Add("account", go100XClient.Address)
+	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("signature", signature)
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
