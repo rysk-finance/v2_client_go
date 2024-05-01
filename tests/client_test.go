@@ -295,6 +295,19 @@ func Test_ListOpenOrders(t *testing.T) {
 	verifyValidJSONResponse("Test_ListOpenOrders", t, res)
 }
 
+func Test_ListOrders(t *testing.T) {
+	res, err := go100x.ListOrders(CLIENT_100_X, &types.ListOrdersRequest{
+		Product: constants.PRODUCT_BTC_PERP,
+		Ids:     []string{"A", "B"},
+	})
+	if err != nil {
+		t.Errorf("[Test_ListOrders] Error: %v", err)
+		return
+	}
+
+	verifyValidJSONResponse("Test_ListOrders", t, res)
+}
+
 func verifyValidJSONResponse(testName string, t *testing.T, res string) {
 	var data interface{}
 

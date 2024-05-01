@@ -39,3 +39,8 @@ type CancelOrderRequest struct {
 	Product    Product // The product. Can be `constants.PRODUCT_ETH_PERP`, `constants.PRODUCT_BTC_PERP` or `constants.PRODUCT_BLAST_PERP`.
 	IdToCancel string  // The unique ID of the order you wish to cancel.
 }
+
+type ListOrdersRequest struct {
+	Product Product  // The product. Can be `constants.PRODUCT_ETH_PERP`, `constants.PRODUCT_BTC_PERP` or `constants.PRODUCT_BLAST_PERP`.
+	Ids     []string // IDs of specific orders you would like to retrieve.
+}
