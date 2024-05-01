@@ -16,7 +16,6 @@ type OrderBookRequest struct {
 
 type ApproveRevokeSignerRequest struct {
 	ApprovedSigner string // The address of the account that will be an approvedSigner on the given subaccount.
-	IsApproved     bool   // Boolean for whether to approve the approvedSigner on the account or not.
 	Nonce          int64  // The nonce. Suggest using the current UNIX timestamp in milliseconds.
 }
 
