@@ -16,7 +16,7 @@ const (
 	ENDPOINT_NEW_ORDER                              types.Endpoint = "order"
 	ENDPOINT_CANCEL_REPLACE_ORDER                   types.Endpoint = "order/cancel-and-replace"
 	ENDPOINT_CANCEL_ORDER                           types.Endpoint = "order"
-	ENDPOINT_DELETE_CANCEL_ALL_OPEN_ORDERS          types.Endpoint = "openOrders"
+	ENDPOINT_CANCEL_ALL_OPEN_ORDERS                 types.Endpoint = "openOrders"
 	ENDPOINT_GET_SESSION_STATUS                     types.Endpoint = "session/status"
 	ENDPOINT_LOGOUT                                 types.Endpoint = "session/logout"
 	ENDPOINT_GET_SPOT_BALANCES                      types.Endpoint = "balances"

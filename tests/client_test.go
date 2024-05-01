@@ -255,6 +255,19 @@ func Test_CancelOrder(t *testing.T) {
 	verifyValidJSONResponse("Test_CancelOrder", t, res)
 }
 
+func Test_CancelAllOpenOrders(t *testing.T) {
+	res, err := go100x.CancelAllOpenOrders(CLIENT_100_X, &types.CancelAllOpenOrdersRequest{
+		Product: constants.PRODUCT_ETH_PERP,
+	})
+
+	if err != nil {
+		t.Errorf("[Test_CancelAllOpenOrders] Error: %v", err)
+		return
+	}
+
+	verifyValidJSONResponse("Test_CancelAllOpenOrders", t, res)
+}
+
 func Test_GetSpotBalances(t *testing.T) {
 	res, err := go100x.GetSpotBalances(CLIENT_100_X)
 	if err != nil {

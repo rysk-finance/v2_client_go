@@ -533,3 +533,47 @@ func CancelOrder(go100XClient *types.Client, params *types.CancelOrderRequest) (
 	// Send HTTP request and return result.
 	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
+
+// Cancel all active orders on a product.
+func CancelAllOpenOrders(go100XClient *types.Client, params *types.CancelAllOpenOrdersRequest) (string, error) {
+	// Generate EIP712 signature.
+	signature, err := utils.SignMessage(
+		go100XClient,
+		constants.PRIMARY_TYPE_CANCEL_ORDERS,
+		&struct {
+			Account      string `json:"account"`
+			SubAccountId string `json:"subAccountId"`
+			ProductId    string `json:"productId"`
+		}{
+			Account:      go100XClient.Address,
+			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			ProductId:    strconv.FormatInt(params.Product.Id, 10),
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// Create HTTP request.
+	request, err := utils.CreateHTTPRequestWithBody(
+		http.MethodDelete,
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_CANCEL_ALL_OPEN_ORDERS),
+		&struct {
+			Account      string
+			SubAccountId int64
+			ProductId    int64
+			Signature    string
+		}{
+			Account:      go100XClient.Address,
+			SubAccountId: go100XClient.SubAccountId,
+			ProductId:    params.Product.Id,
+			Signature:    signature,
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// Send HTTP request and return result.
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+}
