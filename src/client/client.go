@@ -449,7 +449,7 @@ func CancelOrder(go100XClient *types.Client, params *types.CancelOrderRequest) (
 }
 
 // CancelAllOpenOrders cancel all active orders on a product.
-func CancelAllOpenOrders(go100XClient *types.Client, params *types.CancelAllOpenOrdersRequest) (string, error) {
+func CancelAllOpenOrders(go100XClient *types.Client, product *types.Product) (string, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient,
@@ -461,7 +461,7 @@ func CancelAllOpenOrders(go100XClient *types.Client, params *types.CancelAllOpen
 		}{
 			Account:      go100XClient.Address,
 			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
-			ProductId:    strconv.FormatInt(params.Product.Id, 10),
+			ProductId:    strconv.FormatInt(product.Id, 10),
 		},
 	)
 	if err != nil {
@@ -480,7 +480,7 @@ func CancelAllOpenOrders(go100XClient *types.Client, params *types.CancelAllOpen
 		}{
 			Account:      go100XClient.Address,
 			SubAccountId: go100XClient.SubAccountId,
-			ProductId:    params.Product.Id,
+			ProductId:    product.Id,
 			Signature:    signature,
 		},
 	)
@@ -603,6 +603,46 @@ func ListApprovedSigners(go100XClient *types.Client) (string, error) {
 	query := request.URL.Query()
 	query.Add("account", go100XClient.Address)
 	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("signature", signature)
+	request.URL.RawQuery = query.Encode()
+
+	// Send HTTP request and return result.
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+}
+
+// ListOpenOrders returns all open orders on the `SubAccount` per product.
+func ListOpenOrders(go100XClient *types.Client, product *types.Product) (string, error) {
+	// Generate EIP712 signature.
+	signature, err := utils.SignMessage(
+		go100XClient,
+		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
+		&struct {
+			Account      string `json:"account"`
+			SubAccountId string `json:"subAccountId"`
+		}{
+			Account:      go100XClient.Address,
+			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// Create HTTP request.
+	request, err := http.NewRequest(
+		http.MethodGet,
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_LIST_OPEN_ORDERS),
+		nil,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// Add query parameters and URL encode HTTP request.
+	query := request.URL.Query()
+	query.Add("account", go100XClient.Address)
+	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("symbol", product.Symbol)
 	query.Add("signature", signature)
 	request.URL.RawQuery = query.Encode()
 

@@ -245,9 +245,7 @@ func Test_CancelOrder(t *testing.T) {
 }
 
 func Test_CancelAllOpenOrders(t *testing.T) {
-	res, err := go100x.CancelAllOpenOrders(CLIENT_100_X, &types.CancelAllOpenOrdersRequest{
-		Product: constants.PRODUCT_ETH_PERP,
-	})
+	res, err := go100x.CancelAllOpenOrders(CLIENT_100_X, &constants.PRODUCT_ETH_PERP)
 
 	if err != nil {
 		t.Errorf("[Test_CancelAllOpenOrders] Error: %v", err)
@@ -285,6 +283,16 @@ func Test_ListApproveSigners(t *testing.T) {
 	}
 
 	verifyValidJSONResponse("Test_ListApproveSigners", t, res)
+}
+
+func Test_ListOpenOrders(t *testing.T) {
+	res, err := go100x.ListOpenOrders(CLIENT_100_X, &constants.PRODUCT_BLAST_PERP)
+	if err != nil {
+		t.Errorf("[Test_ListOpenOrders] Error: %v", err)
+		return
+	}
+
+	verifyValidJSONResponse("Test_ListOpenOrders", t, res)
 }
 
 func verifyValidJSONResponse(testName string, t *testing.T, res string) {
