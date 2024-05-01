@@ -5,13 +5,16 @@ import (
 )
 
 const (
-	NAME                  string            = "100x"
-	VERSION               string            = "0.0.0"
-	LOGIN_MESSAGE         types.PrimaryType = "LoginMessage"
-	ORDER                 types.PrimaryType = "Order"
-	CANCEL_ORDER          types.PrimaryType = "CancelOrder"
-	CANCEL_ORDERS         types.PrimaryType = "CancelOrders"
-	APPROVE_SIGNER        types.PrimaryType = "ApproveSigner"
-	WITHDRAW              types.PrimaryType = "Withdraw"
-	SIGNED_AUTHENTICATION types.PrimaryType = "SignedAuthentication"
+	NAME    string = "100x"
+	VERSION string = "0.0.0"
+)
+
+const (
+	PRIMARY_TYPE_LOGIN_MESSAGE         types.PrimaryType = "LoginMessage"
+	PRIMARY_TYPE_ORDER                 types.PrimaryType = "Order"
+	PRIMARY_TYPE_CANCEL_ORDER          types.PrimaryType = "CancelOrder"
+	PRIMARY_TYPE_CANCEL_ORDERS         types.PrimaryType = "CancelOrders"
+	PRIMARY_TYPE_APPROVE_SIGNER        types.PrimaryType = "ApproveSigner"
+	PRIMARY_TYPE_WITHDRAW              types.PrimaryType = "Withdraw"
+	PRIMARY_TYPE_SIGNED_AUTHENTICATION types.PrimaryType = "SignedAuthentication"
 )

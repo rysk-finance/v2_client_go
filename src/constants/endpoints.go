@@ -4,7 +4,7 @@ import "go100x/src/types"
 
 const (
 	GET_24H_TICKER_PRICE_CHANGE_STATISTICS types.Endpoint = "ticker/24hr"
-	GET_PRODUCT                            types.Endpoint = "products"
+	GET_PRODUCT                            types.Endpoint = "products/"
 	GET_PRODUCT_BY_ID                      types.Endpoint = "products/product-by-id"
 	GET_KLINE_DATA                         types.Endpoint = "uiKlines"
 	LIST_PRODUCTS                          types.Endpoint = "products"
