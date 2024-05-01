@@ -250,45 +250,6 @@ func approveRevokeSigner(go100XClient *types.Client, params *types.ApproveRevoke
 
 // }
 
-// Returns spot balances for sub account id.
-func GetSpotBalances(go100XClient *types.Client) (string, error) {
-	// Generate EIP712 signature.
-	signature, err := utils.SignMessage(
-		go100XClient,
-		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
-		&struct {
-			Account      string `json:"account"`
-			SubAccountId string `json:"subAccountId"`
-		}{
-			Account:      go100XClient.Address,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
-		},
-	)
-	if err != nil {
-		return "", err
-	}
-
-	// Create HTTP request.
-	request, err := http.NewRequest(
-		http.MethodGet,
-		string(go100XClient.BaseUri)+string(constants.ENDPOINT_GET_SPOT_BALANCES),
-		nil,
-	)
-	if err != nil {
-		return "", err
-	}
-
-	// Add query parameters and URL encode HTTP request.
-	query := request.URL.Query()
-	query.Add("account", go100XClient.Address)
-	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
-	query.Add("signature", signature)
-	request.URL.RawQuery = query.Encode()
-
-	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
-}
-
 // Create a new order on the SubAccount.
 func NewOrder(go100XClient *types.Client, params *types.NewOrderRequest) (string, error) {
 	// Generate EIP712 signature.
@@ -526,6 +487,85 @@ func CancelAllOpenOrders(go100XClient *types.Client, params *types.CancelAllOpen
 	if err != nil {
 		return "", err
 	}
+
+	// Send HTTP request and return result.
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+}
+
+// Returns spot balances for sub account id.
+func GetSpotBalances(go100XClient *types.Client) (string, error) {
+	// Generate EIP712 signature.
+	signature, err := utils.SignMessage(
+		go100XClient,
+		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
+		&struct {
+			Account      string `json:"account"`
+			SubAccountId string `json:"subAccountId"`
+		}{
+			Account:      go100XClient.Address,
+			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// Create HTTP request.
+	request, err := http.NewRequest(
+		http.MethodGet,
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_GET_SPOT_BALANCES),
+		nil,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// Add query parameters and URL encode HTTP request.
+	query := request.URL.Query()
+	query.Add("account", go100XClient.Address)
+	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("signature", signature)
+	request.URL.RawQuery = query.Encode()
+
+	// Send HTTP request and return result.
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+}
+
+// Returns perpetual position for sub account id.
+func GetPerpetualPosition(go100XClient *types.Client, product *types.Product) (string, error) {
+	// Generate EIP712 signature.
+	signature, err := utils.SignMessage(
+		go100XClient,
+		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
+		&struct {
+			Account      string `json:"account"`
+			SubAccountId string `json:"subAccountId"`
+		}{
+			Account:      go100XClient.Address,
+			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// Create HTTP request.
+	request, err := http.NewRequest(
+		http.MethodGet,
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_GET_PERPETUAL_POSITION),
+		nil,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// Add query parameters and URL encode HTTP request.
+	query := request.URL.Query()
+	query.Add("account", go100XClient.Address)
+	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("signature", signature)
+	query.Add("symbol", product.Symbol)
+	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
 	return utils.SendHTTPRequest(go100XClient.HttpClient, request)

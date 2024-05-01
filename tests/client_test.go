@@ -267,6 +267,16 @@ func Test_GetSpotBalances(t *testing.T) {
 	verifyValidJSONResponse("Test_GetSpotBalances", t, res)
 }
 
+func Test_GetPerpetualPosition(t *testing.T) {
+	res, err := go100x.GetPerpetualPosition(CLIENT_100_X, &constants.PRODUCT_BLAST_PERP)
+	if err != nil {
+		t.Errorf("[Test_GetPerpetualPosition] Error: %v", err)
+		return
+	}
+
+	verifyValidJSONResponse("Test_GetPerpetualPosition", t, res)
+}
+
 func verifyValidJSONResponse(testName string, t *testing.T, res string) {
 	var data interface{}
 
