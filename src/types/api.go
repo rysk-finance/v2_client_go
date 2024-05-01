@@ -29,3 +29,8 @@ type NewOrderRequest struct {
 	Expiration  int64       // UNIX timestamp (in ms) after which the order is no longer active.
 	Nonce       int64       // The nonce. Suggest using the current UNIX timestamp in milliseconds.
 }
+
+type CancelOrderAndReplaceRequest struct {
+	IdToCancel string          // ID of the order to be replaced.
+	NewOrder   NewOrderRequest // The new order details to be used in the replacement.
+}

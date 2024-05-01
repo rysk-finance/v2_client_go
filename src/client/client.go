@@ -391,3 +391,77 @@ func NewOrder(c *types.Client, params *types.NewOrderRequest) (string, error) {
 	// Send HTTP request and return result.
 	return utils.SendHTTPRequest(c.HttpClient, req)
 }
+
+// CancelOrderAndReplace cancel an order and create a new order on the `SubAccount`.
+func CancelOrderAndReplace(c *types.Client, params *types.CancelOrderAndReplaceRequest) (string, error) {
+	// Generate EIP712 signature.
+	signature, err := utils.SignMessage(c, constants.ORDER, &struct {
+		Account      string `json:"account"`
+		SubAccountId string `json:"subAccountId"`
+		ProductId    string `json:"productId"`
+		IsBuy        bool   `json:"isBuy"`
+		OrderType    string `json:"orderType"`
+		TimeInForce  string `json:"timeInForce"`
+		Expiration   string `json:"expiration"`
+		Price        string `json:"price"`
+		Quantity     string `json:"quantity"`
+		Nonce        string `json:"nonce"`
+	}{
+		Account:      c.Address,
+		SubAccountId: strconv.FormatInt(c.SubAccountId, 10),
+		ProductId:    strconv.FormatInt(params.NewOrder.Product.Id, 10),
+		IsBuy:        params.NewOrder.IsBuy,
+		OrderType:    strconv.FormatInt(int64(params.NewOrder.OrderType), 10),
+		TimeInForce:  strconv.FormatInt(int64(params.NewOrder.TimeInForce), 10),
+		Expiration:   strconv.FormatInt(params.NewOrder.Expiration, 10),
+		Price:        params.NewOrder.Price,
+		Quantity:     params.NewOrder.Quantity,
+		Nonce:        strconv.FormatInt(params.NewOrder.Nonce, 10),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	// Create HTTP request.
+	req, err := utils.CreateHTTPRequestWithBody(
+		http.MethodPost,
+		string(c.BaseUri)+string(constants.CANCEL_REPLACE_ORDER),
+		&struct {
+			IdToCancel string
+			NewOrder   interface{}
+		}{
+			IdToCancel: params.IdToCancel,
+			NewOrder: struct {
+				Account      string
+				SubAccountId int64
+				ProductId    int64
+				IsBuy        bool
+				OrderType    int64
+				TimeInForce  int64
+				Expiration   int64
+				Price        string
+				Quantity     string
+				Nonce        int64
+				Signature    string
+			}{
+				Account:      c.Address,
+				SubAccountId: c.SubAccountId,
+				ProductId:    params.NewOrder.Product.Id,
+				IsBuy:        params.NewOrder.IsBuy,
+				OrderType:    int64(params.NewOrder.OrderType),
+				TimeInForce:  int64(params.NewOrder.TimeInForce),
+				Expiration:   params.NewOrder.Expiration,
+				Price:        params.NewOrder.Price,
+				Quantity:     params.NewOrder.Quantity,
+				Nonce:        params.NewOrder.Nonce,
+				Signature:    signature,
+			},
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	// Send HTTP request and return result.
+	return utils.SendHTTPRequest(c.HttpClient, req)
+}

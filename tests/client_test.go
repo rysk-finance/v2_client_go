@@ -217,6 +217,30 @@ func Test_NewOrder(t *testing.T) {
 	verifyValidJSONResponse("Test_NewOrder", t, res)
 }
 
+func Test_CancelOrderAndReplace(t *testing.T) {
+	res, err := go100x.CancelOrderAndReplace(CLIENT, &types.CancelOrderAndReplaceRequest{
+		IdToCancel: "1",
+		// Limit buy 1 ETH for 3300 USDB, valid for 1 day
+		NewOrder: types.NewOrderRequest{
+			Product:     constants.ETH_PERP,
+			IsBuy:       true,
+			OrderType:   constants.LIMIT_MAKER,
+			TimeInForce: constants.GTC,
+			Price:       new(big.Int).Mul(big.NewInt(3300), big.NewInt(params.Ether)).String(),
+			Quantity:    new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether)).String(),
+			Expiration:  time.Now().Add(24 * time.Hour).UnixMilli(),
+			Nonce:       time.Now().UnixMilli(),
+		},
+	})
+
+	if err != nil {
+		t.Errorf("[Test_CancelOrderAndReplace] Error: %v", err)
+		return
+	}
+
+	verifyValidJSONResponse("Test_CancelOrderAndReplace", t, res)
+}
+
 func Test_GetSpotBalances(t *testing.T) {
 	res, err := go100x.GetSpotBalances(CLIENT)
 	if err != nil {
