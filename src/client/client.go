@@ -2,9 +2,7 @@ package go100x
 
 import (
 	"bytes"
-	"crypto/ecdsa"
 	"encoding/json"
-	"fmt"
 	"go100x/src/constants"
 	"go100x/src/types"
 	"go100x/src/utils"
@@ -12,54 +10,43 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
-)
-
-var (
-	once       sync.Once
-	httpClient *http.Client
-	instance   *types.Client
 )
 
 // Creates a new `go100x.Client` instance.
 // Initializes the client with the provided configuration.
 func NewClient(config *types.ClientConfiguration) *types.Client {
-	once.Do(func() {
-		// Remove '0x' from private key
-		privateKey := strings.TrimPrefix(config.PrivateKey, "0x")
+	// Remove '0x' from private key.
+	privateKey := strings.TrimPrefix(config.PrivateKey, "0x")
 
-		// Compute address from private key
-		address, err := addressFromPrivateKey(privateKey)
-		if err != nil {
-			panic(err)
-		}
+	// Compute address from private key.
+	address, err := utils.AddressFromPrivateKey(privateKey)
+	if err != nil {
+		panic(err)
+	}
 
-		// Instance Client100x
-		instance = &types.Client{
-			BaseUri:           constants.BASE_URI[config.Env],
-			PrivateKey:        privateKey,
-			Address:           address,
-			SubAccountId:      int64(config.SubAccountId),
-			HttpClient:        getHTTPClient(config),
-			VerifyingContract: constants.CIAO[config.Env],
-			Domain: apitypes.TypedDataDomain{
-				Name:              constants.NAME,
-				Version:           constants.VERSION,
-				ChainId:           constants.CHAIN_ID[config.Env],
-				VerifyingContract: constants.VERIFIER[config.Env],
-			},
-		}
-	})
-
-	return instance
+	// Return a new `go100x.Client`.
+	return &types.Client{
+		BaseUri:           constants.BASE_URI[config.Env],
+		PrivateKey:        privateKey,
+		Address:           address,
+		SubAccountId:      int64(config.SubAccountId),
+		HttpClient:        &http.Client{Timeout: config.Timeout},
+		VerifyingContract: constants.CIAO[config.Env],
+		Domain: apitypes.TypedDataDomain{
+			Name:              constants.NAME,
+			Version:           constants.VERSION,
+			ChainId:           constants.CHAIN_ID[config.Env],
+			VerifyingContract: constants.VERIFIER[config.Env],
+		},
+	}
 }
 
 // Returns 24 hour rolling window price change statistics.
-func Get24hrPriceChangeStatistics(c *types.Client, product types.Product) (string, error) {
+// If no `Product` is provided, ticker data for all assets will be returned.
+func Get24hrPriceChangeStatistics(c *types.Client, product *types.Product) (string, error) {
 	uri := c.BaseUri + string(constants.GET_24H_TICKER_PRICE_CHANGE_STATISTICS)
 
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
@@ -101,7 +88,7 @@ func GetProductById(c *types.Client, id int64) (string, error) {
 }
 
 // Returns Kline/candlestick bars for a symbol. Klines are uniquely identified by interval(timeframe) and startTime.
-func GetKlineData(c *types.Client, params types.KlineDataRequest) (string, error) {
+func GetKlineData(c *types.Client, params *types.KlineDataRequest) (string, error) {
 	uri := string(c.BaseUri) + string(constants.GET_KLINE_DATA)
 
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
@@ -133,7 +120,7 @@ func GetKlineData(c *types.Client, params types.KlineDataRequest) (string, error
 
 // Returns a list of products available to trade.
 func ListProducts(c *types.Client) (string, error) {
-	uri := string(c.BaseUri) + string(constants.GET_LIST_PRODUCTS)
+	uri := string(c.BaseUri) + string(constants.LIST_PRODUCTS)
 
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
@@ -145,8 +132,8 @@ func ListProducts(c *types.Client) (string, error) {
 }
 
 // Returns bids and asks for a market.
-func OrderBook(c *types.Client, params types.OrderBookRequest) (string, error) {
-	uri := string(c.BaseUri) + string(constants.GET_ORDER_BOOK)
+func OrderBook(c *types.Client, params *types.OrderBookRequest) (string, error) {
+	uri := string(c.BaseUri) + string(constants.ORDER_BOOK)
 
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
@@ -171,7 +158,7 @@ func OrderBook(c *types.Client, params types.OrderBookRequest) (string, error) {
 
 // Returns current server time.
 func ServerTime(c *types.Client) (string, error) {
-	uri := string(c.BaseUri) + string(constants.GET_SERVER_TIME)
+	uri := string(c.BaseUri) + string(constants.SERVER_TIME)
 	req, err := http.NewRequest(http.MethodGet, uri, nil)
 	if err != nil {
 		return "", err
@@ -184,12 +171,12 @@ func ServerTime(c *types.Client) (string, error) {
 // Approve or revoke a Signer for a SubAccount
 func ApproveRevokeSigner(c *types.Client, params *types.ApproveRevokeSignerRequest) (string, error) {
 	// Generate EIP712 signature
-	signature, err := utils.SignMessage(c, constants.POST_APPROVE_REVOKE_SIGNER, &struct {
-		Account        string
-		SubAccountId   string
-		ApprovedSigner string
-		IsApproved     bool
-		Nonce          string
+	signature, err := utils.SignMessage(c, constants.APPROVE_SIGNER, &struct {
+		Account        string `json:"account"`
+		SubAccountId   string `json:"subAccountId"`
+		ApprovedSigner string `json:"approvedSigner"`
+		IsApproved     bool   `json:"isApproved"`
+		Nonce          string `json:"nonce"`
 	}{
 		Account:        c.Address,
 		SubAccountId:   strconv.FormatInt(c.SubAccountId, 10),
@@ -222,7 +209,7 @@ func ApproveRevokeSigner(c *types.Client, params *types.ApproveRevokeSignerReque
 	}
 
 	// Create API request
-	uri := string(c.BaseUri) + string(constants.POST_APPROVE_REVOKE_SIGNER)
+	uri := string(c.BaseUri) + string(constants.APPROVE_REVOKE_SIGNER)
 	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer(body))
 	if err != nil {
 		return "", err
@@ -236,10 +223,10 @@ func Login(c *types.Client) (string, error) {
 	timestamp := time.Now().UnixMilli()
 
 	// Generate EIP712 signature
-	signature, err := utils.SignMessage(c, constants.POST_LOGIN, &struct {
-		Account   string
-		Message   string
-		Timestamp string
+	signature, err := utils.SignMessage(c, constants.LOGIN_MESSAGE, &struct {
+		Account   string `json:"account"`
+		Message   string `json:"message"`
+		Timestamp string `json:"timestamp"`
 	}{
 		Account:   c.Address,
 		Message:   "I want to log into 100x.finance",
@@ -266,7 +253,7 @@ func Login(c *types.Client) (string, error) {
 	}
 
 	// Create API request
-	uri := string(c.BaseUri) + string(constants.POST_LOGIN)
+	uri := string(c.BaseUri) + string(constants.LOGIN)
 	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer(body))
 	if err != nil {
 		return "", err
@@ -284,9 +271,9 @@ func Login(c *types.Client) (string, error) {
 // Returns spot balances for sub account id.
 func GetSpotBalances(c *types.Client) (string, error) {
 	// Generate EIP712 signature
-	signature, err := utils.SignMessage(c, constants.GET_SPOT_BALANCES, &struct {
-		Account      string
-		SubAccountId string
+	signature, err := utils.SignMessage(c, constants.SIGNED_AUTHENTICATION, &struct {
+		Account      string `json:"account"`
+		SubAccountId string `json:"subAccountId"`
 	}{
 		Account:      c.Address,
 		SubAccountId: strconv.FormatInt(c.SubAccountId, 10),
@@ -315,17 +302,17 @@ func GetSpotBalances(c *types.Client) (string, error) {
 // Create a new order on the SubAccount
 func NewOrder(c *types.Client, params *types.NewOrderRequest) (string, error) {
 	// Generate EIP712 signature
-	signature, err := utils.SignMessage(c, constants.POST_NEW_ORDER, &struct {
-		Account      string
-		SubAccountId string
-		ProductId    string
-		IsBuy        bool
-		OrderType    string
-		TimeInForce  string
-		Expiration   string
-		Price        string
-		Quantity     string
-		Nonce        string
+	signature, err := utils.SignMessage(c, constants.ORDER, &struct {
+		Account      string `json:"account"`
+		SubAccountId string `json:"subAccountId"`
+		ProductId    string `json:"productId"`
+		IsBuy        bool   `json:"isBuy"`
+		OrderType    string `json:"orderType"`
+		TimeInForce  string `json:"timeInForce"`
+		Expiration   string `json:"expiration"`
+		Price        string `json:"price"`
+		Quantity     string `json:"quantity"`
+		Nonce        string `json:"nonce"`
 	}{
 		Account:      c.Address,
 		SubAccountId: strconv.FormatInt(c.SubAccountId, 10),
@@ -373,7 +360,7 @@ func NewOrder(c *types.Client, params *types.NewOrderRequest) (string, error) {
 	}
 
 	// Create API request
-	uri := string(c.BaseUri) + string(constants.POST_NEW_ORDER)
+	uri := string(c.BaseUri) + string(constants.NEW_ORDER)
 	req, err := http.NewRequest(http.MethodPost, uri, bytes.NewBuffer(body))
 	if err != nil {
 		return "", err
@@ -382,18 +369,7 @@ func NewOrder(c *types.Client, params *types.NewOrderRequest) (string, error) {
 	return sendRequest(c.HttpClient, req)
 }
 
-// Returns a singleton instance of http.Client.
-// It ensures that only one instance of http.Client is created and reused.
-func getHTTPClient(config *types.ClientConfiguration) *http.Client {
-	if httpClient == nil {
-		httpClient = &http.Client{
-			Timeout: config.Timeout,
-		}
-	}
-	return httpClient
-}
-
-// sendRequest send HTTP request using Client100x.HttpClient and returns response as string.
+// sendRequest send HTTP request using `Client100x.HttpClient` and returns response as string.
 func sendRequest(c *http.Client, req *http.Request) (string, error) {
 	// Send request
 	res, err := c.Do(req)
@@ -409,22 +385,4 @@ func sendRequest(c *http.Client, req *http.Request) (string, error) {
 	}
 
 	return string(response), nil
-}
-
-func addressFromPrivateKey(privateKeyHex string) (string, error) {
-	// Convert private key hex string to an ECDSA private key
-	privateKey, err := crypto.HexToECDSA(privateKeyHex)
-	if err != nil {
-		return "", err
-	}
-
-	// Derive the Ethereum address (EOA) from the public key
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		return "", fmt.Errorf("error converting public key to ECDSA")
-	}
-	address := crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
-
-	return address, nil
 }

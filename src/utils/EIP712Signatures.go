@@ -1,92 +1,71 @@
 package utils
 
 import (
+	"crypto/ecdsa"
+	"encoding/json"
 	"fmt"
-	"go100x/src/constants"
 	"go100x/src/types"
-	"reflect"
-	"unicode"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
+// `TypedDataDomain` key.
+const EIP_712_DOMAIN = "EIP712Domain"
+
 // SignMessage signs a message using EIP-712 and returns the signature.
-func SignMessage(c *types.Client, endpoint types.Endpoint, message interface{}) (string, error) {
-	// Get the primary type based on the endpoint.
-	primaryType := constants.PRIMARY_TYPE[endpoint]
-
-	// Create a pointer to the message value.
-	messagePtr := reflect.ValueOf(message)
-	if messagePtr.Kind() != reflect.Ptr {
-		return "", fmt.Errorf("message must be a pointer to an interface")
-	}
-
-	// Generate the EIP-712 message using the provided primary type, client domain, and mapped message.
-	unsignedMessage, err := generateEIP712Message(primaryType, c.Domain, mapMessage(message))
+func SignMessage(c *types.Client, primaryType types.PrimaryType, message interface{}) (string, error) {
+	// Map message to `TypedDataMessage` interface.
+	typedDataMessage, err := mapMessageToTypedData(message)
 	if err != nil {
 		return "", err
 	}
 
-	// Load the private key from hex
+	// Generate the EIP-712 message using the provided primary type, client `TypedDataDomain`, and `TypedDataMessage` message.
+	unsignedMessage, err := generateEIP712Message(primaryType, c.Domain, typedDataMessage)
+	if err != nil {
+		return "", err
+	}
+
+	// Load the private key from hex.
 	privateKey, err := crypto.HexToECDSA(c.PrivateKey)
 	if err != nil {
 		return "", err
 	}
 
-	// Sign the message hash with the private key
-	signature, err := crypto.Sign(unsignedMessage, privateKey)
+	// Sign EIP-712 message and return the signature.
+	return signEIP712Message(unsignedMessage, privateKey)
+}
+
+// mapMessageToTypedData maps any struct to `TypedDataMessage`.
+func mapMessageToTypedData(message interface{}) (map[string]interface{}, error) {
+	// Convert message to JSON.
+	messageJSON, err := json.Marshal(message)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// Convert the signature to a hex string
-	signatureHex := common.Bytes2Hex(signature)
+	// Instance empty `TypedDataMessage`.
+	var typedData map[string]interface{}
 
-	// Return the signature
-	return "0x" + signatureHex, nil
-}
-
-// mapMessage maps any struct to a map[string]interface{}.
-func mapMessage(data interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-
-	// Get the reflect.Value of the interface.
-	value := reflect.ValueOf(data)
-
-	// Dereference the pointer to get the underlying value.
-	elemValue := value.Elem()
-
-	// Iterate through fields of the struct.
-	for i := 0; i < elemValue.NumField(); i++ {
-		field := elemValue.Type().Field(i)
-		fieldValue := elemValue.Field(i).Interface()
-
-		// Add field name and value to the result map.
-		result[lowercaseFirstRune(field.Name)] = fieldValue
+	// Populate the empty `TypedDataMessage` with message values.
+	err = json.Unmarshal(messageJSON, &typedData)
+	if err != nil {
+		return nil, err
 	}
 
-	return result
-}
-
-func lowercaseFirstRune(s string) string {
-	if len(s) == 0 {
-		return s
-	}
-	rs := []rune(s)
-	rs[0] = unicode.ToLower(rs[0])
-	return string(rs)
+	return typedData, nil
 }
 
 // generateEIP712Message generates an EIP-712 compliant message hash.
-func generateEIP712Message(primaryType string, domain apitypes.TypedDataDomain, message apitypes.TypedDataMessage) ([]byte, error) {
+func generateEIP712Message(primaryType types.PrimaryType, typedDataDomain apitypes.TypedDataDomain, typedDataMessage apitypes.TypedDataMessage) ([]byte, error) {
 	// Create a TypedData instance with the provided parameters.
 	signerData := apitypes.TypedData{
 		Types:       types.EIP712_TYPES,
-		PrimaryType: primaryType,
-		Domain:      domain,
-		Message:     message,
+		PrimaryType: string(primaryType),
+		Domain:      typedDataDomain,
+		Message:     typedDataMessage,
 	}
 
 	// Hash the structured data of the message.
@@ -95,8 +74,8 @@ func generateEIP712Message(primaryType string, domain apitypes.TypedDataDomain, 
 		return nil, err
 	}
 
-	// Hash the EIP712 domain separator data.
-	domainSeparator, err := signerData.HashStruct("EIP712Domain", signerData.Domain.Map())
+	// Hash the EIP-712 domain separator data.
+	domainSeparator, err := signerData.HashStruct(EIP_712_DOMAIN, signerData.Domain.Map())
 	if err != nil {
 		return nil, err
 	}
@@ -106,4 +85,19 @@ func generateEIP712Message(primaryType string, domain apitypes.TypedDataDomain, 
 
 	// Hash the raw data using Keccak256 and return.
 	return crypto.Keccak256(rawData), nil
+}
+
+// signEIP712Message returns a signed EIP-712 signature.
+func signEIP712Message(unsignedMessage []byte, privateKey *ecdsa.PrivateKey) (string, error) {
+	// Sign EIP-712 message.
+	signature, err := crypto.Sign(unsignedMessage, privateKey)
+	if err != nil {
+		return "", err
+	}
+
+	// Convert the signature to a hex string.
+	signatureHex := common.Bytes2Hex(signature)
+
+	// Return the signature prepending `0x`.
+	return "0x" + signatureHex, nil
 }

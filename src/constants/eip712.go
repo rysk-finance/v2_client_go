@@ -5,21 +5,13 @@ import (
 )
 
 const (
-	NAME    string = "100x"
-	VERSION string = "0.0.0"
+	NAME                  string            = "100x"
+	VERSION               string            = "0.0.0"
+	LOGIN_MESSAGE         types.PrimaryType = "LoginMessage"
+	ORDER                 types.PrimaryType = "Order"
+	CANCEL_ORDER          types.PrimaryType = "CancelOrder"
+	CANCEL_ORDERS         types.PrimaryType = "CancelOrders"
+	APPROVE_SIGNER        types.PrimaryType = "ApproveSigner"
+	WITHDRAW              types.PrimaryType = "Withdraw"
+	SIGNED_AUTHENTICATION types.PrimaryType = "SignedAuthentication"
 )
-
-var PRIMARY_TYPE = map[types.Endpoint]string{
-	POST_LOGIN:                    "LoginMessage",
-	POST_NEW_ORDER:                "Order",
-	POST_CANCEL_REPLACE_ORDER:     "Order",
-	DELETE_CANCEL_ALL_OPEN_ORDERS: "CancelOrders",
-	DELETE_CANCEL_ORDER:           "CancelOrder",
-	POST_APPROVE_REVOKE_SIGNER:    "ApproveSigner",
-	POST_WITHDRAW:                 "Withdraw",
-	GET_SPOT_BALANCES:             "SignedAuthentication",
-	GET_PERPETUAL_POSITION:        "SignedAuthentication",
-	GET_LIST_APPROVED_SIGNERS:     "SignedAuthentication",
-	GET_LIST_OPEN_ORDERS:          "SignedAuthentication",
-	GET_LIST_ORDERS:               "SignedAuthentication",
-}

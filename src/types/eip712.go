@@ -4,6 +4,8 @@ import (
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
+type PrimaryType string
+
 var EIP712_TYPES = apitypes.Types{
 	"EIP712Domain": {
 		{

@@ -15,11 +15,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// .env variables to be setup via `TestMain` before running tests.
 var (
 	PRIVATE_KEYS string = ""
 	RPC_URL      string = ""
 )
 
+// Setup .env variables for test suite.
 func TestMain(m *testing.M) {
 	if err := godotenv.Load(); err != nil {
 		fmt.Println("[TestMain] Error loading .env file:", err)
@@ -42,7 +44,7 @@ func Test_Get24hrPriceChangeStatistics_NoProduct(t *testing.T) {
 		SubAccountId: 1,
 	})
 
-	res, err := go100x.Get24hrPriceChangeStatistics(client, types.Product{})
+	res, err := go100x.Get24hrPriceChangeStatistics(client, &types.Product{})
 
 	if err != nil {
 		t.Errorf("[Test_Get24hrPriceChangeStatistics_NoProduct] Error: %v", err)
@@ -61,7 +63,7 @@ func Test_Get24hrPriceChangeStatistics_WithNonExistingProduct(t *testing.T) {
 		SubAccountId: 1,
 	})
 
-	res, err := go100x.Get24hrPriceChangeStatistics(client, types.Product{
+	res, err := go100x.Get24hrPriceChangeStatistics(client, &types.Product{
 		Id:     69420,
 		Symbol: "69420",
 	})
@@ -86,7 +88,7 @@ func Test_Get24hrPriceChangeStatistics_WithProduct(t *testing.T) {
 		SubAccountId: 1,
 	})
 
-	res, err := go100x.Get24hrPriceChangeStatistics(client, constants.ETH_PERP)
+	res, err := go100x.Get24hrPriceChangeStatistics(client, &constants.ETH_PERP)
 
 	if err != nil {
 		t.Errorf("[Test_Get24hrPriceChangeStatistics_WithProduct] Error: %v", err)
@@ -143,7 +145,7 @@ func Test_GetKlineData(t *testing.T) {
 		SubAccountId: 1,
 	})
 
-	res, err := go100x.GetKlineData(client, types.KlineDataRequest{
+	res, err := go100x.GetKlineData(client, &types.KlineDataRequest{
 		Product:   constants.BTC_PERP,
 		Interval:  constants.D1,
 		StartTime: time.Now().Add(-24 * time.Hour).UnixMilli(),
@@ -186,7 +188,7 @@ func Test_OrderBook(t *testing.T) {
 		SubAccountId: 1,
 	})
 
-	res, err := go100x.OrderBook(client, types.OrderBookRequest{
+	res, err := go100x.OrderBook(client, &types.OrderBookRequest{
 		Product:     constants.ETH_PERP,
 		Granularity: 0,
 		Limit:       constants.FIVE,
