@@ -182,7 +182,7 @@ func Test_RevokeSigner(t *testing.T) {
 		return
 	}
 
-	verifyValidJSONResponse("Test_GetSpotBalances", t, res)
+	verifyValidJSONResponse("Test_RevokeSigner", t, res)
 }
 
 func Test_Login(t *testing.T) {
@@ -236,5 +236,5 @@ func verifyValidJSONResponse(testName string, t *testing.T, res string) {
 		return
 	}
 
-	t.Logf("[%s] - \n%s", testName, res)
+	t.Logf("[%s] %s", testName, res)
 }

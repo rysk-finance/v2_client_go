@@ -1,12 +1,9 @@
 package go100x
 
 import (
-	"bytes"
-	"encoding/json"
 	"go100x/src/constants"
 	"go100x/src/types"
 	"go100x/src/utils"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,7 +24,7 @@ func NewClient(config *types.ClientConfiguration) *types.Client {
 		PrivateKey:        privateKey,
 		Address:           utils.AddressFromPrivateKey(privateKey),
 		SubAccountId:      int64(config.SubAccountId),
-		HttpClient:        utils.GetHttpClient(config.Timeout),
+		HttpClient:        utils.GetHTTPClient(config.Timeout),
 		VerifyingContract: constants.CIAO[config.Env],
 		Domain: apitypes.TypedDataDomain{
 			Name:              constants.NAME,
@@ -59,7 +56,7 @@ func Get24hrPriceChangeStatistics(c *types.Client, product *types.Product) (stri
 	}
 
 	// Send http request and return result.
-	return sendRequest(c.HttpClient, req)
+	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
 // GetProduct returns details for a specific product by symbol
@@ -75,7 +72,7 @@ func GetProduct(c *types.Client, symbol string) (string, error) {
 	}
 
 	// Send http request and return result.
-	return sendRequest(c.HttpClient, req)
+	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
 // GetProductById returns details for a specific product by id.
@@ -91,7 +88,7 @@ func GetProductById(c *types.Client, id int64) (string, error) {
 	}
 
 	// Send http request and return result.
-	return sendRequest(c.HttpClient, req)
+	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
 // GetKlineData returns Kline/candlestick bars for a symbol. Klines are uniquely identified by interval(timeframe) and startTime.
@@ -126,7 +123,7 @@ func GetKlineData(c *types.Client, params *types.KlineDataRequest) (string, erro
 	req.URL.RawQuery = query.Encode()
 
 	// Send http request and return result.
-	return sendRequest(c.HttpClient, req)
+	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
 // ListProducts returns a list of products available to trade.
@@ -142,7 +139,7 @@ func ListProducts(c *types.Client) (string, error) {
 	}
 
 	// Send http request and return result.
-	return sendRequest(c.HttpClient, req)
+	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
 // OrderBook returns bids and asks for a market.
@@ -169,7 +166,7 @@ func OrderBook(c *types.Client, params *types.OrderBookRequest) (string, error) 
 	req.URL.RawQuery = query.Encode()
 
 	// Send http request and return result.
-	return sendRequest(c.HttpClient, req)
+	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
 // ServerTime returns current server time.
@@ -185,7 +182,7 @@ func ServerTime(c *types.Client) (string, error) {
 	}
 
 	// Send http request and return result.
-	return sendRequest(c.HttpClient, req)
+	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
 // ApproveSigner approves a Signer for a `SubAccount`.
@@ -200,7 +197,7 @@ func RevokeSigner(c *types.Client, params *types.ApproveRevokeSignerRequest) (st
 
 // approveRevokeSigner approves or revoke a signer for a `SubAccount`.
 func approveRevokeSigner(c *types.Client, params *types.ApproveRevokeSignerRequest, isApproved bool) (string, error) {
-	// Generate EIP712 signature
+	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(c, constants.APPROVE_SIGNER, &struct {
 		Account        string `json:"account"`
 		SubAccountId   string `json:"subAccountId"`
@@ -219,7 +216,7 @@ func approveRevokeSigner(c *types.Client, params *types.ApproveRevokeSignerReque
 	}
 
 	// Create HTTP request.
-	req, err := createRequestWithBody(
+	req, err := utils.CreateHTTPRequestWithBody(
 		http.MethodPost,
 		string(c.BaseUri)+string(constants.APPROVE_REVOKE_SIGNER),
 		&struct {
@@ -243,7 +240,7 @@ func approveRevokeSigner(c *types.Client, params *types.ApproveRevokeSignerReque
 	}
 
 	// Send http request and return result.
-	return sendRequest(c.HttpClient, req)
+	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
 // Log user in returning a set-cookie header that will need to be attached to authenticated requests to access private endpoints.
@@ -265,7 +262,7 @@ func Login(c *types.Client) (string, error) {
 	}
 
 	// Create HTTP request.
-	req, err := createRequestWithBody(
+	req, err := utils.CreateHTTPRequestWithBody(
 		http.MethodPost,
 		string(c.BaseUri)+string(constants.LOGIN),
 		&struct {
@@ -285,7 +282,7 @@ func Login(c *types.Client) (string, error) {
 	}
 
 	// Send http request and return result.
-	return sendRequest(c.HttpClient, req)
+	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
 // TODO
@@ -296,7 +293,7 @@ func Login(c *types.Client) (string, error) {
 
 // Returns spot balances for sub account id.
 func GetSpotBalances(c *types.Client) (string, error) {
-	// Generate EIP712 signature
+	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(c, constants.SIGNED_AUTHENTICATION, &struct {
 		Account      string `json:"account"`
 		SubAccountId string `json:"subAccountId"`
@@ -326,7 +323,7 @@ func GetSpotBalances(c *types.Client) (string, error) {
 	req.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return sendRequest(c.HttpClient, req)
+	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
 // Create a new order on the SubAccount.
@@ -360,7 +357,7 @@ func NewOrder(c *types.Client, params *types.NewOrderRequest) (string, error) {
 	}
 
 	// Create HTTP request.
-	req, err := createRequestWithBody(
+	req, err := utils.CreateHTTPRequestWithBody(
 		http.MethodPost,
 		string(c.BaseUri)+string(constants.NEW_ORDER),
 		&struct {
@@ -394,35 +391,5 @@ func NewOrder(c *types.Client, params *types.NewOrderRequest) (string, error) {
 	}
 
 	// Send HTTP request and return result.
-	return sendRequest(c.HttpClient, req)
-}
-
-// createRequestWithBody creates a new HTTP request with a request body.
-func createRequestWithBody(method string, uri string, body interface{}) (*http.Request, error) {
-	// Marshal body into JSON.
-	bodyJSON, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create API request.
-	return http.NewRequest(method, uri, bytes.NewBuffer(bodyJSON))
-}
-
-// sendRequest send HTTP request using `Client100x.HttpClient` and returns response as string.
-func sendRequest(c *http.Client, req *http.Request) (string, error) {
-	// Send request
-	res, err := c.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer res.Body.Close()
-
-	// Read response
-	response, err := io.ReadAll(res.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return string(response), nil
+	return utils.SendHTTPRequest(c.HttpClient, req)
 }
