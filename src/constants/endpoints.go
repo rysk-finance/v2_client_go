@@ -15,7 +15,7 @@ const (
 	POST_WITHDRAW                          types.Endpoint = "withdraw"
 	NEW_ORDER                              types.Endpoint = "order"
 	CANCEL_REPLACE_ORDER                   types.Endpoint = "order/cancel-and-replace"
-	DELETE_CANCEL_ORDER                    types.Endpoint = "order"
+	CANCEL_ORDER                           types.Endpoint = "order"
 	DELETE_CANCEL_ALL_OPEN_ORDERS          types.Endpoint = "openOrders"
 	GET_SESSION_STATUS                     types.Endpoint = "session/status"
 	GET_LOGOUT                             types.Endpoint = "session/logout"

@@ -34,3 +34,8 @@ type CancelOrderAndReplaceRequest struct {
 	IdToCancel string          // ID of the order to be replaced.
 	NewOrder   NewOrderRequest // The new order details to be used in the replacement.
 }
+
+type CancelOrderRequest struct {
+	Product    Product // The product. Can be `constants.ETH_PERP`, `constants.BTC_PERP` or `constants.BLAST_PERP`.
+	IdToCancel string  // The unique ID of the order you wish to cancel.
+}
