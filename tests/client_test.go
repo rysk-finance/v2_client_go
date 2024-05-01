@@ -106,7 +106,7 @@ func Test_GetProductById(t *testing.T) {
 
 func Test_GetKlineData(t *testing.T) {
 	res, err := go100x.GetKlineData(CLIENT_100_X, &types.KlineDataRequest{
-		Product:   constants.PRODUCT_BTC_PERP,
+		Product:   &constants.PRODUCT_BTC_PERP,
 		Interval:  constants.INTERVAL_D1,
 		StartTime: time.Now().Add(-24 * time.Hour).UnixMilli(),
 		EndTime:   time.Now().UnixMilli(),
@@ -133,7 +133,7 @@ func Test_ListProducts(t *testing.T) {
 
 func Test_OrderBook(t *testing.T) {
 	res, err := go100x.OrderBook(CLIENT_100_X, &types.OrderBookRequest{
-		Product:     constants.PRODUCT_ETH_PERP,
+		Product:     &constants.PRODUCT_ETH_PERP,
 		Granularity: 0,
 		Limit:       constants.LIMIT_FIVE,
 	})
@@ -188,7 +188,7 @@ func Test_RevokeSigner(t *testing.T) {
 func Test_NewOrder(t *testing.T) {
 	// Limit buy 1 ETH for 3300 USDB, valid for 1 day
 	res, err := go100x.NewOrder(CLIENT_100_X, &types.NewOrderRequest{
-		Product:     constants.PRODUCT_ETH_PERP,
+		Product:     &constants.PRODUCT_ETH_PERP,
 		IsBuy:       true,
 		OrderType:   constants.ORDER_TYPE_LIMIT,
 		TimeInForce: constants.TIME_IN_FORCE_GTC,
@@ -210,8 +210,8 @@ func Test_CancelOrderAndReplace(t *testing.T) {
 	res, err := go100x.CancelOrderAndReplace(CLIENT_100_X, &types.CancelOrderAndReplaceRequest{
 		IdToCancel: "1",
 		// Limit buy 1 ETH for 3300 USDB, valid for 1 day
-		NewOrder: types.NewOrderRequest{
-			Product:     constants.PRODUCT_ETH_PERP,
+		NewOrder: &types.NewOrderRequest{
+			Product:     &constants.PRODUCT_ETH_PERP,
 			IsBuy:       true,
 			OrderType:   constants.ORDER_TYPE_LIMIT_MAKER,
 			TimeInForce: constants.TIME_IN_FORCE_GTC,
@@ -232,7 +232,7 @@ func Test_CancelOrderAndReplace(t *testing.T) {
 
 func Test_CancelOrder(t *testing.T) {
 	res, err := go100x.CancelOrder(CLIENT_100_X, &types.CancelOrderRequest{
-		Product:    constants.PRODUCT_ETH_PERP,
+		Product:    &constants.PRODUCT_ETH_PERP,
 		IdToCancel: "1",
 	})
 
@@ -297,7 +297,7 @@ func Test_ListOpenOrders(t *testing.T) {
 
 func Test_ListOrders(t *testing.T) {
 	res, err := go100x.ListOrders(CLIENT_100_X, &types.ListOrdersRequest{
-		Product: constants.PRODUCT_BTC_PERP,
+		Product: &constants.PRODUCT_BTC_PERP,
 		Ids:     []string{"A", "B"},
 	})
 	if err != nil {
