@@ -365,7 +365,7 @@ func CancelOrderAndReplace(go100XClient *types.Client, params *types.CancelOrder
 			NewOrder   interface{}
 		}{
 			IdToCancel: params.IdToCancel,
-			NewOrder: struct {
+			NewOrder: &struct {
 				Account      string
 				SubAccountId int64
 				ProductId    int64
