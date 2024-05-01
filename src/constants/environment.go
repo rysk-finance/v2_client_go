@@ -3,6 +3,6 @@ package constants
 import "go100x/src/types"
 
 const (
-	MAINNET types.Environment = "mainnet"
-	TESTNET types.Environment = "testnet"
+	ENVIRONMENT_MAINNET types.Environment = "mainnet"
+	ENVIRONMENT_TESTNET types.Environment = "testnet"
 )

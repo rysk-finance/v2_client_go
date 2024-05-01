@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	NAME    string = "100x"
-	VERSION string = "0.0.0"
+	DOMAIN_NAME    string = "100x"
+	DOMAIN_VERSION string = "0.0.0"
 )
 
 const (

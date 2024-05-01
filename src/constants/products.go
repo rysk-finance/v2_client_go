@@ -3,15 +3,15 @@ package constants
 import "go100x/src/types"
 
 var (
-	ETH_PERP = types.Product{
+	PRODUCT_ETH_PERP = types.Product{
 		Symbol: "ethperp",
 		Id:     1002,
 	}
-	BTC_PERP = types.Product{
+	PRODUCT_BTC_PERP = types.Product{
 		Symbol: "btcperp",
 		Id:     1003,
 	}
-	BLAST_PERP = types.Product{
+	PRODUCT_BLAST_PERP = types.Product{
 		Symbol: "blastperp",
 		Id:     1006,
 	}

@@ -3,7 +3,7 @@ package constants
 import "go100x/src/types"
 
 const (
-	FIVE   types.Limit = 5
-	TEN    types.Limit = 10
-	TWENTY types.Limit = 20
+	LIMIT_FIVE   types.Limit = 5
+	LIMIT_TEN    types.Limit = 10
+	LIMIT_TWENTY types.Limit = 20
 )

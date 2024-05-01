@@ -25,12 +25,12 @@ func NewClient(config *types.ClientConfiguration) *types.Client {
 		Address:           utils.AddressFromPrivateKey(privateKey),
 		SubAccountId:      int64(config.SubAccountId),
 		HttpClient:        utils.GetHTTPClient(config.Timeout),
-		VerifyingContract: constants.CIAO[config.Env],
+		VerifyingContract: constants.CIAO_ADDRESS[config.Env],
 		Domain: apitypes.TypedDataDomain{
-			Name:              constants.NAME,
-			Version:           constants.VERSION,
+			Name:              constants.DOMAIN_NAME,
+			Version:           constants.DOMAIN_VERSION,
 			ChainId:           constants.CHAIN_ID[config.Env],
-			VerifyingContract: constants.VERIFIER[config.Env],
+			VerifyingContract: constants.VERIFIER_ADDRESS[config.Env],
 		},
 	}
 }
@@ -41,7 +41,7 @@ func Get24hrPriceChangeStatistics(go100XClient *types.Client, product *types.Pro
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		go100XClient.BaseUri+string(constants.GET_24H_TICKER_PRICE_CHANGE_STATISTICS),
+		go100XClient.BaseUri+string(constants.ENDPOINT_GET_24H_TICKER_PRICE_CHANGE_STATISTICS),
 		nil,
 	)
 	if err != nil {
@@ -64,7 +64,7 @@ func GetProduct(go100XClient *types.Client, symbol string) (string, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		go100XClient.BaseUri+string(constants.GET_PRODUCT)+symbol,
+		go100XClient.BaseUri+string(constants.ENDPOINT_GET_PRODUCT)+symbol,
 		nil,
 	)
 	if err != nil {
@@ -80,7 +80,7 @@ func GetProductById(go100XClient *types.Client, id int64) (string, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		go100XClient.BaseUri+string(constants.GET_PRODUCT_BY_ID)+strconv.FormatInt(id, 10),
+		go100XClient.BaseUri+string(constants.ENDPOINT_GET_PRODUCT_BY_ID)+strconv.FormatInt(id, 10),
 		nil,
 	)
 	if err != nil {
@@ -96,7 +96,7 @@ func GetKlineData(go100XClient *types.Client, params *types.KlineDataRequest) (s
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.BaseUri)+string(constants.GET_KLINE_DATA),
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_GET_KLINE_DATA),
 		nil,
 	)
 	if err != nil {
@@ -129,7 +129,7 @@ func ListProducts(go100XClient *types.Client) (string, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.BaseUri)+string(constants.LIST_PRODUCTS),
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_LIST_PRODUCTS),
 		nil,
 	)
 	if err != nil {
@@ -145,7 +145,7 @@ func OrderBook(go100XClient *types.Client, params *types.OrderBookRequest) (stri
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.BaseUri)+string(constants.ORDER_BOOK),
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_ORDER_BOOK),
 		nil,
 	)
 	if err != nil {
@@ -172,7 +172,7 @@ func ServerTime(go100XClient *types.Client) (string, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.BaseUri)+string(constants.SERVER_TIME),
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_SERVER_TIME),
 		nil,
 	)
 	if err != nil {
@@ -220,7 +220,7 @@ func approveRevokeSigner(go100XClient *types.Client, params *types.ApproveRevoke
 	// Create HTTP request.
 	request, err := utils.CreateHTTPRequestWithBody(
 		http.MethodPost,
-		string(go100XClient.BaseUri)+string(constants.APPROVE_REVOKE_SIGNER),
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_APPROVE_REVOKE_SIGNER),
 		&struct {
 			Account        string
 			SubAccountId   int64
@@ -270,7 +270,7 @@ func Login(go100XClient *types.Client) (string, error) {
 	// Create HTTP request.
 	request, err := utils.CreateHTTPRequestWithBody(
 		http.MethodPost,
-		string(go100XClient.BaseUri)+string(constants.LOGIN),
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_LOGIN),
 		&struct {
 			Account   string
 			Message   string
@@ -318,7 +318,7 @@ func GetSpotBalances(go100XClient *types.Client) (string, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.BaseUri)+string(constants.GET_SPOT_BALANCES),
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_GET_SPOT_BALANCES),
 		nil,
 	)
 	if err != nil {
@@ -373,7 +373,7 @@ func NewOrder(go100XClient *types.Client, params *types.NewOrderRequest) (string
 	// Create HTTP request.
 	request, err := utils.CreateHTTPRequestWithBody(
 		http.MethodPost,
-		string(go100XClient.BaseUri)+string(constants.NEW_ORDER),
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_NEW_ORDER),
 		&struct {
 			Account      string
 			SubAccountId int64
@@ -445,7 +445,7 @@ func CancelOrderAndReplace(go100XClient *types.Client, params *types.CancelOrder
 	// Create HTTP request.
 	request, err := utils.CreateHTTPRequestWithBody(
 		http.MethodPost,
-		string(go100XClient.BaseUri)+string(constants.CANCEL_REPLACE_ORDER),
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_CANCEL_REPLACE_ORDER),
 		&struct {
 			IdToCancel string
 			NewOrder   interface{}
@@ -511,7 +511,7 @@ func CancelOrder(go100XClient *types.Client, params *types.CancelOrderRequest) (
 	// Create HTTP request.
 	request, err := utils.CreateHTTPRequestWithBody(
 		http.MethodDelete,
-		string(go100XClient.BaseUri)+string(constants.CANCEL_ORDER),
+		string(go100XClient.BaseUri)+string(constants.ENDPOINT_CANCEL_ORDER),
 		&struct {
 			Account      string
 			SubAccountId int64
