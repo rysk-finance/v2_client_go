@@ -1,15 +1,15 @@
 package types
 
 type KlineDataRequest struct {
-	Product   Product  // The product. Can be `constants.ETH_PERP`, `constants.BTC_PERP` or `constants.BLAST_PERP`.
-	Interval  Interval // The interval. Can be `constants.M1`, `constants.M5`, `constants.M15`, `constants.M30`, `constants.H1`, `constants.H2`, `constants.H4`, `constants.H8`, `constants.D1`, `constants.D3` or `constants.W1`.
+	Product   Product  // The product. Can be `constants.PRODUCT_ETH_PERP`, `constants.PRODUCT_BTC_PERP` or `constants.PRODUCT_BLAST_PERP`.
+	Interval  Interval // The interval. Can be `constants.INTERVAL_M1`, `constants.INTERVAL_5M`, `constants.INTERVAL_15M`, `constants.INTERVAL_30M`, `constants.INTERVAL_1H`, `constants.INTERVAL_2H`, `constants.INTERVAL_4H`, `constants.INTERVAL_8H`, `constants.INTERVAL_1D`, `constants.INTERVAL_3D` or `constants.INTERVAL_1W`.
 	StartTime int64    // Start timestamp in ms.
 	EndTime   int64    // End timestamp in ms.
 	Limit     int64    // Number of values to retrieve (max 1000).
 }
 
 type OrderBookRequest struct {
-	Product     Product // The product. Can be `constants.ETH_PERP`, `constants.BTC_PERP` or `constants.BLAST_PERP`.
+	Product     Product // The product. Can be `constants.PRODUCT_ETH_PERP`, `constants.PRODUCT_BTC_PERP` or `constants.PRODUCT_BLAST_PERP`.
 	Granularity int64   // The number of decimals to remove from prices.
 	Limit       Limit   // The number of bids and asks to retrieve. Can be `constants.FIVE`, `constants.TEN` or `constants.TWENTY`.
 }
@@ -20,10 +20,10 @@ type ApproveRevokeSignerRequest struct {
 }
 
 type NewOrderRequest struct {
-	Product     Product     // The product. Can be `constants.ETH_PERP`, `constants.BTC_PERP` or `constants.BLAST_PERP`.
+	Product     Product     // The product. Can be `constants.PRODUCT_ETH_PERP`, `constants.PRODUCT_BTC_PERP` or `constants.PRODUCT_BLAST_PERP`.
 	IsBuy       bool        // Whether the account is buying or selling.
-	OrderType   OrderType   // The order type. Can be `constants.LIMIT`, `constants.LIMIT_MAKER`, `constants.MARKET`, `constants.STOP_LOSS`, `constants.STOP_LOSS_LIMIT`, `constants.TAKE_PROFIT` or `constants.TAKE_PROFIT_LIMIT`.
-	TimeInForce TimeInForce // Order time in force. Can be `constants.GTC`, `constants.FOK` or `constants.IOC`.
+	OrderType   OrderType   // The order type. Can be `constants.ORDER_TYPE_LIMIT`, `constants.ORDER_TYPE_LIMIT_MAKER`, `constants.ORDER_TYPE_MARKET`, `constants.ORDER_TYPE_STOP_LOSS`, `constants.ORDER_TYPE_STOP_LOSS_LIMIT`, `constants.ORDER_TYPE_TAKE_PROFIT` or `constants.ORDER_TYPE_TAKE_PROFIT_LIMIT`.
+	TimeInForce TimeInForce // Order time in force. Can be `constants.TIME_IN_FORCE_GTC`, `constants.TIME_IN_FORCE_FOK` or `constants.TIME_IN_FORCE_IOC`.
 	Price       string      // Price in wei (e18).
 	Quantity    string      // Quantity in wei (e18).
 	Expiration  int64       // UNIX timestamp (in ms) after which the order is no longer active.
@@ -36,6 +36,6 @@ type CancelOrderAndReplaceRequest struct {
 }
 
 type CancelOrderRequest struct {
-	Product    Product // The product. Can be `constants.ETH_PERP`, `constants.BTC_PERP` or `constants.BLAST_PERP`.
+	Product    Product // The product. Can be `constants.PRODUCT_ETH_PERP`, `constants.PRODUCT_BTC_PERP` or `constants.PRODUCT_BLAST_PERP`.
 	IdToCancel string  // The unique ID of the order you wish to cancel.
 }

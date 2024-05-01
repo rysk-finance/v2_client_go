@@ -15,15 +15,15 @@ type Limit int64
 type OrderType int64
 type TimeInForce int64
 
-// `constants.ETH_PERP`, `constants.BTC_PERP` or `constants.BLAST_PERP`.
+// `constants.PRODUCT_ETH_PERP`, `constants.PRODUCT_BTC_PERP` or `constants.PRODUCT_BLAST_PERP`.
 type Product struct {
-	Symbol string // `constants.ETH_PERP.Symbol`, `constants.BTC_PERP.Symbol` or `constants.BLAST_PERP.Symbol`.
-	Id     int64  // `constants.ETH_PERP.Id`, `constants.BTC_PERP.Id` or `constants.BLAST_PERP.Id`.
+	Symbol string // `constants.PRODUCT_ETH_PERP.Symbol`, `constants.PRODUCT_BTC_PERP.Symbol` or `constants.PRODUCT_BLAST_PERP.Symbol`.
+	Id     int64  // `constants.PRODUCT_ETH_PERP.Id`, `constants.PRODUCT_BTC_PERP.Id` or `constants.PRODUCT_BLAST_PERP.Id`.
 }
 
 // Client configuration
 type ClientConfiguration struct {
-	Env          Environment   // `constants.TESTNET` or `constants.MAINNET`.
+	Env          Environment   // `constants.ENVIRONMENT_TESTNET` or `constants.ENVIRONMENT_MAINNET`.
 	Timeout      time.Duration // e.g. `10 * time.Second`.
 	PrivateKey   string        // e.g. `0x2638b4...` or `2638b4...`.
 	RpcUrl       string        // e.g. `https://sepolia.blast.io` or `https://rpc.blastblockchain.com`.
