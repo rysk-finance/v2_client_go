@@ -185,17 +185,6 @@ func Test_RevokeSigner(t *testing.T) {
 	verifyValidJSONResponse("Test_RevokeSigner", t, res)
 }
 
-func Test_Login(t *testing.T) {
-	res, err := go100x.Login(CLIENT_100_X)
-
-	if err != nil {
-		t.Errorf("[Test_Login] Error: %v", err)
-		return
-	}
-
-	verifyValidJSONResponse("Test_Login", t, res)
-}
-
 func Test_NewOrder(t *testing.T) {
 	// Limit buy 1 ETH for 3300 USDB, valid for 1 day
 	res, err := go100x.NewOrder(CLIENT_100_X, &types.NewOrderRequest{
@@ -283,7 +272,7 @@ func verifyValidJSONResponse(testName string, t *testing.T, res string) {
 
 	// Check if res is valid JSON by trying to unmarshal it
 	if err := json.Unmarshal([]byte(res), &data); err != nil {
-		t.Errorf("[%s] Error unmarshalling response: %v", testName, err)
+		t.Errorf("[%s] Error unmarshalling response: %v", testName, res)
 		return
 	}
 

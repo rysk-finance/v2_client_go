@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
@@ -235,52 +234,6 @@ func approveRevokeSigner(go100XClient *types.Client, params *types.ApproveRevoke
 			Nonce:          params.Nonce,
 			Signature:      signature,
 			IsApproved:     isApproved,
-		},
-	)
-	if err != nil {
-		return "", err
-	}
-
-	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
-}
-
-// Log user in returning a set-cookie header that will need to be attached to authenticated requests to access private endpoints.
-func Login(go100XClient *types.Client) (string, error) {
-	timestamp := time.Now().UnixMilli()
-
-	// Generate EIP712 signature.
-	signature, err := utils.SignMessage(
-		go100XClient,
-		constants.PRIMARY_TYPE_LOGIN_MESSAGE,
-		&struct {
-			Account   string `json:"account"`
-			Message   string `json:"message"`
-			Timestamp string `json:"timestamp"`
-		}{
-			Account:   go100XClient.Address,
-			Message:   "I want to log into 100x.finance",
-			Timestamp: strconv.FormatInt(timestamp, 10),
-		},
-	)
-	if err != nil {
-		return "", err
-	}
-
-	// Create HTTP request.
-	request, err := utils.CreateHTTPRequestWithBody(
-		http.MethodPost,
-		string(go100XClient.BaseUri)+string(constants.ENDPOINT_LOGIN),
-		&struct {
-			Account   string
-			Message   string
-			Timestamp int64
-			Signature string
-		}{
-			Account:   go100XClient.Address,
-			Message:   "I want to log into 100x.finance",
-			Timestamp: timestamp,
-			Signature: signature,
 		},
 	)
 	if err != nil {
