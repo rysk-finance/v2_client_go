@@ -55,7 +55,7 @@ func Get24hrPriceChangeStatistics(c *types.Client, product *types.Product) (stri
 		req.URL.RawQuery = query.Encode()
 	}
 
-	// Send http request and return result.
+	// Send HTTP request and return result.
 	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
@@ -71,7 +71,7 @@ func GetProduct(c *types.Client, symbol string) (string, error) {
 		return "", err
 	}
 
-	// Send http request and return result.
+	// Send HTTP request and return result.
 	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
@@ -87,7 +87,7 @@ func GetProductById(c *types.Client, id int64) (string, error) {
 		return "", err
 	}
 
-	// Send http request and return result.
+	// Send HTTP request and return result.
 	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
@@ -106,7 +106,6 @@ func GetKlineData(c *types.Client, params *types.KlineDataRequest) (string, erro
 	// Add query parameters and URL encode HTTP request.
 	query := req.URL.Query()
 	query.Add("symbol", string(params.Product.Symbol))
-
 	if params.Interval != "" {
 		query.Add("interval", string(params.Interval))
 	}
@@ -119,10 +118,9 @@ func GetKlineData(c *types.Client, params *types.KlineDataRequest) (string, erro
 	if params.Limit != 0 {
 		query.Add("limit", strconv.FormatInt(params.Limit, 10))
 	}
-
 	req.URL.RawQuery = query.Encode()
 
-	// Send http request and return result.
+	// Send HTTP request and return result.
 	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
@@ -138,7 +136,7 @@ func ListProducts(c *types.Client) (string, error) {
 		return "", err
 	}
 
-	// Send http request and return result.
+	// Send HTTP request and return result.
 	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
@@ -165,7 +163,7 @@ func OrderBook(c *types.Client, params *types.OrderBookRequest) (string, error) 
 	}
 	req.URL.RawQuery = query.Encode()
 
-	// Send http request and return result.
+	// Send HTTP request and return result.
 	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
@@ -181,7 +179,7 @@ func ServerTime(c *types.Client) (string, error) {
 		return "", err
 	}
 
-	// Send http request and return result.
+	// Send HTTP request and return result.
 	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
@@ -239,7 +237,7 @@ func approveRevokeSigner(c *types.Client, params *types.ApproveRevokeSignerReque
 		return "", err
 	}
 
-	// Send http request and return result.
+	// Send HTTP request and return result.
 	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
@@ -281,7 +279,7 @@ func Login(c *types.Client) (string, error) {
 		return "", err
 	}
 
-	// Send http request and return result.
+	// Send HTTP request and return result.
 	return utils.SendHTTPRequest(c.HttpClient, req)
 }
 
