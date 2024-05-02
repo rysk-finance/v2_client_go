@@ -1,6 +1,6 @@
 package constants
 
-import "go100x/src/types"
+import "github.com/eldief/go100x/src/types"
 
 const (
 	ENDPOINT_GET_24H_TICKER_PRICE_CHANGE_STATISTICS types.Endpoint = "ticker/24hr"

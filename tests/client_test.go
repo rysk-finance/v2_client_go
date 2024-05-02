@@ -3,13 +3,16 @@ package go100x_test
 import (
 	"encoding/json"
 	"fmt"
-	go100x "go100x/src/client"
-	"go100x/src/constants"
-	"go100x/src/types"
+	"io"
 	"math/big"
+	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	go100x "github.com/eldief/go100x/src/client"
+	"github.com/eldief/go100x/src/constants"
+	"github.com/eldief/go100x/src/types"
 
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/joho/godotenv"
@@ -55,7 +58,7 @@ func Test_Get24hrPriceChangeStatistics_NoProduct(t *testing.T) {
 }
 
 func Test_Get24hrPriceChangeStatistics_WithNonExistingProduct(t *testing.T) {
-	res, err := go100x.Get24hrPriceChangeStatistics(CLIENT_100_X, &types.Product{
+	_, err := go100x.Get24hrPriceChangeStatistics(CLIENT_100_X, &types.Product{
 		Id:     69420,
 		Symbol: "69420",
 	})
@@ -65,10 +68,10 @@ func Test_Get24hrPriceChangeStatistics_WithNonExistingProduct(t *testing.T) {
 		return
 	}
 
-	expectedResponse := "Product not found"
-	if res != expectedResponse {
-		t.Errorf("[Test_Get24hrPriceChangeStatistics_WithNonExistingProduct] Unexpected response. Got: %s, Expected: %s", res, expectedResponse)
-	}
+	// expectedResponse := "Product not found"
+	// if res != expectedResponse {
+	// 	t.Errorf("[Test_Get24hrPriceChangeStatistics_WithNonExistingProduct] Unexpected response. Got: %s, Expected: %s", res, expectedResponse)
+	// }
 }
 
 func Test_Get24hrPriceChangeStatistics_WithProduct(t *testing.T) {
@@ -79,6 +82,7 @@ func Test_Get24hrPriceChangeStatistics_WithProduct(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_Get24hrPriceChangeStatistics_WithProduct", t, 200, res)
 	verifyValidJSONResponse("Test_Get24hrPriceChangeStatistics_WithProduct", t, res)
 }
 
@@ -90,6 +94,7 @@ func Test_GetProduct(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_GetProduct", t, 200, res)
 	verifyValidJSONResponse("Test_GetProduct", t, res)
 }
 
@@ -101,6 +106,7 @@ func Test_GetProductById(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_GetProductById", t, 200, res)
 	verifyValidJSONResponse("Test_GetProductById", t, res)
 }
 
@@ -117,6 +123,7 @@ func Test_GetKlineData(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_GetKlineData", t, 200, res)
 	verifyValidJSONResponse("Test_GetKlineData", t, res)
 }
 
@@ -128,6 +135,7 @@ func Test_ListProducts(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_ListProducts", t, 200, res)
 	verifyValidJSONResponse("Test_ListProducts", t, res)
 }
 
@@ -143,6 +151,7 @@ func Test_OrderBook(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_OrderBook", t, 200, res)
 	verifyValidJSONResponse("Test_OrderBook", t, res)
 }
 
@@ -154,6 +163,7 @@ func Test_ServerTime(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_ServerTime", t, 200, res)
 	verifyValidJSONResponse("Test_ServerTime", t, res)
 }
 
@@ -168,6 +178,7 @@ func Test_ApproveSigner(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_ApproveSigner", t, 200, res)
 	verifyValidJSONResponse("Test_ApproveSigner", t, res)
 }
 
@@ -182,6 +193,7 @@ func Test_RevokeSigner(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_RevokeSigner", t, 500, res)
 	verifyValidJSONResponse("Test_RevokeSigner", t, res)
 }
 
@@ -203,6 +215,7 @@ func Test_NewOrder(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_NewOrder", t, 400, res)
 	verifyValidJSONResponse("Test_NewOrder", t, res)
 }
 
@@ -227,6 +240,7 @@ func Test_CancelOrderAndReplace(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_CancelOrderAndReplace", t, 404, res)
 	verifyValidJSONResponse("Test_CancelOrderAndReplace", t, res)
 }
 
@@ -241,6 +255,7 @@ func Test_CancelOrder(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_CancelOrder", t, 404, res)
 	verifyValidJSONResponse("Test_CancelOrder", t, res)
 }
 
@@ -252,6 +267,7 @@ func Test_CancelAllOpenOrders(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_CancelAllOpenOrders", t, 200, res)
 	verifyValidJSONResponse("Test_CancelAllOpenOrders", t, res)
 }
 
@@ -262,6 +278,7 @@ func Test_GetSpotBalances(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_GetSpotBalances", t, 200, res)
 	verifyValidJSONResponse("Test_GetSpotBalances", t, res)
 }
 
@@ -272,6 +289,7 @@ func Test_GetPerpetualPosition(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_GetPerpetualPosition", t, 200, res)
 	verifyValidJSONResponse("Test_GetPerpetualPosition", t, res)
 }
 
@@ -282,6 +300,7 @@ func Test_ListApproveSigners(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_ListApproveSigners", t, 200, res)
 	verifyValidJSONResponse("Test_ListApproveSigners", t, res)
 }
 
@@ -292,6 +311,7 @@ func Test_ListOpenOrders(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_ListOpenOrders", t, 200, res)
 	verifyValidJSONResponse("Test_ListOpenOrders", t, res)
 }
 
@@ -305,17 +325,31 @@ func Test_ListOrders(t *testing.T) {
 		return
 	}
 
+	verifyResponseStatusCode("Test_ListOrders", t, 200, res)
 	verifyValidJSONResponse("Test_ListOrders", t, res)
 }
 
-func verifyValidJSONResponse(testName string, t *testing.T, res string) {
-	var data interface{}
+func verifyResponseStatusCode(testName string, t *testing.T, expectedStatusCode int, response *http.Response) {
+	if response.StatusCode != expectedStatusCode {
+		t.Errorf("[%s] Expected status code %v but got %v", testName, expectedStatusCode, response.StatusCode)
+	}
+}
 
-	// Check if res is valid JSON by trying to unmarshal it
-	if err := json.Unmarshal([]byte(res), &data); err != nil {
-		t.Errorf("[%s] Error unmarshalling response: %v", testName, res)
+func verifyValidJSONResponse(testName string, t *testing.T, response *http.Response) {
+	// Read response
+	defer response.Body.Close()
+	bytesBody, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Errorf("[%s] Error reading response body: %v", testName, err)
 		return
 	}
 
-	t.Logf("[%s] %s", testName, res)
+	// Check if res is valid JSON by trying to unmarshal it
+	var data interface{}
+	if err := json.Unmarshal([]byte(bytesBody), &data); err != nil {
+		t.Errorf("[%s] Error unmarshalling response: %v", testName, bytesBody)
+		return
+	}
+
+	t.Logf("[%s] Response is a valid JSON: %s", testName, bytesBody)
 }

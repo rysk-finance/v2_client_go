@@ -4,7 +4,8 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
-	"go100x/src/types"
+
+	"github.com/eldief/go100x/src/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"

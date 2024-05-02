@@ -3,7 +3,6 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 	"time"
 )
@@ -36,19 +35,22 @@ func CreateHTTPRequestWithBody(method string, uri string, body interface{}) (*ht
 }
 
 // SendHTTPRequest send HTTP request using a `http.Client` and returns response as string.
-func SendHTTPRequest(c *http.Client, req *http.Request) (string, error) {
+func SendHTTPRequest(c *http.Client, req *http.Request) (*http.Response, error) {
 	// Send request
 	res, err := c.Do(req)
 	if err != nil {
-		return "", err
-	}
-	defer res.Body.Close()
-
-	// Read response
-	response, err := io.ReadAll(res.Body)
-	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(response), nil
+	return res, nil
+
+	// defer res.Body.Close()
+
+	// // Read response
+	// response, err := io.ReadAll(res.Body)
+	// if err != nil {
+	// 	return "", err
+	// }
+
+	// return string(response), nil
 }

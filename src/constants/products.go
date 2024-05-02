@@ -1,6 +1,6 @@
 package constants
 
-import "go100x/src/types"
+import "github.com/eldief/go100x/src/types"
 
 var (
 	PRODUCT_ETH_PERP = types.Product{

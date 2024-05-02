@@ -1,7 +1,7 @@
 package constants
 
 import (
-	"go100x/src/types"
+	"github.com/eldief/go100x/src/types"
 )
 
 var CIAO_ADDRESS = map[types.Environment]string{

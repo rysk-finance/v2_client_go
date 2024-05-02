@@ -1,6 +1,6 @@
 package constants
 
-import "go100x/src/types"
+import "github.com/eldief/go100x/src/types"
 
 const (
 	LIMIT_FIVE   types.Limit = 5

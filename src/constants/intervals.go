@@ -1,6 +1,6 @@
 package constants
 
-import "go100x/src/types"
+import "github.com/eldief/go100x/src/types"
 
 const (
 	INTERVAL_1M  types.Interval = "1m"  // 1 minute

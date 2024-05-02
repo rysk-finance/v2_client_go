@@ -1,4 +1,4 @@
-module go100x
+module github.com/eldief/go100x
 
 go 1.22.2
 
