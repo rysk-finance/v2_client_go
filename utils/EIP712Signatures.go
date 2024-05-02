@@ -5,15 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/eldief/go100x/constants"
 	"github.com/eldief/go100x/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
-
-// `TypedDataDomain` key.
-const EIP_712_DOMAIN = "EIP712Domain"
 
 // SignMessage signs a message using EIP-712 and returns the signature.
 func SignMessage(c *types.Go100XClient, primaryType types.PrimaryType, message interface{}) (string, error) {
@@ -76,7 +74,7 @@ func generateEIP712Message(primaryType types.PrimaryType, typedDataDomain apityp
 	}
 
 	// Hash the EIP-712 domain separator data.
-	domainSeparator, err := signerData.HashStruct(EIP_712_DOMAIN, signerData.Domain.Map())
+	domainSeparator, err := signerData.HashStruct(constants.EIP_712_DOMAIN, signerData.Domain.Map())
 	if err != nil {
 		return nil, err
 	}
