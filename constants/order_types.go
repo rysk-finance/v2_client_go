@@ -1,6 +1,6 @@
 package constants
 
-import "github.com/eldief/go100x/src/types"
+import "github.com/eldief/go100x/types"
 
 const (
 	ORDER_TYPE_LIMIT             types.OrderType = 0

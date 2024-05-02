@@ -1,25 +1,25 @@
-package go100x
+package client
 
 import (
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/eldief/go100x/src/constants"
-	"github.com/eldief/go100x/src/types"
-	"github.com/eldief/go100x/src/utils"
+	"github.com/eldief/go100x/constants"
+	"github.com/eldief/go100x/types"
+	"github.com/eldief/go100x/utils"
 
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
-// NewClient creates a new `go100x.Client` instance.
+// NewGo100XClient creates a new `Go100XClient` instance.
 // Initializes the client with the provided configuration.
-func NewClient(config *types.ClientConfiguration) *types.Client {
+func NewGo100XClient(config *types.Go100XClientConfiguration) *types.Go100XClient {
 	// Remove '0x' from private key.
 	privateKey := strings.TrimPrefix(config.PrivateKey, "0x")
 
 	// Return a new `go100x.Client`.
-	return &types.Client{
+	return &types.Go100XClient{
 		BaseUri:           constants.BASE_URI[config.Env],
 		PrivateKey:        privateKey,
 		Address:           utils.AddressFromPrivateKey(privateKey),
@@ -37,7 +37,7 @@ func NewClient(config *types.ClientConfiguration) *types.Client {
 
 // Get24hrPriceChangeStatistics returns 24 hour rolling window price change statistics.
 // If no `Product` is provided, ticker data for all assets will be returned.
-func Get24hrPriceChangeStatistics(go100XClient *types.Client, product *types.Product) (*http.Response, error) {
+func Get24hrPriceChangeStatistics(go100XClient *types.Go100XClient, product *types.Product) (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
@@ -60,7 +60,7 @@ func Get24hrPriceChangeStatistics(go100XClient *types.Client, product *types.Pro
 }
 
 // GetProduct returns details for a specific product by symbol
-func GetProduct(go100XClient *types.Client, symbol string) (*http.Response, error) {
+func GetProduct(go100XClient *types.Go100XClient, symbol string) (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
@@ -76,7 +76,7 @@ func GetProduct(go100XClient *types.Client, symbol string) (*http.Response, erro
 }
 
 // GetProductById returns details for a specific product by id.
-func GetProductById(go100XClient *types.Client, id int64) (*http.Response, error) {
+func GetProductById(go100XClient *types.Go100XClient, id int64) (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
@@ -92,7 +92,7 @@ func GetProductById(go100XClient *types.Client, id int64) (*http.Response, error
 }
 
 // GetKlineData returns Kline/Candlestick bars for a symbol. Klines are uniquely identified by interval(timeframe) and startTime.
-func GetKlineData(go100XClient *types.Client, params *types.KlineDataRequest) (*http.Response, error) {
+func GetKlineData(go100XClient *types.Go100XClient, params *types.KlineDataRequest) (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
@@ -125,7 +125,7 @@ func GetKlineData(go100XClient *types.Client, params *types.KlineDataRequest) (*
 }
 
 // ListProducts returns a list of products available to trade.
-func ListProducts(go100XClient *types.Client) (*http.Response, error) {
+func ListProducts(go100XClient *types.Go100XClient) (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
@@ -141,7 +141,7 @@ func ListProducts(go100XClient *types.Client) (*http.Response, error) {
 }
 
 // OrderBook returns bids and asks for a market.
-func OrderBook(go100XClient *types.Client, params *types.OrderBookRequest) (*http.Response, error) {
+func OrderBook(go100XClient *types.Go100XClient, params *types.OrderBookRequest) (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
@@ -168,7 +168,7 @@ func OrderBook(go100XClient *types.Client, params *types.OrderBookRequest) (*htt
 }
 
 // ServerTime returns current server time.
-func ServerTime(go100XClient *types.Client) (*http.Response, error) {
+func ServerTime(go100XClient *types.Go100XClient) (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
@@ -184,17 +184,17 @@ func ServerTime(go100XClient *types.Client) (*http.Response, error) {
 }
 
 // ApproveSigner approves a Signer for a `SubAccount`.
-func ApproveSigner(go100XClient *types.Client, params *types.ApproveRevokeSignerRequest) (*http.Response, error) {
+func ApproveSigner(go100XClient *types.Go100XClient, params *types.ApproveRevokeSignerRequest) (*http.Response, error) {
 	return approveRevokeSigner(go100XClient, params, true)
 }
 
 // RevokeSigner revokes a Signer for a `SubAccount`.
-func RevokeSigner(go100XClient *types.Client, params *types.ApproveRevokeSignerRequest) (*http.Response, error) {
+func RevokeSigner(go100XClient *types.Go100XClient, params *types.ApproveRevokeSignerRequest) (*http.Response, error) {
 	return approveRevokeSigner(go100XClient, params, false)
 }
 
 // approveRevokeSigner approves or revoke a signer for a `SubAccount`.
-func approveRevokeSigner(go100XClient *types.Client, params *types.ApproveRevokeSignerRequest, isApproved bool) (*http.Response, error) {
+func approveRevokeSigner(go100XClient *types.Go100XClient, params *types.ApproveRevokeSignerRequest, isApproved bool) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient,
@@ -252,7 +252,7 @@ func approveRevokeSigner(go100XClient *types.Client, params *types.ApproveRevoke
 // }
 
 // NewOrder creates a new order on the `SubAccount`.
-func NewOrder(go100XClient *types.Client, params *types.NewOrderRequest) (*http.Response, error) {
+func NewOrder(go100XClient *types.Go100XClient, params *types.NewOrderRequest) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient,
@@ -324,7 +324,7 @@ func NewOrder(go100XClient *types.Client, params *types.NewOrderRequest) (*http.
 }
 
 // CancelOrderAndReplace cancel an order and create a new order on the `SubAccount`.
-func CancelOrderAndReplace(go100XClient *types.Client, params *types.CancelOrderAndReplaceRequest) (*http.Response, error) {
+func CancelOrderAndReplace(go100XClient *types.Go100XClient, params *types.CancelOrderAndReplaceRequest) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient,
@@ -402,7 +402,7 @@ func CancelOrderAndReplace(go100XClient *types.Client, params *types.CancelOrder
 }
 
 // CancelOrder cancel an active order on the `SubAccount`.
-func CancelOrder(go100XClient *types.Client, params *types.CancelOrderRequest) (*http.Response, error) {
+func CancelOrder(go100XClient *types.Go100XClient, params *types.CancelOrderRequest) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient,
@@ -450,7 +450,7 @@ func CancelOrder(go100XClient *types.Client, params *types.CancelOrderRequest) (
 }
 
 // CancelAllOpenOrders cancel all active orders on a product.
-func CancelAllOpenOrders(go100XClient *types.Client, product *types.Product) (*http.Response, error) {
+func CancelAllOpenOrders(go100XClient *types.Go100XClient, product *types.Product) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient,
@@ -494,7 +494,7 @@ func CancelAllOpenOrders(go100XClient *types.Client, product *types.Product) (*h
 }
 
 // GetSpotBalances returns spot balances for sub account id.
-func GetSpotBalances(go100XClient *types.Client) (*http.Response, error) {
+func GetSpotBalances(go100XClient *types.Go100XClient) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient,
@@ -533,7 +533,7 @@ func GetSpotBalances(go100XClient *types.Client) (*http.Response, error) {
 }
 
 // GetPerpetualPosition returns perpetual position for sub account id.
-func GetPerpetualPosition(go100XClient *types.Client, product *types.Product) (*http.Response, error) {
+func GetPerpetualPosition(go100XClient *types.Go100XClient, product *types.Product) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient,
@@ -573,7 +573,7 @@ func GetPerpetualPosition(go100XClient *types.Client, product *types.Product) (*
 }
 
 // ListApprovedSigners returns a list of all approved signers for a `SubAccount`.
-func ListApprovedSigners(go100XClient *types.Client) (*http.Response, error) {
+func ListApprovedSigners(go100XClient *types.Go100XClient) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient,
@@ -612,7 +612,7 @@ func ListApprovedSigners(go100XClient *types.Client) (*http.Response, error) {
 }
 
 // ListOpenOrders returns all open orders on the `SubAccount` per product.
-func ListOpenOrders(go100XClient *types.Client, product *types.Product) (*http.Response, error) {
+func ListOpenOrders(go100XClient *types.Go100XClient, product *types.Product) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient,
@@ -652,7 +652,7 @@ func ListOpenOrders(go100XClient *types.Client, product *types.Product) (*http.R
 }
 
 // ListOrders returns all orders on the `SubAccount` per product.
-func ListOrders(go100XClient *types.Client, params *types.ListOrdersRequest) (*http.Response, error) {
+func ListOrders(go100XClient *types.Go100XClient, params *types.ListOrdersRequest) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient,

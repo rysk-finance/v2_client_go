@@ -1,4 +1,4 @@
-package go100x_test
+package client
 
 import (
 	"encoding/json"
@@ -10,9 +10,8 @@ import (
 	"testing"
 	"time"
 
-	go100x "github.com/eldief/go100x/src/client"
-	"github.com/eldief/go100x/src/constants"
-	"github.com/eldief/go100x/src/types"
+	"github.com/eldief/go100x/constants"
+	"github.com/eldief/go100x/types"
 
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/joho/godotenv"
@@ -20,9 +19,9 @@ import (
 
 // .env variables to be setup via `TestMain` before running tests.
 var (
-	PRIVATE_KEYS string = ""
-	RPC_URL      string = ""
-	CLIENT_100_X *types.Client
+	PRIVATE_KEYS    string = ""
+	RPC_URL         string = ""
+	GO_100_X_CLIENT *types.Go100XClient
 )
 
 // Setup .env variables for test suite.
@@ -34,7 +33,7 @@ func TestMain(m *testing.M) {
 
 	PRIVATE_KEYS = string(os.Getenv("PRIVATE_KEYS"))
 	RPC_URL = os.Getenv("RPC_URL")
-	CLIENT_100_X = go100x.NewClient(&types.ClientConfiguration{
+	GO_100_X_CLIENT = NewGo100XClient(&types.Go100XClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   PRIVATE_KEYS,
 		RpcUrl:       RPC_URL,
@@ -47,7 +46,7 @@ func TestMain(m *testing.M) {
 }
 
 func Test_Get24hrPriceChangeStatistics_NoProduct(t *testing.T) {
-	res, err := go100x.Get24hrPriceChangeStatistics(CLIENT_100_X, &types.Product{})
+	res, err := Get24hrPriceChangeStatistics(GO_100_X_CLIENT, &types.Product{})
 
 	if err != nil {
 		t.Errorf("[Test_Get24hrPriceChangeStatistics_NoProduct] Error: %v", err)
@@ -58,7 +57,7 @@ func Test_Get24hrPriceChangeStatistics_NoProduct(t *testing.T) {
 }
 
 func Test_Get24hrPriceChangeStatistics_WithNonExistingProduct(t *testing.T) {
-	_, err := go100x.Get24hrPriceChangeStatistics(CLIENT_100_X, &types.Product{
+	_, err := Get24hrPriceChangeStatistics(GO_100_X_CLIENT, &types.Product{
 		Id:     69420,
 		Symbol: "69420",
 	})
@@ -75,7 +74,7 @@ func Test_Get24hrPriceChangeStatistics_WithNonExistingProduct(t *testing.T) {
 }
 
 func Test_Get24hrPriceChangeStatistics_WithProduct(t *testing.T) {
-	res, err := go100x.Get24hrPriceChangeStatistics(CLIENT_100_X, &constants.PRODUCT_ETH_PERP)
+	res, err := Get24hrPriceChangeStatistics(GO_100_X_CLIENT, &constants.PRODUCT_ETH_PERP)
 
 	if err != nil {
 		t.Errorf("[Test_Get24hrPriceChangeStatistics_WithProduct] Error: %v", err)
@@ -87,7 +86,7 @@ func Test_Get24hrPriceChangeStatistics_WithProduct(t *testing.T) {
 }
 
 func Test_GetProduct(t *testing.T) {
-	res, err := go100x.GetProduct(CLIENT_100_X, constants.PRODUCT_ETH_PERP.Symbol)
+	res, err := GetProduct(GO_100_X_CLIENT, constants.PRODUCT_ETH_PERP.Symbol)
 
 	if err != nil {
 		t.Errorf("[Test_GetProduct] Error: %v", err)
@@ -99,7 +98,7 @@ func Test_GetProduct(t *testing.T) {
 }
 
 func Test_GetProductById(t *testing.T) {
-	res, err := go100x.GetProductById(CLIENT_100_X, constants.PRODUCT_ETH_PERP.Id)
+	res, err := GetProductById(GO_100_X_CLIENT, constants.PRODUCT_ETH_PERP.Id)
 
 	if err != nil {
 		t.Errorf("[Test_GetProductById] Error: %v", err)
@@ -111,7 +110,7 @@ func Test_GetProductById(t *testing.T) {
 }
 
 func Test_GetKlineData(t *testing.T) {
-	res, err := go100x.GetKlineData(CLIENT_100_X, &types.KlineDataRequest{
+	res, err := GetKlineData(GO_100_X_CLIENT, &types.KlineDataRequest{
 		Product:   &constants.PRODUCT_BTC_PERP,
 		Interval:  constants.INTERVAL_D1,
 		StartTime: time.Now().Add(-24 * time.Hour).UnixMilli(),
@@ -128,7 +127,7 @@ func Test_GetKlineData(t *testing.T) {
 }
 
 func Test_ListProducts(t *testing.T) {
-	res, err := go100x.ListProducts(CLIENT_100_X)
+	res, err := ListProducts(GO_100_X_CLIENT)
 
 	if err != nil {
 		t.Errorf("[Test_ListProducts] Error: %v", err)
@@ -140,7 +139,7 @@ func Test_ListProducts(t *testing.T) {
 }
 
 func Test_OrderBook(t *testing.T) {
-	res, err := go100x.OrderBook(CLIENT_100_X, &types.OrderBookRequest{
+	res, err := OrderBook(GO_100_X_CLIENT, &types.OrderBookRequest{
 		Product:     &constants.PRODUCT_ETH_PERP,
 		Granularity: 0,
 		Limit:       constants.LIMIT_FIVE,
@@ -156,7 +155,7 @@ func Test_OrderBook(t *testing.T) {
 }
 
 func Test_ServerTime(t *testing.T) {
-	res, err := go100x.ServerTime(CLIENT_100_X)
+	res, err := ServerTime(GO_100_X_CLIENT)
 
 	if err != nil {
 		t.Errorf("[Test_ServerTime] Error: %v", err)
@@ -168,7 +167,7 @@ func Test_ServerTime(t *testing.T) {
 }
 
 func Test_ApproveSigner(t *testing.T) {
-	res, err := go100x.ApproveSigner(CLIENT_100_X, &types.ApproveRevokeSignerRequest{
+	res, err := ApproveSigner(GO_100_X_CLIENT, &types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", // vitalik.eth
 		Nonce:          time.Now().UnixMilli(),
 	})
@@ -183,7 +182,7 @@ func Test_ApproveSigner(t *testing.T) {
 }
 
 func Test_RevokeSigner(t *testing.T) {
-	res, err := go100x.RevokeSigner(CLIENT_100_X, &types.ApproveRevokeSignerRequest{
+	res, err := RevokeSigner(GO_100_X_CLIENT, &types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", // vitalik.eth
 		Nonce:          time.Now().UnixMilli(),
 	})
@@ -199,7 +198,7 @@ func Test_RevokeSigner(t *testing.T) {
 
 func Test_NewOrder(t *testing.T) {
 	// Limit buy 1 ETH for 3300 USDB, valid for 1 day
-	res, err := go100x.NewOrder(CLIENT_100_X, &types.NewOrderRequest{
+	res, err := NewOrder(GO_100_X_CLIENT, &types.NewOrderRequest{
 		Product:     &constants.PRODUCT_ETH_PERP,
 		IsBuy:       true,
 		OrderType:   constants.ORDER_TYPE_LIMIT,
@@ -220,7 +219,7 @@ func Test_NewOrder(t *testing.T) {
 }
 
 func Test_CancelOrderAndReplace(t *testing.T) {
-	res, err := go100x.CancelOrderAndReplace(CLIENT_100_X, &types.CancelOrderAndReplaceRequest{
+	res, err := CancelOrderAndReplace(GO_100_X_CLIENT, &types.CancelOrderAndReplaceRequest{
 		IdToCancel: "1",
 		// Limit buy 1 ETH for 3300 USDB, valid for 1 day
 		NewOrder: &types.NewOrderRequest{
@@ -245,7 +244,7 @@ func Test_CancelOrderAndReplace(t *testing.T) {
 }
 
 func Test_CancelOrder(t *testing.T) {
-	res, err := go100x.CancelOrder(CLIENT_100_X, &types.CancelOrderRequest{
+	res, err := CancelOrder(GO_100_X_CLIENT, &types.CancelOrderRequest{
 		Product:    &constants.PRODUCT_ETH_PERP,
 		IdToCancel: "1",
 	})
@@ -260,7 +259,7 @@ func Test_CancelOrder(t *testing.T) {
 }
 
 func Test_CancelAllOpenOrders(t *testing.T) {
-	res, err := go100x.CancelAllOpenOrders(CLIENT_100_X, &constants.PRODUCT_ETH_PERP)
+	res, err := CancelAllOpenOrders(GO_100_X_CLIENT, &constants.PRODUCT_ETH_PERP)
 
 	if err != nil {
 		t.Errorf("[Test_CancelAllOpenOrders] Error: %v", err)
@@ -272,7 +271,7 @@ func Test_CancelAllOpenOrders(t *testing.T) {
 }
 
 func Test_GetSpotBalances(t *testing.T) {
-	res, err := go100x.GetSpotBalances(CLIENT_100_X)
+	res, err := GetSpotBalances(GO_100_X_CLIENT)
 	if err != nil {
 		t.Errorf("[Test_GetSpotBalances] Error: %v", err)
 		return
@@ -283,7 +282,7 @@ func Test_GetSpotBalances(t *testing.T) {
 }
 
 func Test_GetPerpetualPosition(t *testing.T) {
-	res, err := go100x.GetPerpetualPosition(CLIENT_100_X, &constants.PRODUCT_BLAST_PERP)
+	res, err := GetPerpetualPosition(GO_100_X_CLIENT, &constants.PRODUCT_BLAST_PERP)
 	if err != nil {
 		t.Errorf("[Test_GetPerpetualPosition] Error: %v", err)
 		return
@@ -294,7 +293,7 @@ func Test_GetPerpetualPosition(t *testing.T) {
 }
 
 func Test_ListApproveSigners(t *testing.T) {
-	res, err := go100x.ListApprovedSigners(CLIENT_100_X)
+	res, err := ListApprovedSigners(GO_100_X_CLIENT)
 	if err != nil {
 		t.Errorf("[Test_ListApproveSigners] Error: %v", err)
 		return
@@ -305,7 +304,7 @@ func Test_ListApproveSigners(t *testing.T) {
 }
 
 func Test_ListOpenOrders(t *testing.T) {
-	res, err := go100x.ListOpenOrders(CLIENT_100_X, &constants.PRODUCT_BLAST_PERP)
+	res, err := ListOpenOrders(GO_100_X_CLIENT, &constants.PRODUCT_BLAST_PERP)
 	if err != nil {
 		t.Errorf("[Test_ListOpenOrders] Error: %v", err)
 		return
@@ -316,7 +315,7 @@ func Test_ListOpenOrders(t *testing.T) {
 }
 
 func Test_ListOrders(t *testing.T) {
-	res, err := go100x.ListOrders(CLIENT_100_X, &types.ListOrdersRequest{
+	res, err := ListOrders(GO_100_X_CLIENT, &types.ListOrdersRequest{
 		Product: &constants.PRODUCT_BTC_PERP,
 		Ids:     []string{"A", "B"},
 	})

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/eldief/go100x/src/types"
+	"github.com/eldief/go100x/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -16,7 +16,7 @@ import (
 const EIP_712_DOMAIN = "EIP712Domain"
 
 // SignMessage signs a message using EIP-712 and returns the signature.
-func SignMessage(c *types.Client, primaryType types.PrimaryType, message interface{}) (string, error) {
+func SignMessage(c *types.Go100XClient, primaryType types.PrimaryType, message interface{}) (string, error) {
 	// Map message to `TypedDataMessage` interface.
 	typedDataMessage, err := mapMessageToTypedData(message)
 	if err != nil {

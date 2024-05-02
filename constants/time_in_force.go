@@ -1,6 +1,6 @@
 package constants
 
-import "github.com/eldief/go100x/src/types"
+import "github.com/eldief/go100x/types"
 
 const (
 	TIME_IN_FORCE_GTC types.TimeInForce = 0

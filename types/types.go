@@ -22,7 +22,7 @@ type Product struct {
 }
 
 // Client configuration
-type ClientConfiguration struct {
+type Go100XClientConfiguration struct {
 	Env          Environment   // `constants.ENVIRONMENT_TESTNET` or `constants.ENVIRONMENT_MAINNET`.
 	Timeout      time.Duration // e.g. `10 * time.Second`.
 	PrivateKey   string        // e.g. `0x2638b4...` or `2638b4...`.
@@ -30,8 +30,8 @@ type ClientConfiguration struct {
 	SubAccountId uint8         // ID of the subaccount to use.
 }
 
-// 100x API Client.
-type Client struct {
+// 100x API Go100XClient.
+type Go100XClient struct {
 	BaseUri           string
 	PrivateKey        string
 	Address           string
