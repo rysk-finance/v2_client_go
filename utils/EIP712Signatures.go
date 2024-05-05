@@ -14,7 +14,7 @@ import (
 )
 
 // SignMessage signs a message using EIP-712 and returns the signature.
-func SignMessage(c *types.Go100XClient, primaryType types.PrimaryType, message interface{}) (string, error) {
+func SignMessage(domain apitypes.TypedDataDomain, privateKey string, primaryType types.PrimaryType, message interface{}) (string, error) {
 	// Map message to `TypedDataMessage` interface.
 	typedDataMessage, err := mapMessageToTypedData(message)
 	if err != nil {
@@ -22,19 +22,19 @@ func SignMessage(c *types.Go100XClient, primaryType types.PrimaryType, message i
 	}
 
 	// Generate the EIP-712 message using the provided primary type, client `TypedDataDomain`, and `TypedDataMessage` message.
-	unsignedMessage, err := generateEIP712Message(primaryType, c.Domain, typedDataMessage)
+	unsignedMessage, err := generateEIP712Message(primaryType, domain, typedDataMessage)
 	if err != nil {
 		return "", err
 	}
 
 	// Load the private key from hex.
-	privateKey, err := crypto.HexToECDSA(c.PrivateKey)
+	hexPrivateKey, err := crypto.HexToECDSA(privateKey)
 	if err != nil {
 		return "", err
 	}
 
 	// Sign EIP-712 message and return the signature.
-	return signEIP712Message(unsignedMessage, privateKey)
+	return signEIP712Message(unsignedMessage, hexPrivateKey)
 }
 
 // mapMessageToTypedData maps any struct to `TypedDataMessage`.
