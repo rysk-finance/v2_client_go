@@ -2,7 +2,6 @@ package ws_client
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
@@ -18,20 +17,20 @@ import (
 // Go100XAPIClient configuration
 type Go100XWSClientConfiguration struct {
 	Env          types.Environment // `constants.ENVIRONMENT_TESTNET` or `constants.ENVIRONMENT_MAINNET`.
-	PrivateKey   string            // e.g. `0x2638b4...` or `2638b4...`.
+	PrivateKey   string            // Account private key with or without `0x` prefix.
 	RpcUrl       string            // e.g. `https://sepolia.blast.io` or `https://rpc.blastblockchain.com`.
 	SubAccountId uint8             // ID of the subaccount to use.
 }
 
 // 100x Websocket client.
 type Go100XWSClient struct {
-	Url               string
-	PrivateKey        string
-	Address           string
+	url               string
+	privateKey        string
+	address           string
 	SubAccountId      int64
-	WSConnection      *websocket.Conn
-	VerifyingContract string
-	Domain            apitypes.TypedDataDomain
+	wsConnection      *websocket.Conn
+	verifyingContract string
+	domain            apitypes.TypedDataDomain
 }
 
 // NewGo100XWSClient creates a new `Go100XWSClient` instance.
@@ -51,13 +50,13 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) *Go100XWSClient {
 
 	// Return a new `go100x.Client`.
 	return &Go100XWSClient{
-		Url:               constants.WS_URL[config.Env],
-		PrivateKey:        privateKey,
-		Address:           utils.AddressFromPrivateKey(privateKey),
+		url:               constants.WS_URL[config.Env],
+		privateKey:        privateKey,
+		address:           utils.AddressFromPrivateKey(privateKey),
 		SubAccountId:      int64(config.SubAccountId),
-		WSConnection:      websocket,
-		VerifyingContract: constants.CIAO_ADDRESS[config.Env],
-		Domain: apitypes.TypedDataDomain{
+		wsConnection:      websocket,
+		verifyingContract: constants.CIAO_ADDRESS[config.Env],
+		domain: apitypes.TypedDataDomain{
 			Name:              constants.DOMAIN_NAME,
 			Version:           constants.DOMAIN_VERSION,
 			ChainId:           constants.CHAIN_ID[config.Env],
@@ -66,20 +65,23 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) *Go100XWSClient {
 	}
 }
 
-func (go100XClient *Go100XWSClient) Login(id string) error {
+// Login authenticate a websocket connection.
+// Authentication using signature is required to create and cancel orders, deposit and withdraw.
+func (go100XClient *Go100XWSClient) Login(messageId string) error {
+	// Current timestamp in ms, will be rejected if older than 10s, easiest to send in a time in the future.
 	timestamp := uint64(time.Now().Add(10 * time.Second).UnixMilli())
 
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.Domain,
-		go100XClient.PrivateKey,
+		go100XClient.domain,
+		go100XClient.privateKey,
 		constants.PRIMARY_TYPE_LOGIN_MESSAGE,
 		&struct {
 			Account   string `json:"account"`
 			Message   string `json:"message"`
 			Timestamp uint64 `json:"timestamp"`
 		}{
-			Account:   go100XClient.Address,
+			Account:   go100XClient.address,
 			Message:   "I want to log into 100x.finance",
 			Timestamp: timestamp,
 		},
@@ -91,7 +93,7 @@ func (go100XClient *Go100XWSClient) Login(id string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
 		JsonRPC: constants.WS_JSON_RPC,
-		ID:      id,
+		ID:      messageId,
 		Method:  constants.WS_METHOD_LOGIN,
 		Params: &struct {
 			Account   string `json:"account"`
@@ -99,24 +101,13 @@ func (go100XClient *Go100XWSClient) Login(id string) error {
 			Timestamp uint64 `json:"timestamp"`
 			Signature string `json:"signature"`
 		}{
-			Account:   go100XClient.Address,
+			Account:   go100XClient.address,
 			Message:   "I want to log into 100x.finance",
 			Timestamp: timestamp,
 			Signature: signature,
 		},
 	}
 
-	// Marshal request into JSON.
-	body, err := json.Marshal(request)
-	if err != nil {
-		return err
-	}
-
 	// Send RPC request.
-	err = go100XClient.WSConnection.WriteMessage(websocket.TextMessage, body)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return utils.SendRPCRequest(go100XClient.wsConnection, request)
 }

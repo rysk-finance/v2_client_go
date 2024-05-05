@@ -46,7 +46,7 @@ func Test_Login(t *testing.T) {
 	}
 
 	for {
-		_, p, err := GO100X_WS_CLIENT.WSConnection.ReadMessage()
+		_, p, err := GO100X_WS_CLIENT.wsConnection.ReadMessage()
 		require.Nil(t, err, "[Test_Login] Error reading message from WebSocket")
 
 		var response types.WebsocketResponse

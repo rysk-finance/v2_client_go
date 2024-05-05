@@ -43,14 +43,4 @@ func SendHTTPRequest(c *http.Client, req *http.Request) (*http.Response, error) 
 	}
 
 	return res, nil
-
-	// defer res.Body.Close()
-
-	// // Read response
-	// response, err := io.ReadAll(res.Body)
-	// if err != nil {
-	// 	return "", err
-	// }
-
-	// return string(response), nil
 }
