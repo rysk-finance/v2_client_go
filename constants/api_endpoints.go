@@ -5,7 +5,7 @@ import "github.com/eldief/go100x/types"
 const (
 	API_ENDPOINT_GET_24H_TICKER_PRICE_CHANGE_STATISTICS types.APIEndpoint = "/ticker/24hr"
 	API_ENDPOINT_GET_PRODUCT                            types.APIEndpoint = "/products/"
-	API_ENDPOINT_GET_PRODUCT_BY_ID                      types.APIEndpoint = "/products/product-by-id"
+	API_ENDPOINT_GET_PRODUCT_BY_ID                      types.APIEndpoint = "/products/product-by-id/"
 	API_ENDPOINT_GET_KLINE_DATA                         types.APIEndpoint = "/uiKlines"
 	API_ENDPOINT_LIST_PRODUCTS                          types.APIEndpoint = "/products"
 	API_ENDPOINT_ORDER_BOOK                             types.APIEndpoint = "/depth"

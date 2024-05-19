@@ -14,6 +14,10 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+type HttpUnitTestSuite struct {
+	suite.Suite
+}
+
 type MockHTTPClient struct {
 	mock.Mock
 }
@@ -27,21 +31,16 @@ func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	return res, args.Error(1)
 }
 
-type HttpUnitTestSuite struct {
-	suite.Suite
-}
-
 func (s *HttpUnitTestSuite) SetupSuite() {
 }
 
-func TestRun_HttpUnitTestSuite(t *testing.T) {
+func TestRunSuiteUnit_HttpUnitTestSuite(t *testing.T) {
 	suite.Run(t, new(HttpUnitTestSuite))
 }
 
 func (s *HttpUnitTestSuite) TestUnit_GetHTTPClient() {
 	timeout := 5 * time.Second
 	client := GetHTTPClient(timeout)
-
 	require.NotNil(s.T(), client)
 	require.Equal(s.T(), timeout, client.Timeout)
 
@@ -71,7 +70,6 @@ func (s *HttpUnitTestSuite) TestUnit_CreateHTTPRequestWithBody() {
 
 func (s *HttpUnitTestSuite) TestUnit_CreateHTTPRequestWithBody_MarshalError() {
 	unsupportedType := make(chan int)
-
 	req, err := CreateHTTPRequestWithBody(http.MethodPost, "http://example.com", unsupportedType)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), req)

@@ -33,7 +33,7 @@ func (suite *EIP712SignaturesTestSuite) SetupSuite() {
 	suite.PublicKey = crypto.FromECDSAPub(&privateKey.PublicKey)
 }
 
-func TestRun_EIP712SignaturesTestSuite(t *testing.T) {
+func TestRunSuiteUnit_EIP712SignaturesTestSuite(t *testing.T) {
 	suite.Run(t, new(EIP712SignaturesTestSuite))
 }
 

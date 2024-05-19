@@ -28,7 +28,7 @@ type Go100XAPIClient struct {
 	privateKey        string
 	address           string
 	SubAccountId      int64
-	httpClient        *http.Client
+	HttpClient        *http.Client
 	verifyingContract string
 	domain            apitypes.TypedDataDomain
 }
@@ -45,7 +45,7 @@ func NewGo100XAPIClient(config *Go100XAPIClientConfiguration) *Go100XAPIClient {
 		privateKey:        privateKey,
 		address:           utils.AddressFromPrivateKey(privateKey),
 		SubAccountId:      int64(config.SubAccountId),
-		httpClient:        utils.GetHTTPClient(config.Timeout),
+		HttpClient:        utils.GetHTTPClient(config.Timeout),
 		verifyingContract: constants.CIAO_ADDRESS[config.Env],
 		domain: apitypes.TypedDataDomain{
 			Name:              constants.DOMAIN_NAME,
@@ -77,7 +77,7 @@ func (go100XClient *Go100XAPIClient) Get24hrPriceChangeStatistics(product *types
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // GetProduct returns details for a specific product by symbol
@@ -93,7 +93,7 @@ func (go100XClient *Go100XAPIClient) GetProduct(symbol string) (*http.Response, 
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // GetProductById returns details for a specific product by id.
@@ -109,7 +109,7 @@ func (go100XClient *Go100XAPIClient) GetProductById(id int64) (*http.Response, e
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // GetKlineData returns Kline/Candlestick bars for a symbol. Klines are uniquely identified by interval(timeframe) and startTime.
@@ -142,7 +142,7 @@ func (go100XClient *Go100XAPIClient) GetKlineData(params *types.KlineDataRequest
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // ListProducts returns a list of products available to trade.
@@ -158,7 +158,7 @@ func (go100XClient *Go100XAPIClient) ListProducts() (*http.Response, error) {
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // OrderBook returns bids and asks for a market.
@@ -185,7 +185,7 @@ func (go100XClient *Go100XAPIClient) OrderBook(params *types.OrderBookRequest) (
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // ServerTime returns current server time.
@@ -201,7 +201,7 @@ func (go100XClient *Go100XAPIClient) ServerTime() (*http.Response, error) {
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // ApproveSigner approves a Signer for a `SubAccount`.
@@ -264,7 +264,7 @@ func (go100XClient *Go100XAPIClient) approveRevokeSigner(params *types.ApproveRe
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // TODO
@@ -343,7 +343,7 @@ func (go100XClient *Go100XAPIClient) NewOrder(params *types.NewOrderRequest) (*h
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // CancelOrderAndReplace cancel an order and create a new order on the `SubAccount`.
@@ -422,7 +422,7 @@ func (go100XClient *Go100XAPIClient) CancelOrderAndReplace(params *types.CancelO
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // CancelOrder cancel an active order on the `SubAccount`.
@@ -471,7 +471,7 @@ func (go100XClient *Go100XAPIClient) CancelOrder(params *types.CancelOrderReques
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // CancelAllOpenOrders cancel all active orders on a product.
@@ -516,7 +516,7 @@ func (go100XClient *Go100XAPIClient) CancelAllOpenOrders(product *types.Product)
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // GetSpotBalances returns spot balances for sub account id.
@@ -556,7 +556,7 @@ func (go100XClient *Go100XAPIClient) GetSpotBalances() (*http.Response, error) {
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // GetPerpetualPosition returns perpetual position for sub account id.
@@ -597,7 +597,7 @@ func (go100XClient *Go100XAPIClient) GetPerpetualPosition(product *types.Product
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // ListApprovedSigners returns a list of all approved signers for a `SubAccount`.
@@ -637,7 +637,7 @@ func (go100XClient *Go100XAPIClient) ListApprovedSigners() (*http.Response, erro
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // ListOpenOrders returns all open orders on the `SubAccount` per product.
@@ -678,7 +678,7 @@ func (go100XClient *Go100XAPIClient) ListOpenOrders(product *types.Product) (*ht
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
 // ListOrders returns all orders on the `SubAccount` per product.
@@ -722,5 +722,5 @@ func (go100XClient *Go100XAPIClient) ListOrders(params *types.ListOrdersRequest)
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.httpClient, request)
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }

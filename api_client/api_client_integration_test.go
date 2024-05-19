@@ -41,7 +41,7 @@ func (s *ApiClientIntegrationTestSuite) SetupSuite() {
 	})
 }
 
-func TestRun_ApiClientIntegrationTestSuite(t *testing.T) {
+func TestRunSuiteIntegration_ApiClientIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(ApiClientIntegrationTestSuite))
 }
 

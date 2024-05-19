@@ -15,15 +15,15 @@ type WebSocketUnitTestSuite struct {
 	suite.Suite
 }
 
+type MockWebSocketConnection struct {
+	mock.Mock
+}
+
 func (s *WebSocketUnitTestSuite) SetupSuite() {
 }
 
-func TestRun_WebSocketUnitTestSuite(t *testing.T) {
+func TestRunSuiteUnit_WebSocketUnitTestSuite(t *testing.T) {
 	suite.Run(t, new(WebSocketUnitTestSuite))
-}
-
-type MockWebSocketConnection struct {
-	mock.Mock
 }
 
 func (m *MockWebSocketConnection) WriteMessage(messageType int, data []byte) error {

@@ -23,7 +23,7 @@ func (s *CryptoUnitTestSuite) SetupSuite() {
 	s.privateKey = privateKey
 }
 
-func TestRun_CryptoUnitTestSuite(t *testing.T) {
+func TestRunSuiteUnit_CryptoUnitTestSuite(t *testing.T) {
 	suite.Run(t, new(CryptoUnitTestSuite))
 }
 
