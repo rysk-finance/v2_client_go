@@ -22,3 +22,7 @@ type WebsocketError struct {
 	Message string      `json:"message,omitempty" binding:"required"`
 	Data    interface{} `json:"data,omitempty"`
 }
+
+type WSConnection interface {
+	WriteMessage(messageType int, body []byte) error
+}

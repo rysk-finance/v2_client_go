@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"github.com/eldief/go100x/types"
 )
 
 // GetHTTPClient initialize a new `http.Client` with custom `http.Transport` and timeout.
@@ -35,7 +37,7 @@ func CreateHTTPRequestWithBody(method string, uri string, body interface{}) (*ht
 }
 
 // SendHTTPRequest send HTTP request using a `http.Client` and returns response as string.
-func SendHTTPRequest(c *http.Client, req *http.Request) (*http.Response, error) {
+func SendHTTPRequest(c types.HTTPClient, req *http.Request) (*http.Response, error) {
 	// Send request
 	res, err := c.Do(req)
 	if err != nil {
