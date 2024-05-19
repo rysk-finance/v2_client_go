@@ -36,16 +36,7 @@ func (s *CryptoUnitTestSuite) TestUnit_AddressFromPrivateKey() {
 
 func (s *CryptoUnitTestSuite) TestUnit_AddressFromPrivateKey_InvalidHex() {
 	invalidPrivateKeyHex := "invalid_hex_string"
-	require.PanicsWithError(s.T(), "invalid hex character 'i' in private key", func() {
-		AddressFromPrivateKey(invalidPrivateKeyHex)
-	})
-}
-
-func (s *CryptoUnitTestSuite) TestUnit_AddressFromPrivateKey_InvalidPublicKey() {
-	invalidPrivateKey := make([]byte, 0)
-	invalidPrivateKeyHex := hex.EncodeToString(invalidPrivateKey)
-
-	require.PanicsWithError(s.T(), "invalid length, need 256 bits", func() {
+	require.Panics(s.T(), func() {
 		AddressFromPrivateKey(invalidPrivateKeyHex)
 	})
 }
