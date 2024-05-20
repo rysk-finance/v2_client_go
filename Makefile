@@ -7,7 +7,7 @@ test_utils:
 	go test ./utils/ -count=1 -cover
 
 test_api_client:
-	go test ./utils/ -count=1 -cover
+	go test ./api_client/ -count=1 -cover
 
 test_ws_client:
 	go test ./ws_client/ -count=1 -cover

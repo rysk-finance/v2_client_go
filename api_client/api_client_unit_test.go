@@ -23,7 +23,8 @@ import (
 
 type ApiClientUnitTestSuite struct {
 	suite.Suite
-	PrivateKeys     string
+	Address         string
+	BaseUrl         string
 	RpcUrl          string
 	Go100XApiClient *Go100XAPIClient
 	MockHTTPServer  *httptest.Server
@@ -42,6 +43,13 @@ func (s *ApiClientUnitTestSuite) SetupSuite() {
 		Timeout:      10 * time.Second,
 		SubAccountId: 1,
 	})
+	s.Address = utils.AddressFromPrivateKey(s.Go100XApiClient.privateKey)
+	s.BaseUrl = s.Go100XApiClient.baseUrl
+}
+
+func (s *ApiClientUnitTestSuite) SetupTest() {
+	s.Go100XApiClient.address = s.Address
+	s.Go100XApiClient.baseUrl = s.BaseUrl
 }
 
 func TestRunSuiteUnit_ApiClientUnitTestSuite(t *testing.T) {
@@ -610,6 +618,602 @@ func (s *ApiClientUnitTestSuite) TestUnit_RevokeSigner_BadBaseURL() {
 	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
 		Nonce:          time.Now().UnixMilli(),
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_NewOrder() {
+	nonce := time.Now().UnixMilli()
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		require.NoError(s.T(), err)
+		defer req.Body.Close()
+
+		var requestBody struct {
+			Account      string `json:"account"`
+			SubAccountId int64  `json:"subAccountId"`
+			ProductId    int64  `json:"productId"`
+			IsBuy        bool   `json:"isBuy"`
+			OrderType    int64  `json:"orderType"`
+			TimeInForce  int64  `json:"timeInForce"`
+			Expiration   int64  `json:"expiration"`
+			Price        string `json:"price"`
+			Quantity     string `json:"quantity"`
+			Nonce        int64  `json:"nonce"`
+			Signature    string `json:"signature"`
+		}
+		err = json.Unmarshal(body, &requestBody)
+		require.NoError(s.T(), err)
+		require.Equal(s.T(), http.MethodPost, req.Method)
+		require.Equal(s.T(), string(constants.API_ENDPOINT_NEW_ORDER), req.URL.Path)
+		require.Equal(s.T(), s.Go100XApiClient.address, requestBody.Account)
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
+		require.Equal(s.T(), int64(1006), requestBody.ProductId)
+		require.True(s.T(), requestBody.IsBuy)
+		require.Equal(s.T(), int64(1), requestBody.OrderType)
+		require.Equal(s.T(), int64(1), requestBody.TimeInForce)
+		require.Equal(s.T(), int64(1627801200), requestBody.Expiration)
+		require.Equal(s.T(), "123", requestBody.Price)
+		require.Equal(s.T(), "456", requestBody.Quantity)
+		require.Equal(s.T(), nonce, requestBody.Nonce)
+		require.NotEmpty(s.T(), requestBody.Signature)
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
+		Product:     &constants.PRODUCT_BLAST_PERP,
+		IsBuy:       true,
+		OrderType:   types.OrderType(1),
+		TimeInForce: types.TimeInForce(1),
+		Expiration:  1627801200,
+		Price:       "123",
+		Quantity:    "456",
+		Nonce:       nonce,
+	})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_NewOrder_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.address = ""
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
+		Product:     &constants.PRODUCT_BLAST_PERP,
+		IsBuy:       true,
+		OrderType:   types.OrderType(1),
+		TimeInForce: types.TimeInForce(1),
+		Expiration:  1627801200,
+		Price:       "123",
+		Quantity:    "456",
+		Nonce:       time.Now().UnixMilli(),
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_NewOrder_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
+		Product:     &constants.PRODUCT_BLAST_PERP,
+		IsBuy:       true,
+		OrderType:   types.OrderType(1),
+		TimeInForce: types.TimeInForce(1),
+		Expiration:  1627801200,
+		Price:       "123",
+		Quantity:    "456",
+		Nonce:       time.Now().UnixMilli(),
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace() {
+	nonce := time.Now().UnixMilli()
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		require.NoError(s.T(), err)
+		defer req.Body.Close()
+
+		var requestBody struct {
+			IdToCancel string `json:"idToCancel"`
+			NewOrder   struct {
+				Account      string `json:"account"`
+				SubAccountId int64  `json:"subAccountId"`
+				ProductId    int64  `json:"productId"`
+				IsBuy        bool   `json:"isBuy"`
+				OrderType    int64  `json:"orderType"`
+				TimeInForce  int64  `json:"timeInForce"`
+				Expiration   int64  `json:"expiration"`
+				Price        string `json:"price"`
+				Quantity     string `json:"quantity"`
+				Nonce        int64  `json:"nonce"`
+				Signature    string `json:"signature"`
+			} `json:"newOrder"`
+		}
+		err = json.Unmarshal(body, &requestBody)
+		require.NoError(s.T(), err)
+		require.Equal(s.T(), http.MethodPost, req.Method)
+		require.Equal(s.T(), string(constants.API_ENDPOINT_CANCEL_REPLACE_ORDER), req.URL.Path)
+		require.Equal(s.T(), "order123", requestBody.IdToCancel)
+		require.Equal(s.T(), s.Go100XApiClient.address, requestBody.NewOrder.Account)
+		require.Equal(s.T(), s.Go100XApiClient.SubAccountId, requestBody.NewOrder.SubAccountId)
+		require.Equal(s.T(), int64(1006), requestBody.NewOrder.ProductId)
+		require.True(s.T(), requestBody.NewOrder.IsBuy)
+		require.Equal(s.T(), int64(1), requestBody.NewOrder.OrderType)
+		require.Equal(s.T(), int64(1), requestBody.NewOrder.TimeInForce)
+		require.Equal(s.T(), int64(1627801200), requestBody.NewOrder.Expiration)
+		require.Equal(s.T(), "123", requestBody.NewOrder.Price)
+		require.Equal(s.T(), "456", requestBody.NewOrder.Quantity)
+		require.Equal(s.T(), nonce, requestBody.NewOrder.Nonce)
+		require.NotEmpty(s.T(), requestBody.NewOrder.Signature)
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
+		IdToCancel: "order123",
+		NewOrder: &types.NewOrderRequest{
+			Product:     &types.Product{Id: 1006},
+			IsBuy:       true,
+			OrderType:   types.OrderType(1),
+			TimeInForce: types.TimeInForce(1),
+			Expiration:  1627801200,
+			Price:       "123",
+			Quantity:    "456",
+			Nonce:       nonce,
+		},
+	})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.address = ""
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
+		IdToCancel: "order123",
+		NewOrder: &types.NewOrderRequest{
+			Product:     &types.Product{Id: 1006},
+			IsBuy:       true,
+			OrderType:   types.OrderType(1),
+			TimeInForce: types.TimeInForce(1),
+			Expiration:  1627801200,
+			Price:       "123",
+			Quantity:    "456",
+			Nonce:       time.Now().UnixMilli(),
+		},
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
+		IdToCancel: "order123",
+		NewOrder: &types.NewOrderRequest{
+			Product:     &types.Product{Id: 1006},
+			IsBuy:       true,
+			OrderType:   types.OrderType(1),
+			TimeInForce: types.TimeInForce(1),
+			Expiration:  1627801200,
+			Price:       "123",
+			Quantity:    "456",
+			Nonce:       time.Now().UnixMilli(),
+		},
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_CancelOrder() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		require.NoError(s.T(), err)
+		defer req.Body.Close()
+
+		var requestBody struct {
+			Account      string `json:"account"`
+			SubAccountId int64  `json:"subAccountId"`
+			ProductId    int64  `json:"productId"`
+			OrderId      string `json:"orderId"`
+			Signature    string `json:"signature"`
+		}
+		err = json.Unmarshal(body, &requestBody)
+		require.NoError(s.T(), err)
+		require.Equal(s.T(), http.MethodDelete, req.Method)
+		require.Equal(s.T(), string(constants.API_ENDPOINT_CANCEL_ORDER), req.URL.Path)
+		require.Equal(s.T(), s.Go100XApiClient.address, requestBody.Account)
+		require.Equal(s.T(), s.Go100XApiClient.SubAccountId, requestBody.SubAccountId)
+		require.Equal(s.T(), int64(1006), requestBody.ProductId)
+		require.Equal(s.T(), "order123", requestBody.OrderId)
+		require.NotEmpty(s.T(), requestBody.Signature)
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
+		Product:    &types.Product{Id: 1006},
+		IdToCancel: "order123",
+	})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_CancelOrder_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.address = ""
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
+		Product:    &types.Product{Id: 1006},
+		IdToCancel: "order123",
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_CancelOrder_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
+		Product:    &types.Product{Id: 1006},
+		IdToCancel: "order123",
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_CancelAllOpenOrders() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		require.NoError(s.T(), err)
+		defer req.Body.Close()
+
+		var requestBody struct {
+			Account      string `json:"account"`
+			SubAccountId int64  `json:"subAccountId"`
+			ProductId    int64  `json:"productId"`
+			Signature    string `json:"signature"`
+		}
+		err = json.Unmarshal(body, &requestBody)
+		require.NoError(s.T(), err)
+		require.Equal(s.T(), http.MethodDelete, req.Method)
+		require.Equal(s.T(), string(constants.API_ENDPOINT_CANCEL_ALL_OPEN_ORDERS), req.URL.Path)
+		require.Equal(s.T(), s.Go100XApiClient.address, requestBody.Account)
+		require.Equal(s.T(), s.Go100XApiClient.SubAccountId, requestBody.SubAccountId)
+		require.Equal(s.T(), int64(1006), requestBody.ProductId)
+		require.NotEmpty(s.T(), requestBody.Signature)
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	product := &types.Product{Id: 1006}
+	res, err := s.Go100XApiClient.CancelAllOpenOrders(product)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_CancelAllOpenOrders_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.address = ""
+	defer s.MockHTTPServer.Close()
+
+	product := &types.Product{Id: 1006}
+	res, err := s.Go100XApiClient.CancelAllOpenOrders(product)
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_CancelAllOpenOrders_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	product := &types.Product{Id: 1006}
+	res, err := s.Go100XApiClient.CancelAllOpenOrders(product)
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetSpotBalances() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(s.T(), string(constants.API_ENDPOINT_GET_SPOT_BALANCES), req.URL.Path)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), s.Go100XApiClient.address, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.GetSpotBalances()
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetSpotBalances_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.address = ""
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.GetSpotBalances()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetSpotBalances_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.GetSpotBalances()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPosition() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(s.T(), string(constants.API_ENDPOINT_GET_PERPETUAL_POSITION), req.URL.Path)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), s.Go100XApiClient.address, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.GetPerpetualPosition(&constants.PRODUCT_BLAST_PERP)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPosition_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.address = ""
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.GetPerpetualPosition(&constants.PRODUCT_BLAST_PERP)
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPosition_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.GetPerpetualPosition(&constants.PRODUCT_BLAST_PERP)
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListApprovedSigners() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_APPROVED_SIGNERS), req.URL.Path)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), s.Go100XApiClient.address, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ListApprovedSigners()
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListApprovedSigners_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.address = ""
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ListApprovedSigners()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListApprovedSigners_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ListApprovedSigners()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrders() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_OPEN_ORDERS), req.URL.Path)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), s.Go100XApiClient.address, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ListOpenOrders(&constants.PRODUCT_BLAST_PERP)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrders_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.address = ""
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ListOpenOrders(&constants.PRODUCT_BLAST_PERP)
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrders_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ListOpenOrders(&constants.PRODUCT_BLAST_PERP)
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListOrders() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_ORDERS), req.URL.Path)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), s.Go100XApiClient.address, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), "123", req.URL.Query().Get("ids"))
+		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
+		Product: &constants.PRODUCT_BLAST_PERP,
+		Ids:     []string{"123"},
+	})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListOrders_MultipleIds() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_ORDERS), req.URL.Path)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), s.Go100XApiClient.address, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Contains(s.T(), req.URL.Query()["ids"], "123")
+		require.Contains(s.T(), req.URL.Query()["ids"], "456")
+		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
+		Product: &constants.PRODUCT_BLAST_PERP,
+		Ids:     []string{"123", "456"},
+	})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListOrders_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.address = ""
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
+		Product: &constants.PRODUCT_BLAST_PERP,
+		Ids:     []string{"123"},
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListOrders_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
+		Product: &constants.PRODUCT_BLAST_PERP,
+		Ids:     []string{"123"},
 	})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
