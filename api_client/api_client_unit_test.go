@@ -188,3 +188,285 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetProductById_BadBaseURL() {
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(
+			s.T(),
+			string(constants.API_ENDPOINT_GET_KLINE_DATA),
+			req.URL.Path,
+		)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
+		Product: &constants.PRODUCT_BLAST_PERP,
+	})
+	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithInterval() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(
+			s.T(),
+			string(constants.API_ENDPOINT_GET_KLINE_DATA),
+			req.URL.Path,
+		)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), string(constants.INTERVAL_15M), req.URL.Query().Get("interval"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
+		Product:  &constants.PRODUCT_BLAST_PERP,
+		Interval: constants.INTERVAL_15M,
+	})
+	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithStartTime() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(
+			s.T(),
+			string(constants.API_ENDPOINT_GET_KLINE_DATA),
+			req.URL.Path,
+		)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), strconv.FormatInt(123, 10), req.URL.Query().Get("startTime"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
+		Product:   &constants.PRODUCT_BLAST_PERP,
+		StartTime: 123,
+	})
+	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithEndTime() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(
+			s.T(),
+			string(constants.API_ENDPOINT_GET_KLINE_DATA),
+			req.URL.Path,
+		)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), strconv.FormatInt(123, 10), req.URL.Query().Get("endTime"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
+		Product: &constants.PRODUCT_BLAST_PERP,
+		EndTime: 123,
+	})
+	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithLimit() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(
+			s.T(),
+			string(constants.API_ENDPOINT_GET_KLINE_DATA),
+			req.URL.Path,
+		)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), strconv.FormatInt(123, 10), req.URL.Query().Get("limit"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
+		Product: &constants.PRODUCT_BLAST_PERP,
+		Limit:   123,
+	})
+	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
+		Product: &constants.PRODUCT_BLAST_PERP,
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListProducts() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(
+			s.T(),
+			string(constants.API_ENDPOINT_LIST_PRODUCTS),
+			req.URL.Path,
+		)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ListProducts()
+	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListProducts_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ListProducts()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_OrderBook() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(
+			s.T(),
+			string(constants.API_ENDPOINT_ORDER_BOOK),
+			req.URL.Path,
+		)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
+		Product: &constants.PRODUCT_BLAST_PERP,
+	})
+	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_OrderBook_WithGranularity() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(
+			s.T(),
+			string(constants.API_ENDPOINT_ORDER_BOOK),
+			req.URL.Path,
+		)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), strconv.FormatInt(1, 10), req.URL.Query().Get("granularity"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
+		Product:     &constants.PRODUCT_BLAST_PERP,
+		Granularity: 1,
+	})
+	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_OrderBook_WithLimit() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(
+			s.T(),
+			string(constants.API_ENDPOINT_ORDER_BOOK),
+			req.URL.Path,
+		)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), strconv.FormatInt(5, 10), req.URL.Query().Get("limit"))
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
+		Product: &constants.PRODUCT_BLAST_PERP,
+		Limit:   constants.LIMIT_FIVE,
+	})
+	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_OrderBook_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
+		Product: &constants.PRODUCT_BLAST_PERP,
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ServerTime() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(
+			s.T(),
+			string(constants.API_ENDPOINT_SERVER_TIME),
+			req.URL.Path,
+		)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ServerTime()
+	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ServerTime_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ServerTime()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
