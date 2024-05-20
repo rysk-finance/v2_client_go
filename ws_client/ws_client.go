@@ -28,7 +28,7 @@ type Go100XWSClient struct {
 	privateKey        string
 	address           string
 	SubAccountId      int64
-	wsConnection      *websocket.Conn
+	Connection        *websocket.Conn
 	verifyingContract string
 	domain            apitypes.TypedDataDomain
 }
@@ -54,7 +54,7 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) *Go100XWSClient {
 		privateKey:        privateKey,
 		address:           utils.AddressFromPrivateKey(privateKey),
 		SubAccountId:      int64(config.SubAccountId),
-		wsConnection:      websocket,
+		Connection:        websocket,
 		verifyingContract: constants.CIAO_ADDRESS[config.Env],
 		domain: apitypes.TypedDataDomain{
 			Name:              constants.DOMAIN_NAME,
@@ -109,5 +109,5 @@ func (go100XClient *Go100XWSClient) Login(messageId string) error {
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.wsConnection, request)
+	return utils.SendRPCRequest(go100XClient.Connection, request)
 }

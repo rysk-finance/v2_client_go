@@ -28,7 +28,7 @@ type ApiClientIntegrationTestSuite struct {
 
 func (s *ApiClientIntegrationTestSuite) SetupSuite() {
 	if err := godotenv.Load(); err != nil {
-		fmt.Println("[TestMain] Error loading .env file:", err)
+		fmt.Println("Error loading .env file:", err)
 		return
 	}
 
@@ -47,9 +47,9 @@ func TestRunSuiteIntegration_ApiClientIntegrationTestSuite(t *testing.T) {
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_Get24hrPriceChangeStatistics_NoProduct() {
 	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&types.Product{})
-	require.Nil(s.T(), err, "[TestIntegration_Get24hrPriceChangeStatistics_NoProduct] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_Get24hrPriceChangeStatistics_NoProduct", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_Get24hrPriceChangeStatistics_NoProduct", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_Get24hrPriceChangeStatistics_WithNonExistingProduct() {
@@ -57,29 +57,29 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_Get24hrPriceChangeStatis
 		Id:     69420,
 		Symbol: "69420",
 	})
-	require.Nil(s.T(), err, "[TestIntegration_Get24hrPriceChangeStatistics_WithNonExistingProduct] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_Get24hrPriceChangeStatistics_WithNonExistingProduct", s.T(), 404, res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 404, res.StatusCode)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_Get24hrPriceChangeStatistics_WithProduct() {
 	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&constants.PRODUCT_ETH_PERP)
-	require.Nil(s.T(), err, "[TestIntegration_Get24hrPriceChangeStatistics_WithProduct] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_Get24hrPriceChangeStatistics_WithProduct", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_Get24hrPriceChangeStatistics_WithProduct", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_GetProduct() {
 	res, err := s.Go100XApiClient.GetProduct(constants.PRODUCT_ETH_PERP.Symbol)
-	require.Nil(s.T(), err, "[TestIntegration_GetProduct] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_GetProduct", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_GetProduct", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_GetProductById() {
 	res, err := s.Go100XApiClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
-	require.Nil(s.T(), err, "[TestIntegration_GetProductById] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_GetProductById", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_GetProductById", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_GetKlineData() {
@@ -89,16 +89,16 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_GetKlineData() {
 		StartTime: time.Now().Add(-24 * time.Hour).UnixMilli(),
 		EndTime:   time.Now().UnixMilli(),
 	})
-	require.Nil(s.T(), err, "[TestIntegration_GetKlineData] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_GetKlineData", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_GetKlineData", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListProducts() {
 	res, err := s.Go100XApiClient.ListProducts()
-	require.Nil(s.T(), err, "[TestIntegration_ListProducts] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_ListProducts", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_ListProducts", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_OrderBook() {
@@ -107,36 +107,36 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_OrderBook() {
 		Granularity: 0,
 		Limit:       constants.LIMIT_FIVE,
 	})
-	require.Nil(s.T(), err, "[TestIntegration_OrderBook] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_OrderBook", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_OrderBook", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ServerTime() {
 	res, err := s.Go100XApiClient.ServerTime()
-	require.Nil(s.T(), err, "[TestIntegration_ServerTime] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_ServerTime", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_ServerTime", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveSigner() {
 	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", // vitalik.eth
+		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
 		Nonce:          time.Now().UnixMilli(),
 	})
-	require.Nil(s.T(), err, "[TestIntegration_ApproveSigner] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_ApproveSigner", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_ApproveSigner", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_RevokeSigner() {
 	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", // vitalik.eth
+		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
 		Nonce:          time.Now().UnixMilli(),
 	})
-	require.Nil(s.T(), err, "[TestIntegration_RevokeSigner] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_RevokeSigner", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_RevokeSigner", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_NewOrder() {
@@ -151,9 +151,9 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_NewOrder() {
 		Expiration:  time.Now().Add(24 * time.Hour).UnixMilli(),
 		Nonce:       time.Now().UnixMilli(),
 	})
-	require.Nil(s.T(), err, "[TestIntegration_NewOrder] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_NewOrder", s.T(), 400, res)
-	verifyValidJSONResponse("TestIntegration_NewOrder", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 400, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() {
@@ -171,9 +171,9 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() 
 			Nonce:       time.Now().UnixMilli(),
 		},
 	})
-	require.Nil(s.T(), err, "[TestIntegration_CancelOrderAndReplace] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_CancelOrderAndReplace", s.T(), 404, res)
-	verifyValidJSONResponse("TestIntegration_CancelOrderAndReplace", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 404, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrder() {
@@ -181,44 +181,44 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 		Product:    &constants.PRODUCT_ETH_PERP,
 		IdToCancel: "1",
 	})
-	require.Nil(s.T(), err, "[TestIntegration_CancelOrder] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_CancelOrder", s.T(), 404, res)
-	verifyValidJSONResponse("TestIntegration_CancelOrder", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 404, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelAllOpenOrders() {
 	res, err := s.Go100XApiClient.CancelAllOpenOrders(&constants.PRODUCT_ETH_PERP)
-	require.Nil(s.T(), err, "[TestIntegration_CancelAllOpenOrders] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_CancelAllOpenOrders", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_CancelAllOpenOrders", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_GetSpotBalances() {
 	res, err := s.Go100XApiClient.GetSpotBalances()
-	require.Nil(s.T(), err, "[TestIntegration_GetSpotBalances] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_GetSpotBalances", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_GetSpotBalances", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_GetPerpetualPosition() {
 	res, err := s.Go100XApiClient.GetPerpetualPosition(&constants.PRODUCT_BLAST_PERP)
-	require.Nil(s.T(), err, "[TestIntegration_GetPerpetualPosition] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_GetPerpetualPosition", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_GetPerpetualPosition", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListApproveSigners() {
 	res, err := s.Go100XApiClient.ListApprovedSigners()
-	require.Nil(s.T(), err, "[TestIntegration_ListApproveSigners] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_ListApproveSigners", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_ListApproveSigners", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOpenOrders() {
 	res, err := s.Go100XApiClient.ListOpenOrders(&constants.PRODUCT_BLAST_PERP)
-	require.Nil(s.T(), err, "[TestIntegration_ListOpenOrders] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_ListOpenOrders", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_ListOpenOrders", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrders() {
@@ -226,24 +226,19 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrders() {
 		Product: &constants.PRODUCT_BTC_PERP,
 		Ids:     []string{"A", "B"},
 	})
-	require.Nil(s.T(), err, "[TestIntegration_ListOrders] Error: %v", err)
-	verifyResponseStatusCode("TestIntegration_ListOrders", s.T(), 200, res)
-	verifyValidJSONResponse("TestIntegration_ListOrders", s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
 }
 
-func verifyResponseStatusCode(testName string, t *testing.T, expectedStatusCode int, response *http.Response) {
-	require.Equal(t, expectedStatusCode, response.StatusCode, "[%s] Expected status code %v but got %v", testName, expectedStatusCode, response.StatusCode)
-}
-
-func verifyValidJSONResponse(testName string, t *testing.T, response *http.Response) {
+func verifyValidJSONResponse(t *testing.T, response *http.Response) {
 	// Read response
 	defer response.Body.Close()
 	bytesBody, err := io.ReadAll(response.Body)
-	require.Nil(t, err, "[%s] Error reading response body: %v", testName, err)
+	require.NoError(t, err)
 
 	// Check if res is valid JSON by trying to unmarshal it
 	var data interface{}
 	err = json.Unmarshal([]byte(bytesBody), &data)
-	require.Nil(t, err, "[%s] Error unmarshalling response: %v", testName, bytesBody)
-	t.Logf("[%s] Response is a valid JSON: %s", testName, bytesBody)
+	require.NoError(t, err)
 }

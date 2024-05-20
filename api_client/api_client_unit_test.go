@@ -69,7 +69,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_Get24hrPriceChangeStatistics_WithBadRe
 	s.Go100XApiClient.baseUrl = "http://\t"
 
 	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&constants.PRODUCT_BLAST_PERP)
-	require.NotNil(s.T(), err)
+	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
 
@@ -108,7 +108,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_Get24hrPriceChangeStatistics_WithProdu
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&constants.PRODUCT_BLAST_PERP)
-	require.Nil(s.T(), err, "[TestUnit_Get24hrPriceChangeStatistics_NoProduct] Error: %v", err)
+	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
 
@@ -140,7 +140,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetProduct() {
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.GetProduct(constants.PRODUCT_BLAST_PERP.Symbol)
-	require.Nil(s.T(), err, "[TestUnit_GetProduct] Error: %v", err)
+	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
 
@@ -172,7 +172,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetProductById() {
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.GetProductById(constants.PRODUCT_BLAST_PERP.Id)
-	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
 
@@ -207,7 +207,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData() {
 	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
 		Product: &constants.PRODUCT_BLAST_PERP,
 	})
-	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
 
@@ -231,7 +231,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithInterval() {
 		Product:  &constants.PRODUCT_BLAST_PERP,
 		Interval: constants.INTERVAL_15M,
 	})
-	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
 
@@ -255,7 +255,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithStartTime() {
 		Product:   &constants.PRODUCT_BLAST_PERP,
 		StartTime: 123,
 	})
-	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
 
@@ -279,7 +279,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithEndTime() {
 		Product: &constants.PRODUCT_BLAST_PERP,
 		EndTime: 123,
 	})
-	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
 
@@ -303,7 +303,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithLimit() {
 		Product: &constants.PRODUCT_BLAST_PERP,
 		Limit:   123,
 	})
-	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
 
@@ -337,7 +337,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListProducts() {
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.ListProducts()
-	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
 
@@ -372,7 +372,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_OrderBook() {
 	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
 		Product: &constants.PRODUCT_BLAST_PERP,
 	})
-	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
 
@@ -396,7 +396,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_OrderBook_WithGranularity() {
 		Product:     &constants.PRODUCT_BLAST_PERP,
 		Granularity: 1,
 	})
-	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
 
@@ -420,7 +420,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_OrderBook_WithLimit() {
 		Product: &constants.PRODUCT_BLAST_PERP,
 		Limit:   constants.LIMIT_FIVE,
 	})
-	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
 
@@ -454,7 +454,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ServerTime() {
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.ServerTime()
-	require.Nil(s.T(), err, "[TestUnit_GetProductById] Error: %v", err)
+	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
 
