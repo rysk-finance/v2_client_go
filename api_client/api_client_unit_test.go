@@ -1,7 +1,9 @@
 package api_client
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -467,6 +469,148 @@ func (s *ApiClientUnitTestSuite) TestUnit_ServerTime_BadBaseURL() {
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.ServerTime()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner() {
+	nonce := time.Now().UnixMilli()
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		require.NoError(s.T(), err)
+		defer req.Body.Close()
+
+		// Unmarshal the body into a struct for easier comparison
+		var requestBody struct {
+			Account        string `json:"account"`
+			SubAccountId   int64  `json:"subAccountId"`
+			Signature      string `json:"signature"`
+			ApprovedSigner string `json:"approvedSigner"`
+			Nonce          int64  `json:"nonce"`
+			IsApproved     bool   `json:"isApproved"`
+		}
+		err = json.Unmarshal(body, &requestBody)
+		require.NoError(s.T(), err)
+		require.Equal(s.T(), http.MethodPost, req.Method)
+		require.Equal(s.T(), string(constants.API_ENDPOINT_APPROVE_REVOKE_SIGNER), req.URL.Path)
+		require.Equal(s.T(), "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", requestBody.ApprovedSigner)
+		require.Equal(s.T(), s.Go100XApiClient.address, requestBody.Account)
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
+		require.Equal(s.T(), nonce, requestBody.Nonce)
+		require.True(s.T(), requestBody.IsApproved)
+		require.NotEmpty(s.T(), requestBody.Signature)
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+		Nonce:          nonce,
+	})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: "",
+		Nonce:          time.Now().UnixMilli(),
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+		Nonce:          time.Now().UnixMilli(),
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_Revokeigner() {
+	nonce := time.Now().UnixMilli()
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		require.NoError(s.T(), err)
+		defer req.Body.Close()
+
+		// Unmarshal the body into a struct for easier comparison
+		var requestBody struct {
+			Account        string `json:"account"`
+			SubAccountId   int64  `json:"subAccountId"`
+			Signature      string `json:"signature"`
+			ApprovedSigner string `json:"approvedSigner"`
+			Nonce          int64  `json:"nonce"`
+			IsApproved     bool   `json:"isApproved"`
+		}
+		err = json.Unmarshal(body, &requestBody)
+		require.NoError(s.T(), err)
+		require.Equal(s.T(), http.MethodPost, req.Method)
+		require.Equal(s.T(), string(constants.API_ENDPOINT_APPROVE_REVOKE_SIGNER), req.URL.Path)
+		require.Equal(s.T(), "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", requestBody.ApprovedSigner)
+		require.Equal(s.T(), s.Go100XApiClient.address, requestBody.Account)
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
+		require.Equal(s.T(), nonce, requestBody.Nonce)
+		require.False(s.T(), requestBody.IsApproved)
+		require.NotEmpty(s.T(), requestBody.Signature)
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+		Nonce:          nonce,
+	})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_RevokeSigner_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: "",
+		Nonce:          time.Now().UnixMilli(),
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_RevokeSigner_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+		Nonce:          time.Now().UnixMilli(),
+	})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
