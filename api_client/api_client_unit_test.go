@@ -1,9 +1,12 @@
 package api_client
 
 import (
+	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -15,6 +18,10 @@ import (
 	"github.com/eldief/go100x/constants"
 	"github.com/eldief/go100x/types"
 	"github.com/eldief/go100x/utils"
+	"github.com/eldief/go100x/utils/mocks"
+	geth_types "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -23,11 +30,13 @@ import (
 
 type ApiClientUnitTestSuite struct {
 	suite.Suite
+	PrivateKey      string
 	Address         string
 	BaseUrl         string
 	RpcUrl          string
 	Go100XApiClient *Go100XAPIClient
 	MockHTTPServer  *httptest.Server
+	EthClient       types.IEthClient
 }
 
 func (s *ApiClientUnitTestSuite) SetupSuite() {
@@ -35,21 +44,24 @@ func (s *ApiClientUnitTestSuite) SetupSuite() {
 		fmt.Println("[TestMain] Error loading .env file:", err)
 		return
 	}
-
-	s.Go100XApiClient = NewGo100XAPIClient(&Go100XAPIClientConfiguration{
+	apiClient, _ := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
-		Timeout:      10 * time.Second,
 		SubAccountId: 1,
 	})
-	s.Address = utils.AddressFromPrivateKey(s.Go100XApiClient.privateKey)
+	s.Go100XApiClient = apiClient
+	s.PrivateKey = s.Go100XApiClient.privateKeyString
+	s.Address = utils.AddressFromPrivateKey(s.Go100XApiClient.privateKeyString)
 	s.BaseUrl = s.Go100XApiClient.baseUrl
+	s.EthClient = apiClient.EthClient
 }
 
 func (s *ApiClientUnitTestSuite) SetupTest() {
-	s.Go100XApiClient.address = s.Address
+	s.Go100XApiClient.privateKeyString = s.PrivateKey
+	s.Go100XApiClient.addressString = s.Address
 	s.Go100XApiClient.baseUrl = s.BaseUrl
+	s.Go100XApiClient.EthClient = s.EthClient
 }
 
 func TestRunSuiteUnit_ApiClientUnitTestSuite(t *testing.T) {
@@ -57,22 +69,49 @@ func TestRunSuiteUnit_ApiClientUnitTestSuite(t *testing.T) {
 }
 
 func (s *ApiClientUnitTestSuite) TestUnit_NewGo100XAPIClient() {
-	apiClient := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
+	apiClient, err := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
-		Timeout:      10 * time.Second,
 		SubAccountId: 1,
 	})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), constants.ENVIRONMENT_TESTNET, apiClient.env)
 	require.Equal(s.T(), constants.API_BASE_URL[constants.ENVIRONMENT_TESTNET], apiClient.baseUrl)
-	require.Equal(s.T(), strings.TrimPrefix(string(os.Getenv("PRIVATE_KEYS")), "0x"), apiClient.privateKey)
-	require.Equal(s.T(), utils.AddressFromPrivateKey(string(os.Getenv("PRIVATE_KEYS"))), apiClient.address)
-	require.Equal(s.T(), int64(1), apiClient.SubAccountId)
-	require.Equal(s.T(), constants.CIAO_ADDRESS[constants.ENVIRONMENT_TESTNET], apiClient.verifyingContract)
-	require.NotNil(s.T(), apiClient.HttpClient)
+	require.Equal(s.T(), strings.TrimPrefix(string(os.Getenv("PRIVATE_KEYS")), "0x"), apiClient.privateKeyString)
+	require.Equal(s.T(), utils.AddressFromPrivateKey(strings.TrimPrefix(string(os.Getenv("PRIVATE_KEYS")), "0x")), apiClient.addressString)
+	require.Equal(s.T(), utils.AddressFromPrivateKey(strings.TrimPrefix(string(os.Getenv("PRIVATE_KEYS")), "0x")), apiClient.address.String())
+	require.Equal(s.T(), strings.TrimPrefix(string(os.Getenv("PRIVATE_KEYS")), "0x"), hex.EncodeToString(crypto.FromECDSA(apiClient.privateKey)))
+	require.Equal(s.T(), constants.CIAO_ADDRESS[constants.ENVIRONMENT_TESTNET], apiClient.ciao.String())
+	require.Equal(s.T(), constants.USDB_ADDRESS[constants.ENVIRONMENT_TESTNET], apiClient.usdb.String())
 	require.NotNil(s.T(), apiClient.domain)
 	require.Equal(s.T(), constants.DOMAIN_NAME, apiClient.domain.Name)
 	require.Equal(s.T(), constants.DOMAIN_VERSION, apiClient.domain.Version)
+	require.Equal(s.T(), int64(1), apiClient.SubAccountId)
+	require.NotNil(s.T(), apiClient.HttpClient)
+	require.NotNil(s.T(), apiClient.EthClient)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_NewGo100XAPIClient_InvalidPrivateKey() {
+	apiClient, err := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
+		Env:          constants.ENVIRONMENT_TESTNET,
+		PrivateKey:   "0x123",
+		RpcUrl:       "",
+		SubAccountId: 1,
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), apiClient)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_NewGo100XAPIClient_InvalidRPCURL() {
+	apiClient, err := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
+		Env:          constants.ENVIRONMENT_TESTNET,
+		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
+		RpcUrl:       "",
+		SubAccountId: 1,
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), apiClient)
 }
 
 func (s *ApiClientUnitTestSuite) TestUnit_Get24hrPriceChangeStatistics_WithBadRequest() {
@@ -502,7 +541,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner() {
 		require.Equal(s.T(), http.MethodPost, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_APPROVE_REVOKE_SIGNER), req.URL.Path)
 		require.Equal(s.T(), "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", requestBody.ApprovedSigner)
-		require.Equal(s.T(), s.Go100XApiClient.address, requestBody.Account)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
 		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
 		require.Equal(s.T(), nonce, requestBody.Nonce)
 		require.True(s.T(), requestBody.IsApproved)
@@ -573,7 +612,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_Revokeigner() {
 		require.Equal(s.T(), http.MethodPost, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_APPROVE_REVOKE_SIGNER), req.URL.Path)
 		require.Equal(s.T(), "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", requestBody.ApprovedSigner)
-		require.Equal(s.T(), s.Go100XApiClient.address, requestBody.Account)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
 		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
 		require.Equal(s.T(), nonce, requestBody.Nonce)
 		require.False(s.T(), requestBody.IsApproved)
@@ -623,6 +662,77 @@ func (s *ApiClientUnitTestSuite) TestUnit_RevokeSigner_BadBaseURL() {
 	require.Nil(s.T(), res)
 }
 
+func (s *ApiClientUnitTestSuite) TestUnit_Withdraw() {
+	nonce := time.Now().UnixMilli()
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		require.NoError(s.T(), err)
+		defer req.Body.Close()
+
+		var requestBody struct {
+			Account      string `json:"account"`
+			SubAccountId int64  `json:"subAccountId"`
+			Asset        string `json:"asset"`
+			Quantity     string `json:"quantity"`
+			Nonce        int64  `json:"nonce"`
+			Signature    string `json:"signature"`
+		}
+		err = json.Unmarshal(body, &requestBody)
+		require.NoError(s.T(), err)
+		require.Equal(s.T(), http.MethodPost, req.Method)
+		require.Equal(s.T(), string(constants.API_ENDPOINT_WITHDRAW), req.URL.Path)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
+		require.Equal(s.T(), constants.USDB_ADDRESS[constants.ENVIRONMENT_TESTNET], requestBody.Asset)
+		require.Equal(s.T(), "456", requestBody.Quantity)
+		require.Equal(s.T(), nonce, requestBody.Nonce)
+		require.NotEmpty(s.T(), requestBody.Signature)
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
+		Quantity: "456",
+		Nonce:    nonce,
+	})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_Withdraw_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.addressString = ""
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
+		Quantity: "456",
+		Nonce:    time.Now().UnixMilli(),
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_Withdraw_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer s.MockHTTPServer.Close()
+
+	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
+		Quantity: "456",
+		Nonce:    time.Now().UnixMilli(),
+	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
 func (s *ApiClientUnitTestSuite) TestUnit_NewOrder() {
 	nonce := time.Now().UnixMilli()
 	handler := func(w http.ResponseWriter, req *http.Request) {
@@ -647,7 +757,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewOrder() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), http.MethodPost, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_NEW_ORDER), req.URL.Path)
-		require.Equal(s.T(), s.Go100XApiClient.address, requestBody.Account)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
 		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
 		require.Equal(s.T(), int64(1006), requestBody.ProductId)
 		require.True(s.T(), requestBody.IsBuy)
@@ -683,7 +793,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewOrder_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.address = ""
+	s.Go100XApiClient.addressString = ""
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
@@ -750,7 +860,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace() {
 		require.Equal(s.T(), http.MethodPost, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_CANCEL_REPLACE_ORDER), req.URL.Path)
 		require.Equal(s.T(), "order123", requestBody.IdToCancel)
-		require.Equal(s.T(), s.Go100XApiClient.address, requestBody.NewOrder.Account)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.NewOrder.Account)
 		require.Equal(s.T(), s.Go100XApiClient.SubAccountId, requestBody.NewOrder.SubAccountId)
 		require.Equal(s.T(), int64(1006), requestBody.NewOrder.ProductId)
 		require.True(s.T(), requestBody.NewOrder.IsBuy)
@@ -789,7 +899,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.address = ""
+	s.Go100XApiClient.addressString = ""
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
@@ -851,7 +961,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrder() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), http.MethodDelete, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_CANCEL_ORDER), req.URL.Path)
-		require.Equal(s.T(), s.Go100XApiClient.address, requestBody.Account)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
 		require.Equal(s.T(), s.Go100XApiClient.SubAccountId, requestBody.SubAccountId)
 		require.Equal(s.T(), int64(1006), requestBody.ProductId)
 		require.Equal(s.T(), "order123", requestBody.OrderId)
@@ -875,7 +985,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrder_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.address = ""
+	s.Go100XApiClient.addressString = ""
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
@@ -918,7 +1028,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelAllOpenOrders() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), http.MethodDelete, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_CANCEL_ALL_OPEN_ORDERS), req.URL.Path)
-		require.Equal(s.T(), s.Go100XApiClient.address, requestBody.Account)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
 		require.Equal(s.T(), s.Go100XApiClient.SubAccountId, requestBody.SubAccountId)
 		require.Equal(s.T(), int64(1006), requestBody.ProductId)
 		require.NotEmpty(s.T(), requestBody.Signature)
@@ -939,7 +1049,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelAllOpenOrders_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.address = ""
+	s.Go100XApiClient.addressString = ""
 	defer s.MockHTTPServer.Close()
 
 	product := &types.Product{Id: 1006}
@@ -966,7 +1076,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetSpotBalances() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_GET_SPOT_BALANCES), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.address, req.URL.Query().Get("account"))
+		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
 		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
@@ -985,7 +1095,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetSpotBalances_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.address = ""
+	s.Go100XApiClient.addressString = ""
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.GetSpotBalances()
@@ -1010,7 +1120,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPosition() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_GET_PERPETUAL_POSITION), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.address, req.URL.Query().Get("account"))
+		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
 		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
 		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
@@ -1030,7 +1140,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPosition_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.address = ""
+	s.Go100XApiClient.addressString = ""
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.GetPerpetualPosition(&constants.PRODUCT_BLAST_PERP)
@@ -1055,7 +1165,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListApprovedSigners() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_APPROVED_SIGNERS), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.address, req.URL.Query().Get("account"))
+		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
 		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
@@ -1074,7 +1184,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListApprovedSigners_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.address = ""
+	s.Go100XApiClient.addressString = ""
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.ListApprovedSigners()
@@ -1099,7 +1209,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrders() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_OPEN_ORDERS), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.address, req.URL.Query().Get("account"))
+		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
 		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
 		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
@@ -1119,7 +1229,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrders_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.address = ""
+	s.Go100XApiClient.addressString = ""
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.ListOpenOrders(&constants.PRODUCT_BLAST_PERP)
@@ -1144,7 +1254,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrders() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_ORDERS), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.address, req.URL.Query().Get("account"))
+		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
 		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
 		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.Equal(s.T(), "123", req.URL.Query().Get("ids"))
@@ -1167,7 +1277,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrders_MultipleIds() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_ORDERS), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.address, req.URL.Query().Get("account"))
+		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
 		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
 		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.Contains(s.T(), req.URL.Query()["ids"], "123")
@@ -1192,7 +1302,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrders_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.address = ""
+	s.Go100XApiClient.addressString = ""
 	defer s.MockHTTPServer.Close()
 
 	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
@@ -1217,4 +1327,130 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrders_BadBaseURL() {
 	})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ApproveUSDB() {
+	mockEthClient := new(mocks.MockEthClient)
+	s.Go100XApiClient.EthClient = mockEthClient
+	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
+	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
+	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
+	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
+	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
+
+	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), transaction)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ApproveUSDB_ErrorGettingParameters() {
+	mockEthClient := new(mocks.MockEthClient)
+	s.Go100XApiClient.EthClient = mockEthClient
+	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
+	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
+	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
+	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), fmt.Errorf("error getting parameters"))
+
+	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	require.Error(s.T(), err)
+	require.Nil(s.T(), transaction)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ApproveUSDB_ErrorSendTransaction() {
+	mockEthClient := new(mocks.MockEthClient)
+	s.Go100XApiClient.EthClient = mockEthClient
+	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
+	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
+	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
+	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
+	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send transaction"))
+
+	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	require.Error(s.T(), err)
+	require.Nil(s.T(), transaction)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDB() {
+	mockEthClient := new(mocks.MockEthClient)
+	s.Go100XApiClient.EthClient = mockEthClient
+	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
+	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
+	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
+	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
+	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
+
+	transaction, err := s.Go100XApiClient.DepositUSDB(context.Background(), big.NewInt(1000))
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), transaction)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDB_ErrorGettingParameters() {
+	mockEthClient := new(mocks.MockEthClient)
+	s.Go100XApiClient.EthClient = mockEthClient
+	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
+	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
+	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
+	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), fmt.Errorf("error getting parameters"))
+
+	transaction, err := s.Go100XApiClient.DepositUSDB(context.Background(), big.NewInt(1000))
+	require.Error(s.T(), err)
+	require.Nil(s.T(), transaction)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDB_ErrorSendTransaction() {
+	mockEthClient := new(mocks.MockEthClient)
+	s.Go100XApiClient.EthClient = mockEthClient
+	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
+	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
+	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
+	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
+	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send transaction"))
+
+	transaction, err := s.Go100XApiClient.DepositUSDB(context.Background(), big.NewInt(1000))
+	require.Error(s.T(), err)
+	require.Nil(s.T(), transaction)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_WaitTransaction() {
+	mockEthClient := new(mocks.MockEthClient)
+	s.Go100XApiClient.EthClient = mockEthClient
+	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
+	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
+	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
+	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
+	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
+	mockEthClient.On("TransactionReceipt", mock.Anything, mock.Anything).Return(&geth_types.Receipt{}, nil)
+
+	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), transaction)
+
+	receipt, err := s.Go100XApiClient.WaitTransaction(context.Background(), transaction)
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), receipt)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_WaitTransaction_WaitMinedError() {
+	mockEthClient := new(mocks.MockEthClient)
+	s.Go100XApiClient.EthClient = mockEthClient
+	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
+	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
+	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
+	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
+	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
+	mockEthClient.On("TransactionReceipt", mock.Anything, mock.Anything).Return((*geth_types.Receipt)(nil), fmt.Errorf("failed to wait transaction"))
+
+	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), transaction)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(2 * time.Second)
+		cancel()
+	}()
+
+	receipt, err := s.Go100XApiClient.WaitTransaction(ctx, transaction)
+	require.Error(s.T(), err)
+	require.Nil(s.T(), receipt)
 }

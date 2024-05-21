@@ -11,7 +11,7 @@ const (
 	API_ENDPOINT_ORDER_BOOK                             types.APIEndpoint = "/depth"
 	API_ENDPOINT_SERVER_TIME                            types.APIEndpoint = "/time"
 	API_ENDPOINT_APPROVE_REVOKE_SIGNER                  types.APIEndpoint = "/approved-signers"
-	API_ENDPOINT_POST_WITHDRAW                          types.APIEndpoint = "/withdraw"
+	API_ENDPOINT_WITHDRAW                               types.APIEndpoint = "/withdraw"
 	API_ENDPOINT_NEW_ORDER                              types.APIEndpoint = "/order"
 	API_ENDPOINT_CANCEL_REPLACE_ORDER                   types.APIEndpoint = "/order/cancel-and-replace"
 	API_ENDPOINT_CANCEL_ORDER                           types.APIEndpoint = "/order"

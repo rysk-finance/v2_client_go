@@ -1,0 +1,10 @@
+package constants
+
+import (
+	"github.com/eldief/go100x/types"
+)
+
+var USDB_ADDRESS = map[types.Environment]string{
+	ENVIRONMENT_MAINNET: "0x4300000000000000000000000000000000000003",
+	ENVIRONMENT_TESTNET: "0x79A59c326C715AC2d31C169C85d1232319E341ce",
+}

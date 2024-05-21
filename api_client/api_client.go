@@ -1,6 +1,10 @@
 package api_client
 
 import (
+	"context"
+	"crypto/ecdsa"
+	"fmt"
+	"math/big"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,13 +14,18 @@ import (
 	"github.com/eldief/go100x/types"
 	"github.com/eldief/go100x/utils"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	geth_types "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
 // Go100XAPIClient configuration
 type Go100XAPIClientConfiguration struct {
 	Env          types.Environment // `constants.ENVIRONMENT_TESTNET` or `constants.ENVIRONMENT_MAINNET`.
-	Timeout      time.Duration     // e.g. `10 * time.Second`.
 	PrivateKey   string            // e.g. `0x2638b4...` or `2638b4...`.
 	RpcUrl       string            // e.g. `https://sepolia.blast.io` or `https://rpc.blastblockchain.com`.
 	SubAccountId uint8             // ID of the subaccount to use.
@@ -24,36 +33,58 @@ type Go100XAPIClientConfiguration struct {
 
 // 100x API client.
 type Go100XAPIClient struct {
-	baseUrl           string
-	privateKey        string
-	address           string
-	SubAccountId      int64
-	HttpClient        *http.Client
-	verifyingContract string
-	domain            apitypes.TypedDataDomain
+	env              types.Environment
+	baseUrl          string
+	privateKeyString string
+	addressString    string
+	privateKey       *ecdsa.PrivateKey
+	address          common.Address
+	ciao             common.Address
+	usdb             common.Address
+	domain           apitypes.TypedDataDomain
+	SubAccountId     int64
+	HttpClient       *http.Client
+	EthClient        types.IEthClient
 }
 
 // NewGo100XAPIClient creates a new `Go100XAPIClient` instance.
 // Initializes the client with the provided configuration.
-func NewGo100XAPIClient(config *Go100XAPIClientConfiguration) *Go100XAPIClient {
+func NewGo100XAPIClient(config *Go100XAPIClientConfiguration) (*Go100XAPIClient, error) {
 	// Remove '0x' from private key.
-	privateKey := strings.TrimPrefix(config.PrivateKey, "0x")
+	privateKeyString := strings.TrimPrefix(config.PrivateKey, "0x")
+
+	// Get ecdsa.PrivateKey.
+	privateKey, err := crypto.HexToECDSA(privateKeyString)
+	if err != nil {
+		return nil, fmt.Errorf("invalid private key: %v", err)
+	}
+
+	// Instanciate new Ethereum Client.
+	client, err := ethclient.Dial(config.RpcUrl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to the Ethereum client: %v", err)
+	}
 
 	// Return a new `go100x.Client`.
 	return &Go100XAPIClient{
-		baseUrl:           constants.API_BASE_URL[config.Env],
-		privateKey:        privateKey,
-		address:           utils.AddressFromPrivateKey(privateKey),
-		SubAccountId:      int64(config.SubAccountId),
-		HttpClient:        utils.GetHTTPClient(config.Timeout),
-		verifyingContract: constants.CIAO_ADDRESS[config.Env],
+		env:              config.Env,
+		baseUrl:          constants.API_BASE_URL[config.Env],
+		privateKeyString: privateKeyString,
+		addressString:    utils.AddressFromPrivateKey(privateKeyString),
+		privateKey:       privateKey,
+		address:          common.HexToAddress(utils.AddressFromPrivateKey(privateKeyString)),
+		ciao:             common.HexToAddress(constants.CIAO_ADDRESS[config.Env]),
+		usdb:             common.HexToAddress(constants.USDB_ADDRESS[config.Env]),
 		domain: apitypes.TypedDataDomain{
 			Name:              constants.DOMAIN_NAME,
 			Version:           constants.DOMAIN_VERSION,
 			ChainId:           constants.CHAIN_ID[config.Env],
 			VerifyingContract: constants.VERIFIER_ADDRESS[config.Env],
 		},
-	}
+		SubAccountId: int64(config.SubAccountId),
+		HttpClient:   utils.GetHTTPClient(10 * time.Second),
+		EthClient:    client,
+	}, nil
 }
 
 // Get24hrPriceChangeStatistics returns 24 hour rolling window price change statistics.
@@ -219,7 +250,7 @@ func (go100XClient *Go100XAPIClient) approveRevokeSigner(params *types.ApproveRe
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.privateKey,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_APPROVE_SIGNER,
 		&struct {
 			Account        string `json:"account"`
@@ -228,7 +259,7 @@ func (go100XClient *Go100XAPIClient) approveRevokeSigner(params *types.ApproveRe
 			IsApproved     bool   `json:"isApproved"`
 			Nonce          string `json:"nonce"`
 		}{
-			Account:        go100XClient.address,
+			Account:        go100XClient.addressString,
 			SubAccountId:   strconv.FormatInt(go100XClient.SubAccountId, 10),
 			ApprovedSigner: params.ApprovedSigner,
 			IsApproved:     isApproved,
@@ -251,7 +282,7 @@ func (go100XClient *Go100XAPIClient) approveRevokeSigner(params *types.ApproveRe
 			Nonce          int64
 			IsApproved     bool
 		}{
-			Account:        go100XClient.address,
+			Account:        go100XClient.addressString,
 			SubAccountId:   go100XClient.SubAccountId,
 			ApprovedSigner: params.ApprovedSigner,
 			Nonce:          params.Nonce,
@@ -267,18 +298,65 @@ func (go100XClient *Go100XAPIClient) approveRevokeSigner(params *types.ApproveRe
 	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
-// TODO
 // Withdraw USDB from 100x account.
-// func Withdraw(c *types.Client100x) (string, error) {
+func (go100XClient *Go100XAPIClient) Withdraw(params *types.WithdrawRequest) (*http.Response, error) {
+	// Generate EIP712 signature.
+	signature, err := utils.SignMessage(
+		go100XClient.domain,
+		go100XClient.privateKeyString,
+		constants.PRIMARY_TYPE_WITHDRAW,
+		&struct {
+			Account      string `json:"account"`
+			SubAccountId string `json:"subAccountId"`
+			Asset        string `json:"asset"`
+			Quantity     string `json:"quantity"`
+			Nonce        string `json:"nonce"`
+		}{
+			Account:      go100XClient.addressString,
+			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Asset:        constants.USDB_ADDRESS[go100XClient.env],
+			Quantity:     params.Quantity,
+			Nonce:        strconv.FormatInt(params.Nonce, 10),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
 
-// }
+	// Create HTTP request.
+	request, err := utils.CreateHTTPRequestWithBody(
+		http.MethodPost,
+		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_WITHDRAW),
+		&struct {
+			Account      string
+			SubAccountId int64
+			Asset        string
+			Quantity     string
+			Nonce        int64
+			Signature    string
+		}{
+			Account:      go100XClient.addressString,
+			SubAccountId: go100XClient.SubAccountId,
+			Asset:        constants.USDB_ADDRESS[go100XClient.env],
+			Quantity:     params.Quantity,
+			Nonce:        params.Nonce,
+			Signature:    signature,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send HTTP request and return result.
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+}
 
 // NewOrder creates a new order on the `SubAccount`.
 func (go100XClient *Go100XAPIClient) NewOrder(params *types.NewOrderRequest) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.privateKey,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_ORDER,
 		&struct {
 			Account      string `json:"account"`
@@ -292,7 +370,7 @@ func (go100XClient *Go100XAPIClient) NewOrder(params *types.NewOrderRequest) (*h
 			Quantity     string `json:"quantity"`
 			Nonce        string `json:"nonce"`
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
 			ProductId:    strconv.FormatInt(params.Product.Id, 10),
 			IsBuy:        params.IsBuy,
@@ -325,7 +403,7 @@ func (go100XClient *Go100XAPIClient) NewOrder(params *types.NewOrderRequest) (*h
 			Nonce        int64
 			Signature    string
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
 			ProductId:    params.Product.Id,
 			IsBuy:        params.IsBuy,
@@ -351,7 +429,7 @@ func (go100XClient *Go100XAPIClient) CancelOrderAndReplace(params *types.CancelO
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.privateKey,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_ORDER,
 		&struct {
 			Account      string `json:"account"`
@@ -365,7 +443,7 @@ func (go100XClient *Go100XAPIClient) CancelOrderAndReplace(params *types.CancelO
 			Quantity     string `json:"quantity"`
 			Nonce        string `json:"nonce"`
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
 			ProductId:    strconv.FormatInt(params.NewOrder.Product.Id, 10),
 			IsBuy:        params.NewOrder.IsBuy,
@@ -403,7 +481,7 @@ func (go100XClient *Go100XAPIClient) CancelOrderAndReplace(params *types.CancelO
 				Nonce        int64
 				Signature    string
 			}{
-				Account:      go100XClient.address,
+				Account:      go100XClient.addressString,
 				SubAccountId: go100XClient.SubAccountId,
 				ProductId:    params.NewOrder.Product.Id,
 				IsBuy:        params.NewOrder.IsBuy,
@@ -430,7 +508,7 @@ func (go100XClient *Go100XAPIClient) CancelOrder(params *types.CancelOrderReques
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.privateKey,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_CANCEL_ORDER,
 		&struct {
 			Account      string `json:"account"`
@@ -438,7 +516,7 @@ func (go100XClient *Go100XAPIClient) CancelOrder(params *types.CancelOrderReques
 			ProductId    string `json:"productId"`
 			OrderId      string `json:"orderId"`
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
 			ProductId:    strconv.FormatInt(params.Product.Id, 10),
 			OrderId:      params.IdToCancel,
@@ -459,7 +537,7 @@ func (go100XClient *Go100XAPIClient) CancelOrder(params *types.CancelOrderReques
 			OrderId      string
 			Signature    string
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
 			ProductId:    params.Product.Id,
 			OrderId:      params.IdToCancel,
@@ -479,14 +557,14 @@ func (go100XClient *Go100XAPIClient) CancelAllOpenOrders(product *types.Product)
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.privateKey,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_CANCEL_ORDERS,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 			ProductId    string `json:"productId"`
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
 			ProductId:    strconv.FormatInt(product.Id, 10),
 		},
@@ -505,7 +583,7 @@ func (go100XClient *Go100XAPIClient) CancelAllOpenOrders(product *types.Product)
 			ProductId    int64
 			Signature    string
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
 			ProductId:    product.Id,
 			Signature:    signature,
@@ -524,13 +602,13 @@ func (go100XClient *Go100XAPIClient) GetSpotBalances() (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.privateKey,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
 		},
 	)
@@ -550,7 +628,7 @@ func (go100XClient *Go100XAPIClient) GetSpotBalances() (*http.Response, error) {
 
 	// Add query parameters and URL encode HTTP request.
 	query := request.URL.Query()
-	query.Add("account", go100XClient.address)
+	query.Add("account", go100XClient.addressString)
 	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
 	query.Add("signature", signature)
 	request.URL.RawQuery = query.Encode()
@@ -564,13 +642,13 @@ func (go100XClient *Go100XAPIClient) GetPerpetualPosition(product *types.Product
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.privateKey,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
 		},
 	)
@@ -590,7 +668,7 @@ func (go100XClient *Go100XAPIClient) GetPerpetualPosition(product *types.Product
 
 	// Add query parameters and URL encode HTTP request.
 	query := request.URL.Query()
-	query.Add("account", go100XClient.address)
+	query.Add("account", go100XClient.addressString)
 	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
 	query.Add("symbol", product.Symbol)
 	query.Add("signature", signature)
@@ -605,13 +683,13 @@ func (go100XClient *Go100XAPIClient) ListApprovedSigners() (*http.Response, erro
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.privateKey,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
 		},
 	)
@@ -631,7 +709,7 @@ func (go100XClient *Go100XAPIClient) ListApprovedSigners() (*http.Response, erro
 
 	// Add query parameters and URL encode HTTP request.
 	query := request.URL.Query()
-	query.Add("account", go100XClient.address)
+	query.Add("account", go100XClient.addressString)
 	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
 	query.Add("signature", signature)
 	request.URL.RawQuery = query.Encode()
@@ -645,13 +723,13 @@ func (go100XClient *Go100XAPIClient) ListOpenOrders(product *types.Product) (*ht
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.privateKey,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
 		},
 	)
@@ -671,7 +749,7 @@ func (go100XClient *Go100XAPIClient) ListOpenOrders(product *types.Product) (*ht
 
 	// Add query parameters and URL encode HTTP request.
 	query := request.URL.Query()
-	query.Add("account", go100XClient.address)
+	query.Add("account", go100XClient.addressString)
 	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
 	query.Add("symbol", product.Symbol)
 	query.Add("signature", signature)
@@ -686,13 +764,13 @@ func (go100XClient *Go100XAPIClient) ListOrders(params *types.ListOrdersRequest)
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.privateKey,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
 		},
 	)
@@ -712,7 +790,7 @@ func (go100XClient *Go100XAPIClient) ListOrders(params *types.ListOrdersRequest)
 
 	// Add query parameters and URL encode HTTP request.
 	query := request.URL.Query()
-	query.Add("account", go100XClient.address)
+	query.Add("account", go100XClient.addressString)
 	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
 	query.Add("symbol", params.Product.Symbol)
 	for _, id := range params.Ids {
@@ -723,4 +801,71 @@ func (go100XClient *Go100XAPIClient) ListOrders(params *types.ListOrdersRequest)
 
 	// Send HTTP request and return result.
 	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+}
+
+// ApproveUSDB approves 100x to spend USDB on your behalf.
+func (go100XClient *Go100XAPIClient) ApproveUSDB(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
+	// Parse ABI
+	parsedABI, _ := abi.JSON(strings.NewReader(constants.ERC20_ABI))
+
+	// Pack transaction data
+	data, _ := parsedABI.Pack("approve", go100XClient.ciao, amount)
+
+	// Get transaction parameters
+	nonce, gasPrice, chainID, gasLimit, err := utils.GetTransactionParams(ctx, go100XClient.EthClient, go100XClient.privateKey, &go100XClient.address, &go100XClient.usdb, &data)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new transaction
+	tx := geth_types.NewTransaction(nonce, go100XClient.usdb, big.NewInt(0), gasLimit, gasPrice, data)
+
+	// Sign transaction
+	signedTx, _ := geth_types.SignTx(tx, geth_types.NewEIP155Signer(chainID), go100XClient.privateKey)
+
+	// Send transaction
+	err = go100XClient.EthClient.SendTransaction(ctx, signedTx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send transaction: %v", err)
+	}
+
+	return signedTx, nil
+}
+
+// DepositUSDB sends USDB to 100x.
+func (go100XClient *Go100XAPIClient) DepositUSDB(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
+	// Parse ABI
+	parsedABI, _ := abi.JSON(strings.NewReader(constants.CIAO_ABI))
+
+	// Pack transaction data
+	data, _ := parsedABI.Pack("deposit", go100XClient.address, uint8(go100XClient.SubAccountId), amount, go100XClient.usdb)
+
+	// Get transaction parameters
+	nonce, gasPrice, chainID, gasLimit, err := utils.GetTransactionParams(ctx, go100XClient.EthClient, go100XClient.privateKey, &go100XClient.address, &go100XClient.ciao, &data)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new transaction
+	tx := geth_types.NewTransaction(nonce, go100XClient.ciao, big.NewInt(0), gasLimit, gasPrice, data)
+
+	// Sign transaction
+	signedTx, _ := geth_types.SignTx(tx, geth_types.NewEIP155Signer(chainID), go100XClient.privateKey)
+
+	// Send transaction
+	err = go100XClient.EthClient.SendTransaction(ctx, signedTx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send transaction: %v", err)
+	}
+
+	return signedTx, nil
+}
+
+// WaitTransaction waits for a transaction to be mined and returns its receipt.
+func (go100XClient *Go100XAPIClient) WaitTransaction(ctx context.Context, transaction *geth_types.Transaction) (*geth_types.Receipt, error) {
+	receipt, err := bind.WaitMined(ctx, go100XClient.EthClient, transaction)
+	if err != nil {
+		return nil, err
+	}
+	return receipt, nil
 }

@@ -8,7 +8,7 @@ import (
 )
 
 // SendRPCRequest send a RPC request via Websocket connection and returns any error.
-func SendRPCRequest(connection types.WSConnection, request interface{}) error {
+func SendRPCRequest(connection types.IWSConnection, request interface{}) error {
 	// Marshal request into JSON.
 	body, err := json.Marshal(request)
 	if err != nil {

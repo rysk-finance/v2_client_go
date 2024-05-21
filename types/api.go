@@ -19,6 +19,11 @@ type ApproveRevokeSignerRequest struct {
 	Nonce          int64  // The nonce. Suggest using the current UNIX timestamp in milliseconds.
 }
 
+type WithdrawRequest struct {
+	Quantity string // Quantity in wei (e18).
+	Nonce    int64  // The nonce. Suggest using the current UNIX timestamp in milliseconds.
+}
+
 type NewOrderRequest struct {
 	Product     *Product    // The product. Can be `constants.PRODUCT_ETH_PERP`, `constants.PRODUCT_BTC_PERP` or `constants.PRODUCT_BLAST_PERP`.
 	IsBuy       bool        // Whether the account is buying or selling.

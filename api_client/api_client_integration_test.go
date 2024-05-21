@@ -1,6 +1,7 @@
 package api_client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,17 +29,20 @@ type ApiClientIntegrationTestSuite struct {
 
 func (s *ApiClientIntegrationTestSuite) SetupSuite() {
 	if err := godotenv.Load(); err != nil {
-		fmt.Println("Error loading .env file:", err)
+		fmt.Println("[TestMain] Error loading .env file:", err)
 		return
 	}
-
-	s.Go100XApiClient = NewGo100XAPIClient(&Go100XAPIClientConfiguration{
+	apiClient, _ := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
-		Timeout:      10 * time.Second,
-		SubAccountId: 1,
+		SubAccountId: 0,
 	})
+	s.Go100XApiClient = apiClient
+}
+
+func (s *ApiClientIntegrationTestSuite) SetupTest() {
+	time.Sleep(100 * time.Millisecond)
 }
 
 func TestRunSuiteIntegration_ApiClientIntegrationTestSuite(t *testing.T) {
@@ -139,6 +143,16 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_RevokeSigner() {
 	verifyValidJSONResponse(s.T(), res)
 }
 
+func (s *ApiClientIntegrationTestSuite) TestIntegration_Withdraw() {
+	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
+		Quantity: new(big.Int).Mul(big.NewInt(100), big.NewInt(params.Ether)).String(),
+		Nonce:    time.Now().UnixMilli(),
+	})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
+}
+
 func (s *ApiClientIntegrationTestSuite) TestIntegration_NewOrder() {
 	// Limit buy 1 ETH for 3300 USDB, valid for 1 day
 	res, err := s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
@@ -229,6 +243,40 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrders() {
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
+}
+
+func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveUSDB() {
+	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), new(big.Int).Mul(big.NewInt(10000), big.NewInt(params.Ether)))
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), transaction)
+}
+
+func (s *ApiClientIntegrationTestSuite) TestIntegration_DepositUSDB() {
+	transaction, err := s.Go100XApiClient.DepositUSDB(context.Background(), new(big.Int).Mul(big.NewInt(100), big.NewInt(params.Ether)))
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), transaction)
+}
+
+func (s *ApiClientIntegrationTestSuite) TestIntegration_WaitTransactionApproveUSDB() {
+	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), new(big.Int).Mul(big.NewInt(10000), big.NewInt(params.Ether)))
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), transaction)
+
+	receipt, err := s.Go100XApiClient.WaitTransaction(context.Background(), transaction)
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), receipt)
+	require.Equal(s.T(), uint64(1), receipt.Status)
+}
+
+func (s *ApiClientIntegrationTestSuite) TestIntegration_WaitTransactionDepositUSDB() {
+	transaction, err := s.Go100XApiClient.DepositUSDB(context.Background(), new(big.Int).Mul(big.NewInt(100), big.NewInt(params.Ether)))
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), transaction)
+
+	receipt, err := s.Go100XApiClient.WaitTransaction(context.Background(), transaction)
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), receipt)
+	require.Equal(s.T(), uint64(1), receipt.Status)
 }
 
 func verifyValidJSONResponse(t *testing.T, response *http.Response) {
