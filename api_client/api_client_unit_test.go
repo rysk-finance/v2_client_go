@@ -41,7 +41,7 @@ type ApiClientUnitTestSuite struct {
 
 func (s *ApiClientUnitTestSuite) SetupSuite() {
 	if err := godotenv.Load(); err != nil {
-		fmt.Println("[TestMain] Error loading .env file:", err)
+		fmt.Println("ApiClientUnitTestSuite.SetupSuite: Error loading .env file:", err)
 		return
 	}
 	apiClient, _ := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
