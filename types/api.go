@@ -46,6 +46,9 @@ type CancelOrderRequest struct {
 }
 
 type ListOrdersRequest struct {
-	Product *Product // The product. Can be `constants.PRODUCT_ETH_PERP`, `constants.PRODUCT_BTC_PERP` or `constants.PRODUCT_BLAST_PERP`.
-	Ids     []string // IDs of specific orders you would like to retrieve.
+	Product   *Product // The product. Can be `constants.PRODUCT_ETH_PERP`, `constants.PRODUCT_BTC_PERP` or `constants.PRODUCT_BLAST_PERP`.
+	Ids       []string // IDs of specific orders you would like to retrieve.
+	StartTime int64    // The start time. Ignored for REST api requests.
+	EndTime   int64    // The end time. Ignored for REST api requests.
+	Limit     int64    // The limit. Ignored for REST api requests.
 }
