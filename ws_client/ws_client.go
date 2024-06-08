@@ -2,6 +2,9 @@ package ws_client
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"fmt"
+	"math/big"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,9 +13,15 @@ import (
 	"github.com/eldief/go100x/constants"
 	"github.com/eldief/go100x/types"
 	"github.com/eldief/go100x/utils"
-	"github.com/gorilla/websocket"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	geth_types "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
+	"github.com/gorilla/websocket"
 )
 
 // Go100XAPIClient configuration
@@ -25,62 +34,82 @@ type Go100XWSClientConfiguration struct {
 
 // 100x Websocket client.
 type Go100XWSClient struct {
-	env               types.Environment
-	url               string
-	streamUrl         string
-	privateKey        string
-	address           string
-	SubAccountId      int64
-	Connection        *websocket.Conn
-	Stream            *websocket.Conn
-	verifyingContract string
-	domain            apitypes.TypedDataDomain
+	env              types.Environment
+	rpcUrl           string
+	streamUrl        string
+	privateKeyString string
+	addressString    string
+	privateKey       *ecdsa.PrivateKey
+	address          common.Address
+	ciao             common.Address
+	usdb             common.Address
+	domain           apitypes.TypedDataDomain
+	SubAccountId     int64
+	RPCConnection    *websocket.Conn
+	StreamConnection *websocket.Conn
+	EthClient        types.IEthClient
 }
 
 // NewGo100XWSClient creates a new `Go100XWSClient` instance.
 // Initializes the client with the provided configuration.
-func NewGo100XWSClient(config *Go100XWSClientConfiguration) *Go100XWSClient {
+func NewGo100XWSClient(config *Go100XWSClientConfiguration) (*Go100XWSClient, error) {
 	// Remove '0x' from private key.
-	privateKey := strings.TrimPrefix(config.PrivateKey, "0x")
+	privateKeyString := strings.TrimPrefix(config.PrivateKey, "0x")
+
+	// Get ecdsa.PrivateKey.
+	privateKey, err := crypto.HexToECDSA(privateKeyString)
+	if err != nil {
+		return nil, fmt.Errorf("invalid private key: %v", err)
+	}
+
+	// Instanciate new Ethereum Client.
+	client, err := ethclient.Dial(config.RpcUrl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to the Ethereum client: %v", err)
+	}
 
 	// Create RPC websocket connection.
-	ws, _, err := websocket.DefaultDialer.DialContext(
+	rpcWebsocket, _, err := websocket.DefaultDialer.DialContext(
 		context.Background(),
-		constants.WS_URL[config.Env],
+		constants.WS_RPC_URL[config.Env],
 		http.Header{},
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to connect to RPC websocket: %v", err)
 	}
 
-	// Create stream websocket connection.
-	stream, _, err := websocket.DefaultDialer.DialContext(
+	// Create streamWebsocket websocket connection.
+	streamWebsocket, _, err := websocket.DefaultDialer.DialContext(
 		context.Background(),
 		constants.WS_STREAM_URL[config.Env],
 		http.Header{},
 	)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to connect to stream websocket: %v", err)
 	}
 
 	// Return a new `go100x.Client`.
 	return &Go100XWSClient{
-		env:               config.Env,
-		url:               constants.WS_URL[config.Env],
-		streamUrl:         constants.WS_STREAM_URL[config.Env],
-		privateKey:        privateKey,
-		address:           utils.AddressFromPrivateKey(privateKey),
-		SubAccountId:      int64(config.SubAccountId),
-		Connection:        ws,
-		Stream:            stream,
-		verifyingContract: constants.CIAO_ADDRESS[config.Env],
+		env:              config.Env,
+		rpcUrl:           constants.WS_RPC_URL[config.Env],
+		streamUrl:        constants.WS_STREAM_URL[config.Env],
+		privateKeyString: privateKeyString,
+		addressString:    utils.AddressFromPrivateKey(privateKeyString),
+		address:          common.HexToAddress(utils.AddressFromPrivateKey(privateKeyString)),
+		privateKey:       privateKey,
+		ciao:             common.HexToAddress(constants.CIAO_ADDRESS[config.Env]),
+		usdb:             common.HexToAddress(constants.USDB_ADDRESS[config.Env]),
 		domain: apitypes.TypedDataDomain{
 			Name:              constants.DOMAIN_NAME,
 			Version:           constants.DOMAIN_VERSION,
 			ChainId:           constants.CHAIN_ID[config.Env],
 			VerifyingContract: constants.VERIFIER_ADDRESS[config.Env],
 		},
-	}
+		SubAccountId:     int64(config.SubAccountId),
+		RPCConnection:    rpcWebsocket,
+		StreamConnection: streamWebsocket,
+		EthClient:        client,
+	}, nil
 }
 
 // ListProducts returns the list of products.
@@ -93,7 +122,7 @@ func (go100XClient *Go100XWSClient) ListProducts(messageId string) error {
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // GetProduct returns details for a specific product.
@@ -111,7 +140,7 @@ func (go100XClient *Go100XWSClient) GetProduct(messageId string, product *types.
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // ServerTime tests connectivity and get the current server time.
@@ -124,7 +153,7 @@ func (go100XClient *Go100XWSClient) ServerTime(messageId string) error {
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // Login authenticate a websocket connection.
@@ -136,14 +165,14 @@ func (go100XClient *Go100XWSClient) Login(messageId string) error {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.privateKey,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_LOGIN_MESSAGE,
 		&struct {
 			Account   string `json:"account"`
 			Message   string `json:"message"`
 			Timestamp uint64 `json:"timestamp"`
 		}{
-			Account:   go100XClient.address,
+			Account:   go100XClient.addressString,
 			Message:   "I want to log into 100x.finance",
 			Timestamp: timestamp,
 		},
@@ -163,7 +192,7 @@ func (go100XClient *Go100XWSClient) Login(messageId string) error {
 			Timestamp uint64 `json:"timestamp"`
 			Signature string `json:"signature"`
 		}{
-			Account:   go100XClient.address,
+			Account:   go100XClient.addressString,
 			Message:   "I want to log into 100x.finance",
 			Timestamp: timestamp,
 			Signature: signature,
@@ -171,7 +200,7 @@ func (go100XClient *Go100XWSClient) Login(messageId string) error {
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // SessionStatus checks active session and return the address currently authenticated.
@@ -184,7 +213,7 @@ func (go100XClient *Go100XWSClient) SessionStatus(messageId string) error {
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // SubAccountList lists all sub accounts.
@@ -197,7 +226,7 @@ func (go100XClient *Go100XWSClient) SubAccountList(messageId string) error {
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // Withdraw withdraws USDB from 100x account.
@@ -205,7 +234,7 @@ func (go100XClient *Go100XWSClient) Withdraw(messageId string, params *types.Wit
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.address,
+		go100XClient.addressString,
 		constants.PRIMARY_TYPE_WITHDRAW,
 		&struct {
 			Account      string `json:"account"`
@@ -214,7 +243,7 @@ func (go100XClient *Go100XWSClient) Withdraw(messageId string, params *types.Wit
 			Quantity     string `json:"quantity"`
 			Nonce        string `json:"nonce"`
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
 			Asset:        constants.USDB_ADDRESS[go100XClient.env],
 			Quantity:     params.Quantity,
@@ -238,7 +267,7 @@ func (go100XClient *Go100XWSClient) Withdraw(messageId string, params *types.Wit
 			Nonce        int64
 			Signature    string
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
 			Asset:        constants.USDB_ADDRESS[go100XClient.env],
 			Quantity:     params.Quantity,
@@ -248,7 +277,7 @@ func (go100XClient *Go100XWSClient) Withdraw(messageId string, params *types.Wit
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // ApproveSigner approves a Signer for a `SubAccount`.
@@ -266,7 +295,7 @@ func (go100XClient *Go100XWSClient) approveRevokeSigner(messageId string, params
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.privateKey,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_APPROVE_SIGNER,
 		&struct {
 			Account        string `json:"account"`
@@ -275,7 +304,7 @@ func (go100XClient *Go100XWSClient) approveRevokeSigner(messageId string, params
 			IsApproved     bool   `json:"isApproved"`
 			Nonce          string `json:"nonce"`
 		}{
-			Account:        go100XClient.address,
+			Account:        go100XClient.addressString,
 			SubAccountId:   strconv.FormatInt(go100XClient.SubAccountId, 10),
 			ApprovedSigner: params.ApprovedSigner,
 			IsApproved:     isApproved,
@@ -299,7 +328,7 @@ func (go100XClient *Go100XWSClient) approveRevokeSigner(messageId string, params
 			Nonce        int64
 			Signature    string
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
 			Signer:       params.ApprovedSigner,
 			Approved:     isApproved,
@@ -309,7 +338,7 @@ func (go100XClient *Go100XWSClient) approveRevokeSigner(messageId string, params
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // NewOrder creates a new order on the SubAccount.
@@ -317,7 +346,7 @@ func (go100XClient *Go100XWSClient) NewOrder(messageId string, params *types.New
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.address,
+		go100XClient.addressString,
 		constants.PRIMARY_TYPE_ORDER,
 		&struct {
 			Account      string `json:"account"`
@@ -331,7 +360,7 @@ func (go100XClient *Go100XWSClient) NewOrder(messageId string, params *types.New
 			Quantity     string `json:"quantity"`
 			Nonce        string `json:"nonce"`
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
 			ProductId:    strconv.FormatInt(params.Product.Id, 10),
 			IsBuy:        params.IsBuy,
@@ -365,7 +394,7 @@ func (go100XClient *Go100XWSClient) NewOrder(messageId string, params *types.New
 			Nonce        int64
 			Signature    string
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
 			ProductId:    params.Product.Id,
 			IsBuy:        params.IsBuy,
@@ -380,7 +409,7 @@ func (go100XClient *Go100XWSClient) NewOrder(messageId string, params *types.New
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // ListOpenOrders returns all open orders on the `SubAccount` per product.
@@ -399,7 +428,7 @@ func (go100XClient *Go100XWSClient) ListOpenOrders(messageId string, params *typ
 			EndTime      int64
 			Limit        int64
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
 			ProductId:    params.Product.Id,
 			OrderIds:     params.Ids,
@@ -410,7 +439,7 @@ func (go100XClient *Go100XWSClient) ListOpenOrders(messageId string, params *typ
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // CancelOrder cancel an active order on the `SubAccount`.
@@ -418,7 +447,7 @@ func (go100XClient *Go100XWSClient) CancelOrder(messageId string, params *types.
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.address,
+		go100XClient.addressString,
 		constants.PRIMARY_TYPE_CANCEL_ORDER,
 		&struct {
 			Account      string `json:"account"`
@@ -426,7 +455,7 @@ func (go100XClient *Go100XWSClient) CancelOrder(messageId string, params *types.
 			ProductId    string `json:"productId"`
 			OrderId      string `json:"orderId"`
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
 			ProductId:    strconv.FormatInt(params.Product.Id, 10),
 			OrderId:      params.IdToCancel,
@@ -448,7 +477,7 @@ func (go100XClient *Go100XWSClient) CancelOrder(messageId string, params *types.
 			OrderId      string
 			Signature    string
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
 			ProductId:    params.Product.Id,
 			OrderId:      params.IdToCancel,
@@ -457,7 +486,7 @@ func (go100XClient *Go100XWSClient) CancelOrder(messageId string, params *types.
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // CancelAllOpenOrders cancel all active orders on a product.
@@ -473,14 +502,14 @@ func (go100XClient *Go100XWSClient) CancelAllOpenOrders(messageId string, produc
 			SubAccountId int64
 			ProductId    int64
 		}{
-			Account:      go100XClient.address,
+			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
 			ProductId:    product.Id,
 		},
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // OrderBook returns bids and asks for a market.
@@ -502,7 +531,7 @@ func (go100XClient *Go100XWSClient) OrderBook(messageId string, params *types.Or
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // GetPerpetualPosition returns perpetual position for sub account id.
@@ -523,14 +552,14 @@ func (go100XClient *Go100XWSClient) GetPerpetualPosition(messageId string, produ
 			SubAccount int64
 			ProductIds []int64
 		}{
-			Account:    go100XClient.address,
+			Account:    go100XClient.addressString,
 			SubAccount: go100XClient.SubAccountId,
 			ProductIds: productIds,
 		},
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // GetPerpetualPosition returns perpetual position for sub account id.
@@ -545,14 +574,14 @@ func (go100XClient *Go100XWSClient) GetSpotBalances(messageId string) error {
 			SubAccount int64
 			Assets     []string
 		}{
-			Account:    go100XClient.address,
+			Account:    go100XClient.addressString,
 			SubAccount: go100XClient.SubAccountId,
 			Assets:     []string{constants.USDB_ADDRESS[go100XClient.env]},
 		},
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // AccountUpdates returns immediate order updates on placement, execution, cancellation,
@@ -567,13 +596,13 @@ func (go100XClient *Go100XWSClient) AccountUpdates(messageId string) error {
 			Account    string
 			SubAccount int64
 		}{
-			Account:    go100XClient.address,
+			Account:    go100XClient.addressString,
 			SubAccount: go100XClient.SubAccountId,
 		},
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Connection, request)
+	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
 // SubscribeAggregateTrades subscribes to aggregate trade (aggTrade) that represents one or more individual trades.
@@ -605,7 +634,7 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribeAggregateTrades(messageI
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Stream, request)
+	return utils.SendRPCRequest(go100XClient.StreamConnection, request)
 }
 
 // SubscribeSingleTrades subscribes to Trade Streams that push raw trade information; each trade has a unique buyer and seller.
@@ -635,7 +664,7 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribeSingleTrades(messageId s
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Stream, request)
+	return utils.SendRPCRequest(go100XClient.StreamConnection, request)
 }
 
 // SubscribeKlineData subscribes to Kline/Candlestick Stream that push updates to the current klines/candlestick every second.
@@ -667,7 +696,7 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribeKlineData(messageId stri
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Stream, request)
+	return utils.SendRPCRequest(go100XClient.StreamConnection, request)
 }
 
 // SubscribePartialBookDepth subscribes to top {limit} bids and asks, pushed every second.
@@ -703,7 +732,7 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribePartialBookDepth(message
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Stream, request)
+	return utils.SendRPCRequest(go100XClient.StreamConnection, request)
 }
 
 // SubscribeSingleTrades subscribes to 24hr rolling window mini-ticker statistics.
@@ -737,5 +766,43 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribe24hrPriceChangeStatistic
 	}
 
 	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.Stream, request)
+	return utils.SendRPCRequest(go100XClient.StreamConnection, request)
+}
+
+// DepositUSDB sends USDB to 100x.
+func (go100XClient *Go100XWSClient) DepositUSDB(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
+	// Parse ABI
+	parsedABI, _ := abi.JSON(strings.NewReader(constants.CIAO_ABI))
+
+	// Pack transaction data
+	data, _ := parsedABI.Pack("deposit", go100XClient.addressString, uint8(go100XClient.SubAccountId), amount, go100XClient.usdb)
+
+	// Get transaction parameters
+	nonce, gasPrice, chainID, gasLimit, err := utils.GetTransactionParams(ctx, go100XClient.EthClient, go100XClient.privateKey, &go100XClient.address, &go100XClient.ciao, &data)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new transaction
+	tx := geth_types.NewTransaction(nonce, go100XClient.ciao, big.NewInt(0), gasLimit, gasPrice, data)
+
+	// Sign transaction
+	signedTx, _ := geth_types.SignTx(tx, geth_types.NewEIP155Signer(chainID), go100XClient.privateKey)
+
+	// Send transaction
+	err = go100XClient.EthClient.SendTransaction(ctx, signedTx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send transaction: %v", err)
+	}
+
+	return signedTx, nil
+}
+
+// WaitTransaction waits for a transaction to be mined and returns its receipt.
+func (go100XClient *Go100XWSClient) WaitTransaction(ctx context.Context, transaction *geth_types.Transaction) (*geth_types.Receipt, error) {
+	receipt, err := bind.WaitMined(ctx, go100XClient.EthClient, transaction)
+	if err != nil {
+		return nil, err
+	}
+	return receipt, nil
 }

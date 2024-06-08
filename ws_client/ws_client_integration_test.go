@@ -25,8 +25,7 @@ func (s *WsClientIntegrationTestSuite) SetupSuite() {
 		fmt.Println("[TestMain] Error loading .env file:", err)
 		return
 	}
-
-	s.Go100XWSClient = NewGo100XWSClient(&Go100XWSClientConfiguration{
+	s.Go100XWSClient, _ = NewGo100XWSClient(&Go100XWSClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
@@ -43,7 +42,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegraton_Login() {
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.Connection.ReadMessage()
+		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
