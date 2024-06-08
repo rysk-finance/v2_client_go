@@ -27,10 +27,12 @@ type Go100XWSClientConfiguration struct {
 type Go100XWSClient struct {
 	env               types.Environment
 	url               string
+	streamUrl         string
 	privateKey        string
 	address           string
 	SubAccountId      int64
 	Connection        *websocket.Conn
+	Stream            *websocket.Conn
 	verifyingContract string
 	domain            apitypes.TypedDataDomain
 }
@@ -41,9 +43,20 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) *Go100XWSClient {
 	// Remove '0x' from private key.
 	privateKey := strings.TrimPrefix(config.PrivateKey, "0x")
 
-	websocket, _, err := websocket.DefaultDialer.DialContext(
+	// Create RPC websocket connection.
+	ws, _, err := websocket.DefaultDialer.DialContext(
 		context.Background(),
 		constants.WS_URL[config.Env],
+		http.Header{},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create stream websocket connection.
+	stream, _, err := websocket.DefaultDialer.DialContext(
+		context.Background(),
+		constants.WS_STREAM_URL[config.Env],
 		http.Header{},
 	)
 	if err != nil {
@@ -54,10 +67,12 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) *Go100XWSClient {
 	return &Go100XWSClient{
 		env:               config.Env,
 		url:               constants.WS_URL[config.Env],
+		streamUrl:         constants.WS_STREAM_URL[config.Env],
 		privateKey:        privateKey,
 		address:           utils.AddressFromPrivateKey(privateKey),
 		SubAccountId:      int64(config.SubAccountId),
-		Connection:        websocket,
+		Connection:        ws,
+		Stream:            stream,
 		verifyingContract: constants.CIAO_ADDRESS[config.Env],
 		domain: apitypes.TypedDataDomain{
 			Name:              constants.DOMAIN_NAME,
@@ -559,4 +574,168 @@ func (go100XClient *Go100XWSClient) AccountUpdates(messageId string) error {
 
 	// Send RPC request.
 	return utils.SendRPCRequest(go100XClient.Connection, request)
+}
+
+// SubscribeAggregateTrades subscribes to aggregate trade (aggTrade) that represents one or more individual trades.
+// Trades that fill at the same time, from the same taker order.
+func (go100XClient *Go100XWSClient) SubscribeAggregateTrades(messageId string, products []*types.Product) error {
+	return go100XClient.subscribeUnsubscribeAggregateTrades(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products)
+}
+
+// UnubscribeAggregateTrades unsubscribes from aggregate trade (aggTrade) that represents one or more individual trades.
+// Trades that fill at the same time, from the same taker order.
+func (go100XClient *Go100XWSClient) UnubscribeAggregateTrades(messageId string, products []*types.Product) error {
+	return go100XClient.subscribeUnsubscribeAggregateTrades(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products)
+}
+
+// subscribeUnsubscribeAggregateTrades subscribe or unsubscribe to/from aggregate trade (aggTrade).
+func (go100XClient *Go100XWSClient) subscribeUnsubscribeAggregateTrades(messageId string, method types.WSMethod, products []*types.Product) error {
+	// Create @aggTrade params.
+	var params []string
+	for _, product := range products {
+		params = append(params, product.Symbol+"@aggTrade")
+	}
+
+	// Generate RPC request.
+	request := &types.WebsocketRequest{
+		JsonRPC: constants.WS_JSON_RPC,
+		ID:      messageId,
+		Method:  method,
+		Params:  params,
+	}
+
+	// Send RPC request.
+	return utils.SendRPCRequest(go100XClient.Stream, request)
+}
+
+// SubscribeSingleTrades subscribes to Trade Streams that push raw trade information; each trade has a unique buyer and seller.
+func (go100XClient *Go100XWSClient) SubscribeSingleTrades(messageId string, products []*types.Product) error {
+	return go100XClient.subscribeUnsubscribeSingleTrades(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products)
+}
+
+// UnubscribeSingleTrades unsubscribes from Trade Streams that push raw trade information; each trade has a unique buyer and seller.
+func (go100XClient *Go100XWSClient) UnubscribeSingleTrades(messageId string, products []*types.Product) error {
+	return go100XClient.subscribeUnsubscribeSingleTrades(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products)
+}
+
+// subscribeUnsubscribeSingleTrades subscribe or unsubscribe to/from Trade Streams.
+func (go100XClient *Go100XWSClient) subscribeUnsubscribeSingleTrades(messageId string, method types.WSMethod, products []*types.Product) error {
+	// Create @trade params.
+	var params []string
+	for _, product := range products {
+		params = append(params, product.Symbol+"@trade")
+	}
+
+	// Generate RPC request.
+	request := &types.WebsocketRequest{
+		JsonRPC: constants.WS_JSON_RPC,
+		ID:      messageId,
+		Method:  method,
+		Params:  params,
+	}
+
+	// Send RPC request.
+	return utils.SendRPCRequest(go100XClient.Stream, request)
+}
+
+// SubscribeKlineData subscribes to Kline/Candlestick Stream that push updates to the current klines/candlestick every second.
+func (go100XClient *Go100XWSClient) SubscribeKlineData(messageId string, products []*types.Product, intervals []*types.Interval) error {
+	return go100XClient.subscribeUnsubscribeKlineData(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products, intervals)
+}
+
+// SubscribeKlineData unsubscribes from Kline/Candlestick Stream that push updates to the current klines/candlestick every second.
+func (go100XClient *Go100XWSClient) UnsubscribeKlineData(messageId string, products []*types.Product, intervals []*types.Interval) error {
+	return go100XClient.subscribeUnsubscribeKlineData(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products, intervals)
+}
+
+// subscribeUnsubscribeKlineData subscribe or unsubscribe to/from Kline/Candlestick Stream.
+func (go100XClient *Go100XWSClient) subscribeUnsubscribeKlineData(messageId string, method types.WSMethod, products []*types.Product, intervals []*types.Interval) error {
+	// Create @klines params.
+	var params []string
+	for _, product := range products {
+		for _, interval := range intervals {
+			params = append(params, product.Symbol+"@klines_"+string(*interval))
+		}
+	}
+
+	// Generate RPC request.
+	request := &types.WebsocketRequest{
+		JsonRPC: constants.WS_JSON_RPC,
+		ID:      messageId,
+		Method:  method,
+		Params:  params,
+	}
+
+	// Send RPC request.
+	return utils.SendRPCRequest(go100XClient.Stream, request)
+}
+
+// SubscribePartialBookDepth subscribes to top {limit} bids and asks, pushed every second.
+// Prices are rounded by 1e{granularity}.
+func (go100XClient *Go100XWSClient) SubscribePartialBookDepth(messageId string, products []*types.Product, limits []*types.Limit, granularities []int64) error {
+	return go100XClient.subscribeUnsubscribePartialBookDepth(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products, limits, granularities)
+}
+
+// UnubscribePartialBookDepth unsubscribes from top {limit} bids and asks, pushed every second.
+// Prices are rounded by 1e{granularity}.
+func (go100XClient *Go100XWSClient) UnubscribePartialBookDepth(messageId string, products []*types.Product, limits []*types.Limit, granularities []int64) error {
+	return go100XClient.subscribeUnsubscribePartialBookDepth(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products, limits, granularities)
+}
+
+// subscribeUnsubscribeKlineData subscribe or unsubscribe to/from Kline/Candlestick Stream.
+func (go100XClient *Go100XWSClient) subscribeUnsubscribePartialBookDepth(messageId string, method types.WSMethod, products []*types.Product, limits []*types.Limit, granularities []int64) error {
+	// Create @depth params.
+	var params []string
+	for _, product := range products {
+		for _, limit := range limits {
+			for _, granularity := range granularities {
+				params = append(params, product.Symbol+"@depth_"+strconv.FormatInt(int64(*limit), 10)+"_"+strconv.FormatInt(granularity, 10))
+			}
+		}
+	}
+
+	// Generate RPC request.
+	request := &types.WebsocketRequest{
+		JsonRPC: constants.WS_JSON_RPC,
+		ID:      messageId,
+		Method:  method,
+		Params:  params,
+	}
+
+	// Send RPC request.
+	return utils.SendRPCRequest(go100XClient.Stream, request)
+}
+
+// SubscribeSingleTrades subscribes to 24hr rolling window mini-ticker statistics.
+// These are NOT the statistics of the UTC day, but a 24hr rolling window for the previous 24hrs.
+// Pushed out every 5s.
+func (go100XClient *Go100XWSClient) Subscribe24hrPriceChangeStatistics(messageId string, products []*types.Product) error {
+	return go100XClient.subscribeUnsubscribe24hrPriceChangeStatistics(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products)
+}
+
+// SubscribeSingleTrUnubscribe24hrPriceChangeStatisticsades unsubscribes from 24hr rolling window mini-ticker statistics.
+// These are NOT the statistics of the UTC day, but a 24hr rolling window for the previous 24hrs.
+// Pushed out every 5s.
+func (go100XClient *Go100XWSClient) Unubscribe24hrPriceChangeStatistics(messageId string, products []*types.Product) error {
+	return go100XClient.subscribeUnsubscribe24hrPriceChangeStatistics(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products)
+}
+
+// subscribeUnsubscribeSingleTrades subscribe or unsubscribe to/from 24hr rolling window mini-ticker statistics.
+func (go100XClient *Go100XWSClient) subscribeUnsubscribe24hrPriceChangeStatistics(messageId string, method types.WSMethod, products []*types.Product) error {
+	// Create @ticker params.
+	var params []string
+	for _, product := range products {
+		params = append(params, product.Symbol+"@ticker")
+	}
+
+	// Generate RPC request.
+	request := &types.WebsocketRequest{
+		JsonRPC: constants.WS_JSON_RPC,
+		ID:      messageId,
+		Method:  method,
+		Params:  params,
+	}
+
+	// Send RPC request.
+	return utils.SendRPCRequest(go100XClient.Stream, request)
 }
