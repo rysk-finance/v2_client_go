@@ -126,7 +126,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ServerTime() {
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveSigner() {
 	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-		Nonce:          time.Now().UnixMilli(),
+		Nonce:          time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
@@ -136,7 +136,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveSigner() {
 func (s *ApiClientIntegrationTestSuite) TestIntegration_RevokeSigner() {
 	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-		Nonce:          time.Now().UnixMilli(),
+		Nonce:          time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
@@ -146,7 +146,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_RevokeSigner() {
 func (s *ApiClientIntegrationTestSuite) TestIntegration_Withdraw() {
 	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
 		Quantity: new(big.Int).Mul(big.NewInt(100), big.NewInt(params.Ether)).String(),
-		Nonce:    time.Now().UnixMilli(),
+		Nonce:    time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
@@ -163,7 +163,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_NewOrder() {
 		Price:       new(big.Int).Mul(big.NewInt(3300), big.NewInt(params.Ether)).String(),
 		Quantity:    new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether)).String(),
 		Expiration:  time.Now().Add(24 * time.Hour).UnixMilli(),
-		Nonce:       time.Now().UnixMilli(),
+		Nonce:       time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 400, res.StatusCode)
@@ -182,7 +182,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() 
 			Price:       new(big.Int).Mul(big.NewInt(3300), big.NewInt(params.Ether)).String(),
 			Quantity:    new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether)).String(),
 			Expiration:  time.Now().Add(24 * time.Hour).UnixMilli(),
-			Nonce:       time.Now().UnixMilli(),
+			Nonce:       time.Now().UnixMicro(),
 		},
 	})
 	require.NoError(s.T(), err)

@@ -569,7 +569,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner_BadAddress() {
 
 	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "",
-		Nonce:          time.Now().UnixMilli(),
+		Nonce:          time.Now().UnixMicro(),
 	})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
@@ -585,14 +585,14 @@ func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner_BadBaseURL() {
 
 	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-		Nonce:          time.Now().UnixMilli(),
+		Nonce:          time.Now().UnixMicro(),
 	})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
 
 func (s *ApiClientUnitTestSuite) TestUnit_Revokeigner() {
-	nonce := time.Now().UnixMilli()
+	nonce := time.Now().UnixMicro()
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		body, err := io.ReadAll(req.Body)
 		require.NoError(s.T(), err)
@@ -640,7 +640,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_RevokeSigner_BadAddress() {
 
 	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "",
-		Nonce:          time.Now().UnixMilli(),
+		Nonce:          time.Now().UnixMicro(),
 	})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
@@ -656,7 +656,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_RevokeSigner_BadBaseURL() {
 
 	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
-		Nonce:          time.Now().UnixMilli(),
+		Nonce:          time.Now().UnixMicro(),
 	})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
@@ -711,7 +711,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_Withdraw_BadAddress() {
 
 	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
 		Quantity: "456",
-		Nonce:    time.Now().UnixMilli(),
+		Nonce:    time.Now().UnixMicro(),
 	})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
@@ -727,14 +727,14 @@ func (s *ApiClientUnitTestSuite) TestUnit_Withdraw_BadBaseURL() {
 
 	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
 		Quantity: "456",
-		Nonce:    time.Now().UnixMilli(),
+		Nonce:    time.Now().UnixMicro(),
 	})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
 
 func (s *ApiClientUnitTestSuite) TestUnit_NewOrder() {
-	nonce := time.Now().UnixMilli()
+	nonce := time.Now().UnixMicro()
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		body, err := io.ReadAll(req.Body)
 		require.NoError(s.T(), err)
@@ -804,7 +804,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewOrder_BadAddress() {
 		Expiration:  1627801200,
 		Price:       "123",
 		Quantity:    "456",
-		Nonce:       time.Now().UnixMilli(),
+		Nonce:       time.Now().UnixMicro(),
 	})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
@@ -826,14 +826,14 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewOrder_BadBaseURL() {
 		Expiration:  1627801200,
 		Price:       "123",
 		Quantity:    "456",
-		Nonce:       time.Now().UnixMilli(),
+		Nonce:       time.Now().UnixMicro(),
 	})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
 
 func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace() {
-	nonce := time.Now().UnixMilli()
+	nonce := time.Now().UnixMicro()
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		body, err := io.ReadAll(req.Body)
 		require.NoError(s.T(), err)
@@ -912,7 +912,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace_BadAddress() {
 			Expiration:  1627801200,
 			Price:       "123",
 			Quantity:    "456",
-			Nonce:       time.Now().UnixMilli(),
+			Nonce:       time.Now().UnixMicro(),
 		},
 	})
 	require.Error(s.T(), err)
@@ -937,7 +937,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace_BadBaseURL() {
 			Expiration:  1627801200,
 			Price:       "123",
 			Quantity:    "456",
-			Nonce:       time.Now().UnixMilli(),
+			Nonce:       time.Now().UnixMicro(),
 		},
 	})
 	require.Error(s.T(), err)
