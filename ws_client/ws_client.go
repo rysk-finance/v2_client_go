@@ -69,24 +69,24 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) (*Go100XWSClient, er
 	}
 
 	// Create RPC websocket connection.
-	rpcWebsocket, _, err := websocket.DefaultDialer.DialContext(
+	rpcWebsocket, _, _ := websocket.DefaultDialer.DialContext(
 		context.Background(),
 		constants.WS_RPC_URL[config.Env],
 		http.Header{},
 	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to RPC websocket: %v", err)
-	}
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to connect to RPC websocket: %v", err)
+	// }
 
 	// Create streamWebsocket websocket connection.
-	streamWebsocket, _, err := websocket.DefaultDialer.DialContext(
+	streamWebsocket, _, _ := websocket.DefaultDialer.DialContext(
 		context.Background(),
 		constants.WS_STREAM_URL[config.Env],
 		http.Header{},
 	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to stream websocket: %v", err)
-	}
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to connect to stream websocket: %v", err)
+	// }
 
 	// Return a new `go100x.Client`.
 	return &Go100XWSClient{
@@ -234,7 +234,7 @@ func (go100XClient *Go100XWSClient) Withdraw(messageId string, params *types.Wit
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.addressString,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_WITHDRAW,
 		&struct {
 			Account      string `json:"account"`
@@ -346,7 +346,7 @@ func (go100XClient *Go100XWSClient) NewOrder(messageId string, params *types.New
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.addressString,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_ORDER,
 		&struct {
 			Account      string `json:"account"`
@@ -447,7 +447,7 @@ func (go100XClient *Go100XWSClient) CancelOrder(messageId string, params *types.
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
-		go100XClient.addressString,
+		go100XClient.privateKeyString,
 		constants.PRIMARY_TYPE_CANCEL_ORDER,
 		&struct {
 			Account      string `json:"account"`

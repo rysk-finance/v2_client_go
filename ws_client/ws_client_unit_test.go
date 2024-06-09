@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/eldief/go100x/constants"
 	"github.com/eldief/go100x/types"
@@ -45,6 +46,7 @@ func (s *WSClientUnitTestSuite) SetupSuite() {
 		RpcUrl:       os.Getenv("RPC_URL"),
 		SubAccountId: 1,
 	})
+	s.Address = utils.AddressFromPrivateKey(s.Go100XWSClient.privateKeyString)
 }
 
 func TestRunSuiteUnit_WsClientUnitTestSuite(t *testing.T) {
@@ -149,7 +151,7 @@ func (s *WSClientUnitTestSuite) TestUnit_ListProducts() {
 			require.Equal(s.T(), "2.0", requestBody.JsonRPC)
 			require.Equal(s.T(), "69420", requestBody.Id)
 			require.Equal(s.T(), string(constants.WS_METHOD_LIST_PRODUCTS), requestBody.Method)
-			require.Empty(s.T(), requestBody.Params)
+			require.Equal(s.T(), "null", string(requestBody.Params))
 		}
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
@@ -164,7 +166,8 @@ func (s *WSClientUnitTestSuite) TestUnit_ListProducts() {
 	s.Go100XWSClient.RPCConnection = rpcWebsocket
 	s.Go100XWSClient.rpcUrl = url
 
-	s.Go100XWSClient.ListProducts("69420")
+	err = s.Go100XWSClient.ListProducts("69420")
+	require.NoError(s.T(), err)
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_GetProduct() {
@@ -211,5 +214,369 @@ func (s *WSClientUnitTestSuite) TestUnit_GetProduct() {
 	s.Go100XWSClient.RPCConnection = rpcWebsocket
 	s.Go100XWSClient.rpcUrl = url
 
-	s.Go100XWSClient.GetProduct("69420", &constants.PRODUCT_ETH_PERP)
+	err = s.Go100XWSClient.GetProduct("69420", &constants.PRODUCT_ETH_PERP)
+	require.NoError(s.T(), err)
+}
+
+func (s *WSClientUnitTestSuite) TestUnit_ServerTime() {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		var upgrader = websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		}
+		conn, _ := upgrader.Upgrade(w, r, nil)
+		defer conn.Close()
+		for {
+			_, message, _ := conn.ReadMessage()
+
+			var requestBody struct {
+				JsonRPC string          `json:"jsonrpc"`
+				Id      string          `json:"id"`
+				Method  string          `json:"method"`
+				Params  json.RawMessage `json:"params"`
+			}
+			err := json.Unmarshal(message, &requestBody)
+			require.NoError(s.T(), err)
+			require.Equal(s.T(), "2.0", requestBody.JsonRPC)
+			require.Equal(s.T(), "69420", requestBody.Id)
+			require.Equal(s.T(), string(constants.WS_METHOD_SERVER_TIME), requestBody.Method)
+			require.Equal(s.T(), "null", string(requestBody.Params))
+		}
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	url := strings.Replace(mockHttpServer.URL, "http", "ws", 1)
+	defer mockHttpServer.Close()
+	rpcWebsocket, _, err := websocket.DefaultDialer.DialContext(
+		context.Background(),
+		url,
+		http.Header{},
+	)
+	require.NoError(s.T(), err)
+	s.Go100XWSClient.RPCConnection = rpcWebsocket
+	s.Go100XWSClient.rpcUrl = url
+
+	err = s.Go100XWSClient.ServerTime("69420")
+	require.NoError(s.T(), err)
+}
+
+func (s *WSClientUnitTestSuite) TestUnit_Login() {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		var upgrader = websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		}
+		conn, _ := upgrader.Upgrade(w, r, nil)
+		defer conn.Close()
+		for {
+			_, message, _ := conn.ReadMessage()
+
+			var requestBody struct {
+				JsonRPC string          `json:"jsonrpc"`
+				Id      string          `json:"id"`
+				Method  string          `json:"method"`
+				Params  json.RawMessage `json:"params"`
+			}
+			err := json.Unmarshal(message, &requestBody)
+			require.NoError(s.T(), err)
+			require.Equal(s.T(), "2.0", requestBody.JsonRPC)
+			require.Equal(s.T(), "69420", requestBody.Id)
+			require.Equal(s.T(), string(constants.WS_METHOD_LOGIN), requestBody.Method)
+			require.NotEmpty(s.T(), requestBody.Params)
+
+			var params struct {
+				Account   string `json:"account"`
+				Message   string `json:"message"`
+				Timestamp uint64 `json:"timestamp"`
+				Signature string `json:"signature"`
+			}
+			err = json.Unmarshal(requestBody.Params, &params)
+			require.NoError(s.T(), err)
+			require.Equal(s.T(), s.Address, params.Account)
+			require.Equal(s.T(), "I want to log into 100x.finance", params.Message)
+			require.Greater(s.T(), params.Timestamp, uint64(0))
+			require.NotEmpty(s.T(), params.Signature)
+		}
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	url := strings.Replace(mockHttpServer.URL, "http", "ws", 1)
+	defer mockHttpServer.Close()
+	rpcWebsocket, _, err := websocket.DefaultDialer.DialContext(
+		context.Background(),
+		url,
+		http.Header{},
+	)
+	require.NoError(s.T(), err)
+	s.Go100XWSClient.RPCConnection = rpcWebsocket
+	s.Go100XWSClient.rpcUrl = url
+
+	err = s.Go100XWSClient.Login("69420")
+	require.NoError(s.T(), err)
+}
+
+func (s *WSClientUnitTestSuite) TestUnit_SessionStatus() {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		var upgrader = websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		}
+		conn, _ := upgrader.Upgrade(w, r, nil)
+		defer conn.Close()
+		for {
+			_, message, _ := conn.ReadMessage()
+
+			var requestBody struct {
+				JsonRPC string          `json:"jsonrpc"`
+				Id      string          `json:"id"`
+				Method  string          `json:"method"`
+				Params  json.RawMessage `json:"params"`
+			}
+			err := json.Unmarshal(message, &requestBody)
+			require.NoError(s.T(), err)
+			require.Equal(s.T(), "2.0", requestBody.JsonRPC)
+			require.Equal(s.T(), "69420", requestBody.Id)
+			require.Equal(s.T(), string(constants.WS_METHOD_SESSION_STATUS), requestBody.Method)
+			require.Equal(s.T(), "null", string(requestBody.Params))
+		}
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	url := strings.Replace(mockHttpServer.URL, "http", "ws", 1)
+	defer mockHttpServer.Close()
+	rpcWebsocket, _, err := websocket.DefaultDialer.DialContext(
+		context.Background(),
+		url,
+		http.Header{},
+	)
+	require.NoError(s.T(), err)
+	s.Go100XWSClient.RPCConnection = rpcWebsocket
+	s.Go100XWSClient.rpcUrl = url
+
+	err = s.Go100XWSClient.SessionStatus("69420")
+	require.NoError(s.T(), err)
+}
+
+func (s *WSClientUnitTestSuite) TestUnit_SubAccountList() {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		var upgrader = websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		}
+		conn, _ := upgrader.Upgrade(w, r, nil)
+		defer conn.Close()
+		for {
+			_, message, _ := conn.ReadMessage()
+
+			var requestBody struct {
+				JsonRPC string          `json:"jsonrpc"`
+				Id      string          `json:"id"`
+				Method  string          `json:"method"`
+				Params  json.RawMessage `json:"params"`
+			}
+			err := json.Unmarshal(message, &requestBody)
+			require.NoError(s.T(), err)
+			require.Equal(s.T(), "2.0", requestBody.JsonRPC)
+			require.Equal(s.T(), "69420", requestBody.Id)
+			require.Equal(s.T(), string(constants.WS_METHOD_SUB_ACCOUNT_LIST), requestBody.Method)
+			require.Equal(s.T(), "null", string(requestBody.Params))
+		}
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	url := strings.Replace(mockHttpServer.URL, "http", "ws", 1)
+	defer mockHttpServer.Close()
+	rpcWebsocket, _, err := websocket.DefaultDialer.DialContext(
+		context.Background(),
+		url,
+		http.Header{},
+	)
+	require.NoError(s.T(), err)
+	s.Go100XWSClient.RPCConnection = rpcWebsocket
+	s.Go100XWSClient.rpcUrl = url
+
+	err = s.Go100XWSClient.SubAccountList("69420")
+	require.NoError(s.T(), err)
+}
+
+func (s *WSClientUnitTestSuite) TestUnit_Withdraw() {
+	nonce := time.Now().UnixMicro()
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		var upgrader = websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		}
+		conn, _ := upgrader.Upgrade(w, r, nil)
+		defer conn.Close()
+		for {
+			_, message, _ := conn.ReadMessage()
+
+			var requestBody struct {
+				JsonRPC string          `json:"jsonrpc"`
+				Id      string          `json:"id"`
+				Method  string          `json:"method"`
+				Params  json.RawMessage `json:"params"`
+			}
+			err := json.Unmarshal(message, &requestBody)
+			require.NoError(s.T(), err)
+			require.Equal(s.T(), "2.0", requestBody.JsonRPC)
+			require.Equal(s.T(), "69420", requestBody.Id)
+			require.Equal(s.T(), string(constants.WS_METHOD_WITHDRAW), requestBody.Method)
+			require.NotEmpty(s.T(), requestBody.Params)
+
+			var params struct {
+				Account      string
+				SubAccountId int64
+				Asset        string
+				Quantity     string
+				Nonce        int64
+				Signature    string
+			}
+			err = json.Unmarshal(requestBody.Params, &params)
+			require.NoError(s.T(), err)
+			require.Equal(s.T(), s.Address, params.Account)
+			require.Equal(s.T(), int64(1), params.SubAccountId)
+			require.Equal(s.T(), constants.USDB_ADDRESS[constants.ENVIRONMENT_TESTNET], params.Asset)
+			require.Equal(s.T(), "123", params.Quantity)
+			require.Equal(s.T(), nonce, params.Nonce)
+			require.NotEmpty(s.T(), params.Signature)
+		}
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	url := strings.Replace(mockHttpServer.URL, "http", "ws", 1)
+	defer mockHttpServer.Close()
+	rpcWebsocket, _, err := websocket.DefaultDialer.DialContext(
+		context.Background(),
+		url,
+		http.Header{},
+	)
+	require.NoError(s.T(), err)
+	s.Go100XWSClient.RPCConnection = rpcWebsocket
+	s.Go100XWSClient.rpcUrl = url
+
+	err = s.Go100XWSClient.Withdraw("69420", &types.WithdrawRequest{
+		Quantity: "123",
+		Nonce:    nonce,
+	})
+	require.NoError(s.T(), err)
+}
+
+func (s *WSClientUnitTestSuite) TestUnit_ApproveSigner() {
+	nonce := time.Now().UnixMicro()
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		var upgrader = websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		}
+		conn, _ := upgrader.Upgrade(w, r, nil)
+		defer conn.Close()
+		for {
+			_, message, _ := conn.ReadMessage()
+
+			var requestBody struct {
+				JsonRPC string          `json:"jsonrpc"`
+				Id      string          `json:"id"`
+				Method  string          `json:"method"`
+				Params  json.RawMessage `json:"params"`
+			}
+			err := json.Unmarshal(message, &requestBody)
+			require.NoError(s.T(), err)
+			require.Equal(s.T(), "2.0", requestBody.JsonRPC)
+			require.Equal(s.T(), "69420", requestBody.Id)
+			require.Equal(s.T(), string(constants.WS_METHOD_APPROVE_REVOKE_SIGNER), requestBody.Method)
+			require.NotEmpty(s.T(), requestBody.Params)
+
+			var params struct {
+				Account      string
+				SubAccountId int64
+				Signer       string
+				Approved     bool
+				Nonce        int64
+				Signature    string
+			}
+			err = json.Unmarshal(requestBody.Params, &params)
+			require.NoError(s.T(), err)
+			require.Equal(s.T(), s.Address, params.Account)
+			require.Equal(s.T(), int64(1), params.SubAccountId)
+			require.Equal(s.T(), s.Address, params.Signer)
+			require.True(s.T(), params.Approved)
+			require.Equal(s.T(), nonce, params.Nonce)
+			require.NotEmpty(s.T(), params.Signature)
+		}
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	url := strings.Replace(mockHttpServer.URL, "http", "ws", 1)
+	defer mockHttpServer.Close()
+	rpcWebsocket, _, err := websocket.DefaultDialer.DialContext(
+		context.Background(),
+		url,
+		http.Header{},
+	)
+	require.NoError(s.T(), err)
+	s.Go100XWSClient.RPCConnection = rpcWebsocket
+	s.Go100XWSClient.rpcUrl = url
+
+	err = s.Go100XWSClient.ApproveSigner("69420", &types.ApproveRevokeSignerRequest{
+		ApprovedSigner: s.Address,
+		Nonce:          nonce,
+	})
+	require.NoError(s.T(), err)
+}
+
+func (s *WSClientUnitTestSuite) TestUnit_RevokeSigner() {
+	nonce := time.Now().UnixMicro()
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		var upgrader = websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		}
+		conn, _ := upgrader.Upgrade(w, r, nil)
+		defer conn.Close()
+		for {
+			_, message, _ := conn.ReadMessage()
+
+			var requestBody struct {
+				JsonRPC string          `json:"jsonrpc"`
+				Id      string          `json:"id"`
+				Method  string          `json:"method"`
+				Params  json.RawMessage `json:"params"`
+			}
+			err := json.Unmarshal(message, &requestBody)
+			require.NoError(s.T(), err)
+			require.Equal(s.T(), "2.0", requestBody.JsonRPC)
+			require.Equal(s.T(), "69420", requestBody.Id)
+			require.Equal(s.T(), string(constants.WS_METHOD_APPROVE_REVOKE_SIGNER), requestBody.Method)
+			require.NotEmpty(s.T(), requestBody.Params)
+
+			var params struct {
+				Account      string
+				SubAccountId int64
+				Signer       string
+				Approved     bool
+				Nonce        int64
+				Signature    string
+			}
+			err = json.Unmarshal(requestBody.Params, &params)
+			require.NoError(s.T(), err)
+			require.Equal(s.T(), s.Address, params.Account)
+			require.Equal(s.T(), int64(1), params.SubAccountId)
+			require.Equal(s.T(), s.Address, params.Signer)
+			require.False(s.T(), params.Approved)
+			require.Equal(s.T(), nonce, params.Nonce)
+			require.NotEmpty(s.T(), params.Signature)
+		}
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	url := strings.Replace(mockHttpServer.URL, "http", "ws", 1)
+	defer mockHttpServer.Close()
+	rpcWebsocket, _, err := websocket.DefaultDialer.DialContext(
+		context.Background(),
+		url,
+		http.Header{},
+	)
+	require.NoError(s.T(), err)
+	s.Go100XWSClient.RPCConnection = rpcWebsocket
+	s.Go100XWSClient.rpcUrl = url
+
+	err = s.Go100XWSClient.RevokeSigner("69420", &types.ApproveRevokeSignerRequest{
+		ApprovedSigner: s.Address,
+		Nonce:          nonce,
+	})
+	require.NoError(s.T(), err)
 }
