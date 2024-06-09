@@ -35,7 +35,6 @@ type ApiClientUnitTestSuite struct {
 	BaseUrl         string
 	RpcUrl          string
 	Go100XApiClient *Go100XAPIClient
-	MockHTTPServer  *httptest.Server
 	EthClient       types.IEthClient
 }
 
@@ -132,9 +131,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_Get24hrPriceChangeStatistics_NoProduct
 		require.Equal(s.T(), http.MethodGet, req.Method)
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&types.Product{})
 	require.Nil(s.T(), err, "[TestUnit_Get24hrPriceChangeStatistics_NoProduct] Error: %v", err)
@@ -152,9 +151,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_Get24hrPriceChangeStatistics_WithProdu
 		require.Equal(s.T(), http.MethodGet, req.Method)
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&constants.PRODUCT_BLAST_PERP)
 	require.NoError(s.T(), err)
@@ -165,9 +164,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_Get24hrPriceChangeStatistics_BadBaseUR
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&constants.PRODUCT_BLAST_PERP)
 	require.Error(s.T(), err)
@@ -184,9 +183,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetProduct() {
 		require.Equal(s.T(), http.MethodGet, req.Method)
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetProduct(constants.PRODUCT_BLAST_PERP.Symbol)
 	require.NoError(s.T(), err)
@@ -197,9 +196,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetProduct_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetProduct(constants.PRODUCT_BLAST_PERP.Symbol)
 	require.Error(s.T(), err)
@@ -216,9 +215,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetProductById() {
 		require.Equal(s.T(), http.MethodGet, req.Method)
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetProductById(constants.PRODUCT_BLAST_PERP.Id)
 	require.NoError(s.T(), err)
@@ -229,9 +228,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetProductById_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetProductById(constants.PRODUCT_BLAST_PERP.Id)
 	require.Error(s.T(), err)
@@ -249,9 +248,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData() {
 		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
 		Product: &constants.PRODUCT_BLAST_PERP,
@@ -272,9 +271,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithInterval() {
 		require.Equal(s.T(), string(constants.INTERVAL_15M), req.URL.Query().Get("interval"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
 		Product:  &constants.PRODUCT_BLAST_PERP,
@@ -296,9 +295,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithStartTime() {
 		require.Equal(s.T(), strconv.FormatInt(123, 10), req.URL.Query().Get("startTime"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
 		Product:   &constants.PRODUCT_BLAST_PERP,
@@ -320,9 +319,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithEndTime() {
 		require.Equal(s.T(), strconv.FormatInt(123, 10), req.URL.Query().Get("endTime"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
 		Product: &constants.PRODUCT_BLAST_PERP,
@@ -344,9 +343,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithLimit() {
 		require.Equal(s.T(), strconv.FormatInt(123, 10), req.URL.Query().Get("limit"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
 		Product: &constants.PRODUCT_BLAST_PERP,
@@ -360,9 +359,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
 		Product: &constants.PRODUCT_BLAST_PERP,
@@ -381,9 +380,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListProducts() {
 		require.Equal(s.T(), http.MethodGet, req.Method)
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ListProducts()
 	require.NoError(s.T(), err)
@@ -394,9 +393,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListProducts_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ListProducts()
 	require.Error(s.T(), err)
@@ -414,9 +413,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_OrderBook() {
 		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
 		Product: &constants.PRODUCT_BLAST_PERP,
@@ -437,9 +436,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_OrderBook_WithGranularity() {
 		require.Equal(s.T(), strconv.FormatInt(1, 10), req.URL.Query().Get("granularity"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
 		Product:     &constants.PRODUCT_BLAST_PERP,
@@ -461,9 +460,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_OrderBook_WithLimit() {
 		require.Equal(s.T(), strconv.FormatInt(5, 10), req.URL.Query().Get("limit"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
 		Product: &constants.PRODUCT_BLAST_PERP,
@@ -477,9 +476,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_OrderBook_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
 		Product: &constants.PRODUCT_BLAST_PERP,
@@ -498,9 +497,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ServerTime() {
 		require.Equal(s.T(), http.MethodGet, req.Method)
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ServerTime()
 	require.NoError(s.T(), err)
@@ -511,9 +510,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ServerTime_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ServerTime()
 	require.Error(s.T(), err)
@@ -548,9 +547,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner() {
 		require.NotEmpty(s.T(), requestBody.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
@@ -564,8 +563,8 @@ func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner_BadAddress() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "",
@@ -579,9 +578,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
@@ -619,9 +618,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_Revokeigner() {
 		require.NotEmpty(s.T(), requestBody.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
@@ -635,8 +634,8 @@ func (s *ApiClientUnitTestSuite) TestUnit_RevokeSigner_BadAddress() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "",
@@ -650,9 +649,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_RevokeSigner_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
@@ -689,9 +688,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_Withdraw() {
 		require.NotEmpty(s.T(), requestBody.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
 		Quantity: "456",
@@ -705,9 +704,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_Withdraw_BadAddress() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.addressString = ""
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
 		Quantity: "456",
@@ -721,9 +720,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_Withdraw_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
 		Quantity: "456",
@@ -770,9 +769,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewOrder() {
 		require.NotEmpty(s.T(), requestBody.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
 		Product:     &constants.PRODUCT_BLAST_PERP,
@@ -792,9 +791,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewOrder_BadAddress() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.addressString = ""
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
 		Product:     &constants.PRODUCT_BLAST_PERP,
@@ -814,9 +813,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewOrder_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
 		Product:     &constants.PRODUCT_BLAST_PERP,
@@ -873,9 +872,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace() {
 		require.NotEmpty(s.T(), requestBody.NewOrder.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
 		IdToCancel: "order123",
@@ -898,9 +897,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace_BadAddress() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.addressString = ""
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
 		IdToCancel: "order123",
@@ -923,9 +922,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
 		IdToCancel: "order123",
@@ -968,9 +967,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrder() {
 		require.NotEmpty(s.T(), requestBody.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
 		Product:    &types.Product{Id: 1006},
@@ -984,9 +983,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrder_BadAddress() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.addressString = ""
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
 		Product:    &types.Product{Id: 1006},
@@ -1000,9 +999,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrder_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
 		Product:    &types.Product{Id: 1006},
@@ -1034,9 +1033,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelAllOpenOrders() {
 		require.NotEmpty(s.T(), requestBody.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	product := &types.Product{Id: 1006}
 	res, err := s.Go100XApiClient.CancelAllOpenOrders(product)
@@ -1048,9 +1047,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelAllOpenOrders_BadAddress() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.addressString = ""
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	product := &types.Product{Id: 1006}
 	res, err := s.Go100XApiClient.CancelAllOpenOrders(product)
@@ -1062,9 +1061,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelAllOpenOrders_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	product := &types.Product{Id: 1006}
 	res, err := s.Go100XApiClient.CancelAllOpenOrders(product)
@@ -1081,9 +1080,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetSpotBalances() {
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetSpotBalances()
 	require.NoError(s.T(), err)
@@ -1094,9 +1093,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetSpotBalances_BadAddress() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.addressString = ""
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetSpotBalances()
 	require.Error(s.T(), err)
@@ -1107,9 +1106,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetSpotBalances_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetSpotBalances()
 	require.Error(s.T(), err)
@@ -1126,9 +1125,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPosition() {
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetPerpetualPosition(&constants.PRODUCT_BLAST_PERP)
 	require.NoError(s.T(), err)
@@ -1139,9 +1138,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPosition_BadAddress() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.addressString = ""
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetPerpetualPosition(&constants.PRODUCT_BLAST_PERP)
 	require.Error(s.T(), err)
@@ -1152,9 +1151,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPosition_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.GetPerpetualPosition(&constants.PRODUCT_BLAST_PERP)
 	require.Error(s.T(), err)
@@ -1170,9 +1169,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListApprovedSigners() {
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ListApprovedSigners()
 	require.NoError(s.T(), err)
@@ -1183,9 +1182,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListApprovedSigners_BadAddress() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.addressString = ""
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ListApprovedSigners()
 	require.Error(s.T(), err)
@@ -1196,9 +1195,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListApprovedSigners_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ListApprovedSigners()
 	require.Error(s.T(), err)
@@ -1215,9 +1214,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrders() {
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ListOpenOrders(&constants.PRODUCT_BLAST_PERP)
 	require.NoError(s.T(), err)
@@ -1228,9 +1227,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrders_BadAddress() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.addressString = ""
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ListOpenOrders(&constants.PRODUCT_BLAST_PERP)
 	require.Error(s.T(), err)
@@ -1241,9 +1240,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrders_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ListOpenOrders(&constants.PRODUCT_BLAST_PERP)
 	require.Error(s.T(), err)
@@ -1261,9 +1260,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrders() {
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
 		Product: &constants.PRODUCT_BLAST_PERP,
@@ -1285,9 +1284,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrders_MultipleIds() {
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = s.MockHTTPServer.URL
-	defer s.MockHTTPServer.Close()
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
 		Product: &constants.PRODUCT_BLAST_PERP,
@@ -1301,9 +1300,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrders_BadAddress() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.addressString = ""
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
 		Product: &constants.PRODUCT_BLAST_PERP,
@@ -1317,9 +1316,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrders_BadBaseURL() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
-	s.MockHTTPServer = httptest.NewServer(http.HandlerFunc(handler))
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	s.Go100XApiClient.baseUrl = "://invalid-url"
-	defer s.MockHTTPServer.Close()
+	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
 		Product: &constants.PRODUCT_BLAST_PERP,
