@@ -5,18 +5,14 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/eldief/go100x/utils/mocks"
 	"github.com/gorilla/websocket"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
 type WebSocketUnitTestSuite struct {
 	suite.Suite
-}
-
-type MockWebSocketConnection struct {
-	mock.Mock
 }
 
 func (s *WebSocketUnitTestSuite) SetupSuite() {
@@ -26,13 +22,8 @@ func TestRunSuiteUnit_WebSocketUnitTestSuite(t *testing.T) {
 	suite.Run(t, new(WebSocketUnitTestSuite))
 }
 
-func (m *MockWebSocketConnection) WriteMessage(messageType int, data []byte) error {
-	args := m.Called(messageType, data)
-	return args.Error(0)
-}
-
 func (s *WebSocketUnitTestSuite) TestUnit_SendRPCRequest() {
-	mockConnection := new(MockWebSocketConnection)
+	mockConnection := new(mocks.MockWebSocketConnection)
 	request := map[string]interface{}{
 		"method": "example",
 		"params": nil,
@@ -47,7 +38,7 @@ func (s *WebSocketUnitTestSuite) TestUnit_SendRPCRequest() {
 }
 
 func (s *WebSocketUnitTestSuite) TestUnit_SendRPCRequest_MarshalError() {
-	mockConnection := new(MockWebSocketConnection)
+	mockConnection := new(mocks.MockWebSocketConnection)
 	invalidRequest := make(chan int)
 
 	err := SendRPCRequest(mockConnection, invalidRequest)
@@ -55,7 +46,7 @@ func (s *WebSocketUnitTestSuite) TestUnit_SendRPCRequest_MarshalError() {
 }
 
 func (s *WebSocketUnitTestSuite) TestUnit_SendRPCRequest_WriteError() {
-	mockConnection := new(MockWebSocketConnection)
+	mockConnection := new(mocks.MockWebSocketConnection)
 	request := map[string]interface{}{
 		"method": "example",
 		"params": nil,
