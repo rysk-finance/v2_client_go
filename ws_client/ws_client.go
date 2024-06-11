@@ -69,24 +69,24 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) (*Go100XWSClient, er
 	}
 
 	// Create RPC websocket connection.
-	rpcWebsocket, _, _ := websocket.DefaultDialer.DialContext(
+	rpcWebsocket, _, err := websocket.DefaultDialer.DialContext(
 		context.Background(),
 		constants.WS_RPC_URL[config.Env],
 		http.Header{},
 	)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to connect to RPC websocket: %v", err)
-	// }
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to RPC websocket: %v", err)
+	}
 
 	// Create streamWebsocket websocket connection.
-	streamWebsocket, _, _ := websocket.DefaultDialer.DialContext(
+	streamWebsocket, _, err := websocket.DefaultDialer.DialContext(
 		context.Background(),
 		constants.WS_STREAM_URL[config.Env],
 		http.Header{},
 	)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to connect to stream websocket: %v", err)
-	// }
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to stream websocket: %v", err)
+	}
 
 	// Return a new `go100x.Client`.
 	return &Go100XWSClient{
