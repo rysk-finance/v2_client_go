@@ -834,6 +834,15 @@ func (go100XClient *Go100XAPIClient) ApproveUSDB(ctx context.Context, amount *bi
 
 // DepositUSDB sends USDB to 100x.
 func (go100XClient *Go100XAPIClient) DepositUSDB(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
+	// Approve self as signer
+	_, err := go100XClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: go100XClient.addressString,
+		Nonce:          time.Now().UnixMicro(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	// Parse ABI
 	parsedABI, _ := abi.JSON(strings.NewReader(constants.CIAO_ABI))
 

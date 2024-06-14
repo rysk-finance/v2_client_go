@@ -1,3 +1,6 @@
+//go:build !unit
+// +build !unit
+
 package api_client
 
 import (
@@ -8,16 +11,16 @@ import (
 	"math/big"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/eldief/go100x/constants"
 	"github.com/eldief/go100x/types"
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/joho/godotenv"
 )
 
 type ApiClientIntegrationTestSuite struct {
@@ -125,27 +128,86 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ServerTime() {
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveSigner() {
 	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+		ApprovedSigner: s.Go100XApiClient.addressString,
 		Nonce:          time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
+
+	// verify approval granted
+	res, err = s.Go100XApiClient.ListApprovedSigners()
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	require.NoError(s.T(), err)
+
+	var unmarshaled []struct {
+		Account    string
+		Subaccount uint8
+		Signer     string
+		Approved   bool
+	}
+	err = json.Unmarshal(body, &unmarshaled)
+	require.NoError(s.T(), err)
+
+	for _, signer := range unmarshaled {
+		if signer.Account == strings.ToLower(s.Go100XApiClient.addressString) &&
+			signer.Subaccount == uint8(s.Go100XApiClient.SubAccountId) &&
+			signer.Signer == strings.ToLower(s.Go100XApiClient.addressString) {
+			require.True(s.T(), signer.Approved)
+			return
+		}
+	}
+	require.FailNow(s.T(), "Signer not found")
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_RevokeSigner() {
 	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+		ApprovedSigner: s.Go100XApiClient.addressString,
 		Nonce:          time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
+
+	// verify approval revoked
+	res, err = s.Go100XApiClient.ListApprovedSigners()
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	require.NoError(s.T(), err)
+
+	var unmarshaled []struct {
+		Account    string
+		Subaccount uint8
+		Signer     string
+		Approved   bool
+	}
+	err = json.Unmarshal(body, &unmarshaled)
+	require.NoError(s.T(), err)
+
+	for _, signer := range unmarshaled {
+		if signer.Account == strings.ToLower(s.Go100XApiClient.addressString) &&
+			signer.Subaccount == uint8(s.Go100XApiClient.SubAccountId) &&
+			signer.Signer == strings.ToLower(s.Go100XApiClient.addressString) {
+			require.False(s.T(), signer.Approved)
+			return
+		}
+	}
+	require.FailNow(s.T(), "Signer not found")
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_Withdraw() {
+	s.TestIntegration_ApproveDepositUSDBWaitingTxs()
+
+	// withdraw
 	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
-		Quantity: new(big.Int).Mul(big.NewInt(100), big.NewInt(params.Ether)).String(),
+		Quantity: constants.E20.String(),
 		Nonce:    time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
@@ -154,49 +216,261 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_Withdraw() {
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_NewOrder() {
-	// Limit buy 1 ETH for 3300 USDB, valid for 1 day
-	res, err := s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
+	s.TestIntegration_ApproveDepositUSDBWaitingTxs()
+
+	// get market price
+	request, err := http.NewRequest(
+		http.MethodGet,
+		"https://api.coinbase.com/v2/exchange-rates?currency=ETH",
+		nil,
+	)
+	require.NoError(s.T(), err)
+
+	res, err := http.DefaultClient.Do(request)
+	require.NoError(s.T(), err)
+
+	body, err := io.ReadAll(res.Body)
+	require.NoError(s.T(), err)
+
+	var priceUnmarshaled struct {
+		Data struct {
+			Currency string
+			Rates    struct {
+				USD string
+			}
+		}
+	}
+	err = json.Unmarshal(body, &priceUnmarshaled)
+	require.NoError(s.T(), err)
+
+	priceFloat, err := strconv.ParseFloat(priceUnmarshaled.Data.Rates.USD, 64)
+	require.NoError(s.T(), err)
+
+	price := new(big.Int)
+	new(big.Float).Mul(big.NewFloat(priceFloat), new(big.Float).SetFloat64(1e18)).Int(price)
+
+	// get product increment
+	res, err = s.Go100XApiClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+
+	var productUnmarshaled struct {
+		Increment string
+	}
+	body, err = io.ReadAll(res.Body)
+	require.NoError(s.T(), err)
+
+	err = json.Unmarshal(body, &productUnmarshaled)
+	require.NoError(s.T(), err)
+
+	increment := new(big.Int)
+	_, ok := increment.SetString(productUnmarshaled.Increment, 10)
+	require.True(s.T(), ok)
+
+	// adjust price with increment
+	remainder := new(big.Int).Mod(price, increment)
+	adjustedPrice := new(big.Int).Sub(price, remainder)
+
+	// Limit buy 0.01 ETH for market price, valid for 1 day
+	res, err = s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
 		Product:     &constants.PRODUCT_ETH_PERP,
 		IsBuy:       true,
 		OrderType:   constants.ORDER_TYPE_LIMIT,
 		TimeInForce: constants.TIME_IN_FORCE_GTC,
-		Price:       new(big.Int).Mul(big.NewInt(3300), big.NewInt(params.Ether)).String(),
-		Quantity:    new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether)).String(),
+		Price:       adjustedPrice.String(),
+		Quantity:    constants.E16.String(),
+		Expiration:  time.Now().Add(24 * time.Hour).UnixMilli(),
+		Nonce:       time.Now().UnixMicro(),
+	})
+	verifyValidJSONResponse(s.T(), res)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() {
+	s.TestIntegration_ApproveDepositUSDBWaitingTxs()
+
+	// get market price
+	req, err := http.NewRequest(
+		http.MethodGet,
+		"https://api.coinbase.com/v2/exchange-rates?currency=ETH",
+		nil,
+	)
+	require.NoError(s.T(), err)
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(s.T(), err)
+
+	body, err := io.ReadAll(res.Body)
+	require.NoError(s.T(), err)
+	defer res.Body.Close()
+
+	var unmarshaled struct {
+		Data struct {
+			Currency string
+			Rates    struct {
+				USD string
+			}
+		}
+	}
+	err = json.Unmarshal(body, &unmarshaled)
+	require.NoError(s.T(), err)
+
+	priceFloat, err := strconv.ParseFloat(unmarshaled.Data.Rates.USD, 64)
+	require.NoError(s.T(), err)
+
+	price := new(big.Int)
+	new(big.Float).Mul(big.NewFloat(priceFloat), new(big.Float).SetFloat64(1e18)).Int(price)
+	price = new(big.Int).Mul(new(big.Int).Div(price, big.NewInt(100)), big.NewInt(110))
+
+	// get product increment
+	res, err = s.Go100XApiClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+
+	var productUnmarshaled struct {
+		Increment string
+	}
+	body, err = io.ReadAll(res.Body)
+	require.NoError(s.T(), err)
+
+	err = json.Unmarshal(body, &productUnmarshaled)
+	require.NoError(s.T(), err)
+
+	increment := new(big.Int)
+	_, ok := increment.SetString(productUnmarshaled.Increment, 10)
+	require.True(s.T(), ok)
+
+	// adjust price with increment
+	remainder := new(big.Int).Mod(price, increment)
+	adjustedPrice := new(big.Int).Sub(price, remainder)
+
+	// new order at 10% market premium
+	res, err = s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
+		Product:     &constants.PRODUCT_ETH_PERP,
+		IsBuy:       true,
+		OrderType:   constants.ORDER_TYPE_LIMIT,
+		TimeInForce: constants.TIME_IN_FORCE_GTC,
+		Price:       adjustedPrice.String(),
+		Quantity:    constants.E16.String(),
 		Expiration:  time.Now().Add(24 * time.Hour).UnixMilli(),
 		Nonce:       time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), 400, res.StatusCode)
-	verifyValidJSONResponse(s.T(), res)
-}
+	require.Equal(s.T(), 200, res.StatusCode)
 
-func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() {
-	res, err := s.Go100XApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
-		IdToCancel: "1",
-		// Limit buy 1 ETH for 3300 USDB, valid for 1 day
+	body, err = io.ReadAll(res.Body)
+	require.NoError(s.T(), err)
+	fmt.Println(string(body))
+
+	var order struct {
+		ID string `json:"id"`
+	}
+	err = json.Unmarshal(body, &order)
+	require.NoError(s.T(), err)
+
+	// cancel and replace
+	res, err = s.Go100XApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
+		IdToCancel: order.ID,
 		NewOrder: &types.NewOrderRequest{
 			Product:     &constants.PRODUCT_ETH_PERP,
 			IsBuy:       true,
 			OrderType:   constants.ORDER_TYPE_LIMIT_MAKER,
 			TimeInForce: constants.TIME_IN_FORCE_GTC,
-			Price:       new(big.Int).Mul(big.NewInt(3300), big.NewInt(params.Ether)).String(),
-			Quantity:    new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether)).String(),
+			Price:       adjustedPrice.String(),
+			Quantity:    constants.E16.String(),
 			Expiration:  time.Now().Add(24 * time.Hour).UnixMilli(),
 			Nonce:       time.Now().UnixMicro(),
 		},
 	})
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), 404, res.StatusCode)
+	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrder() {
-	res, err := s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
+	s.TestIntegration_ApproveDepositUSDBWaitingTxs()
+
+	// get market price
+	req, err := http.NewRequest(
+		http.MethodGet,
+		"https://api.coinbase.com/v2/exchange-rates?currency=ETH",
+		nil,
+	)
+	require.NoError(s.T(), err)
+
+	res, err := http.DefaultClient.Do(req)
+	require.NoError(s.T(), err)
+
+	body, err := io.ReadAll(res.Body)
+	require.NoError(s.T(), err)
+	defer res.Body.Close()
+
+	var unmarshaled struct {
+		Data struct {
+			Currency string
+			Rates    struct {
+				USD string
+			}
+		}
+	}
+	err = json.Unmarshal(body, &unmarshaled)
+	require.NoError(s.T(), err)
+
+	priceFloat, err := strconv.ParseFloat(unmarshaled.Data.Rates.USD, 64)
+	require.NoError(s.T(), err)
+
+	price := new(big.Int)
+	new(big.Float).Mul(big.NewFloat(priceFloat), new(big.Float).SetFloat64(1e18)).Int(price)
+	price = new(big.Int).Mul(new(big.Int).Div(price, big.NewInt(100)), big.NewInt(110))
+
+	// get product increment
+	res, err = s.Go100XApiClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+
+	var productUnmarshaled struct {
+		Increment string
+	}
+	body, err = io.ReadAll(res.Body)
+	require.NoError(s.T(), err)
+
+	err = json.Unmarshal(body, &productUnmarshaled)
+	require.NoError(s.T(), err)
+
+	increment := new(big.Int)
+	_, ok := increment.SetString(productUnmarshaled.Increment, 10)
+	require.True(s.T(), ok)
+
+	// adjust price with increment
+	remainder := new(big.Int).Mod(price, increment)
+	adjustedPrice := new(big.Int).Sub(price, remainder)
+
+	// new order at 10% market premium
+	res, err = s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
+		Product:     &constants.PRODUCT_ETH_PERP,
+		IsBuy:       true,
+		OrderType:   constants.ORDER_TYPE_LIMIT,
+		TimeInForce: constants.TIME_IN_FORCE_GTC,
+		Price:       adjustedPrice.String(),
+		Quantity:    constants.E16.String(),
+		Expiration:  time.Now().Add(24 * time.Hour).UnixMilli(),
+		Nonce:       time.Now().UnixMicro(),
+	})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+
+	body, err = io.ReadAll(res.Body)
+	require.NoError(s.T(), err)
+	fmt.Println(string(body))
+
+	// cancel order
+	res, err = s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
 		Product:    &constants.PRODUCT_ETH_PERP,
 		IdToCancel: "1",
 	})
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), 404, res.StatusCode)
+	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
@@ -238,27 +512,15 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOpenOrders() {
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrders() {
 	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
 		Product: &constants.PRODUCT_BTC_PERP,
-		Ids:     []string{"A", "B"},
+		Ids:     []string{},
 	})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
-func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveUSDB() {
-	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), new(big.Int).Mul(big.NewInt(10000), big.NewInt(params.Ether)))
-	require.NoError(s.T(), err)
-	require.NotNil(s.T(), transaction)
-}
-
-func (s *ApiClientIntegrationTestSuite) TestIntegration_DepositUSDB() {
-	transaction, err := s.Go100XApiClient.DepositUSDB(context.Background(), new(big.Int).Mul(big.NewInt(100), big.NewInt(params.Ether)))
-	require.NoError(s.T(), err)
-	require.NotNil(s.T(), transaction)
-}
-
-func (s *ApiClientIntegrationTestSuite) TestIntegration_WaitTransactionApproveUSDB() {
-	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), new(big.Int).Mul(big.NewInt(10000), big.NewInt(params.Ether)))
+func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveUSDBWaitingTx() {
+	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), constants.E22)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 
@@ -268,8 +530,8 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_WaitTransactionApproveUS
 	require.Equal(s.T(), uint64(1), receipt.Status)
 }
 
-func (s *ApiClientIntegrationTestSuite) TestIntegration_WaitTransactionDepositUSDB() {
-	transaction, err := s.Go100XApiClient.DepositUSDB(context.Background(), new(big.Int).Mul(big.NewInt(100), big.NewInt(params.Ether)))
+func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveDepositUSDBWaitingTxs() {
+	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), constants.E20)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 
@@ -277,6 +539,43 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_WaitTransactionDepositUS
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), receipt)
 	require.Equal(s.T(), uint64(1), receipt.Status)
+
+	transaction, err = s.Go100XApiClient.DepositUSDB(context.Background(), constants.E20)
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), transaction)
+
+	receipt, err = s.Go100XApiClient.WaitTransaction(context.Background(), transaction)
+	require.NoError(s.T(), err)
+	require.NotNil(s.T(), receipt)
+	require.Equal(s.T(), uint64(1), receipt.Status)
+
+	res, err := s.Go100XApiClient.GetSpotBalances()
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+
+	body, err := io.ReadAll(res.Body)
+	require.NoError(s.T(), err)
+
+	var unmarshaled []struct {
+		Account    string
+		SubAccount int64
+		Quantity   string
+	}
+	err = json.Unmarshal(body, &unmarshaled)
+	require.NoError(s.T(), err)
+	require.NotEmpty(s.T(), unmarshaled)
+
+	for _, balance := range unmarshaled {
+		if balance.Account == strings.ToLower(s.Go100XApiClient.addressString) &&
+			balance.SubAccount == s.Go100XApiClient.SubAccountId {
+			quantity := new(big.Int)
+			quantity, ok := quantity.SetString(balance.Quantity, 10)
+			require.True(s.T(), ok)
+			require.GreaterOrEqual(s.T(), quantity.Cmp(constants.E20), 0)
+			return
+		}
+	}
+	require.FailNow(s.T(), "Balance not found")
 }
 
 func verifyValidJSONResponse(t *testing.T, response *http.Response) {
@@ -289,4 +588,6 @@ func verifyValidJSONResponse(t *testing.T, response *http.Response) {
 	var data interface{}
 	err = json.Unmarshal([]byte(bytesBody), &data)
 	require.NoError(t, err)
+
+	fmt.Println(string(bytesBody))
 }

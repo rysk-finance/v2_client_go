@@ -11,6 +11,10 @@ var (
 		Symbol: "btcperp",
 		Id:     1003,
 	}
+	PRODUCT_SOL_PERP = types.Product{
+		Symbol: "solperp",
+		Id:     1004,
+	}
 	PRODUCT_BLAST_PERP = types.Product{
 		Symbol: "blastperp",
 		Id:     1006,

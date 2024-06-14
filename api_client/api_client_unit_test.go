@@ -1,3 +1,6 @@
+//go:build !integration
+// +build !integration
+
 package api_client
 
 import (
@@ -21,11 +24,10 @@ import (
 	"github.com/eldief/go100x/utils/mocks"
 	geth_types "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/joho/godotenv"
 )
 
 type ApiClientUnitTestSuite struct {
@@ -539,7 +541,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), http.MethodPost, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_APPROVE_REVOKE_SIGNER), req.URL.Path)
-		require.Equal(s.T(), "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", requestBody.ApprovedSigner)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.ApprovedSigner)
 		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
 		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
 		require.Equal(s.T(), nonce, requestBody.Nonce)
@@ -552,7 +554,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner() {
 	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+		ApprovedSigner: s.Go100XApiClient.addressString,
 		Nonce:          nonce,
 	})
 	require.NoError(s.T(), err)
@@ -583,7 +585,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner_BadBaseURL() {
 	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+		ApprovedSigner: s.Go100XApiClient.addressString,
 		Nonce:          time.Now().UnixMicro(),
 	})
 	require.Error(s.T(), err)
@@ -610,7 +612,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_Revokeigner() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), http.MethodPost, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_APPROVE_REVOKE_SIGNER), req.URL.Path)
-		require.Equal(s.T(), "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045", requestBody.ApprovedSigner)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.ApprovedSigner)
 		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
 		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
 		require.Equal(s.T(), nonce, requestBody.Nonce)
@@ -623,7 +625,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_Revokeigner() {
 	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+		ApprovedSigner: s.Go100XApiClient.addressString,
 		Nonce:          nonce,
 	})
 	require.NoError(s.T(), err)
@@ -654,7 +656,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_RevokeSigner_BadBaseURL() {
 	defer mockHttpServer.Close()
 
 	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+		ApprovedSigner: s.Go100XApiClient.addressString,
 		Nonce:          time.Now().UnixMicro(),
 	})
 	require.Error(s.T(), err)
@@ -1381,6 +1383,13 @@ func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDB() {
 	transaction, err := s.Go100XApiClient.DepositUSDB(context.Background(), big.NewInt(1000))
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDB_ErrorApproveSigner() {
+	s.Go100XApiClient.addressString = ""
+	transaction, err := s.Go100XApiClient.DepositUSDB(context.Background(), big.NewInt(1000))
+	require.Error(s.T(), err)
+	require.Nil(s.T(), transaction)
 }
 
 func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDB_ErrorGettingParameters() {

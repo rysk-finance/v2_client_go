@@ -2,6 +2,11 @@ package constants
 
 import "github.com/eldief/go100x/types"
 
+var API_BASE_URL = map[types.Environment]string{
+	ENVIRONMENT_MAINNET: "https://api.100x.finance/v1",
+	ENVIRONMENT_TESTNET: "https://api.staging.100x.finance/v1",
+}
+
 const (
 	API_ENDPOINT_GET_24H_TICKER_PRICE_CHANGE_STATISTICS types.APIEndpoint = "/ticker/24hr"
 	API_ENDPOINT_GET_PRODUCT                            types.APIEndpoint = "/products/"
