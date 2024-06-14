@@ -43,6 +43,8 @@ const (
 )
 
 var (
+	E27 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(1_000_000_000))
+	E26 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(100_000_000))
 	E25 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(10_000_000))
 	E24 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(1_000_000))
 	E23 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(100_000))
@@ -53,4 +55,10 @@ var (
 	E18 = big.NewInt(1e18)
 	E17 = big.NewInt(1e17)
 	E16 = big.NewInt(1e16)
+	E15 = big.NewInt(1e15)
+	E14 = big.NewInt(1e14)
+	E13 = big.NewInt(1e13)
+	E12 = big.NewInt(1e12)
+	E11 = big.NewInt(1e11)
+	E10 = big.NewInt(1e10)
 )
