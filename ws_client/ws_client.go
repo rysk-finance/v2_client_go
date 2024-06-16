@@ -613,7 +613,7 @@ func (go100XClient *Go100XWSClient) SubscribeAggregateTrades(messageId string, p
 
 // UnubscribeAggregateTrades unsubscribes from aggregate trade (aggTrade) that represents one or more individual trades.
 // Trades that fill at the same time, from the same taker order.
-func (go100XClient *Go100XWSClient) UnubscribeAggregateTrades(messageId string, products []*types.Product) error {
+func (go100XClient *Go100XWSClient) UnsubscribeAggregateTrades(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribeAggregateTrades(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products)
 }
 
@@ -668,22 +668,22 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribeSingleTrades(messageId s
 }
 
 // SubscribeKlineData subscribes to Kline/Candlestick Stream that push updates to the current klines/candlestick every second.
-func (go100XClient *Go100XWSClient) SubscribeKlineData(messageId string, products []*types.Product, intervals []*types.Interval) error {
+func (go100XClient *Go100XWSClient) SubscribeKlineData(messageId string, products []*types.Product, intervals []types.Interval) error {
 	return go100XClient.subscribeUnsubscribeKlineData(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products, intervals)
 }
 
 // SubscribeKlineData unsubscribes from Kline/Candlestick Stream that push updates to the current klines/candlestick every second.
-func (go100XClient *Go100XWSClient) UnsubscribeKlineData(messageId string, products []*types.Product, intervals []*types.Interval) error {
+func (go100XClient *Go100XWSClient) UnsubscribeKlineData(messageId string, products []*types.Product, intervals []types.Interval) error {
 	return go100XClient.subscribeUnsubscribeKlineData(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products, intervals)
 }
 
 // subscribeUnsubscribeKlineData subscribe or unsubscribe to/from Kline/Candlestick Stream.
-func (go100XClient *Go100XWSClient) subscribeUnsubscribeKlineData(messageId string, method types.WSMethod, products []*types.Product, intervals []*types.Interval) error {
+func (go100XClient *Go100XWSClient) subscribeUnsubscribeKlineData(messageId string, method types.WSMethod, products []*types.Product, intervals []types.Interval) error {
 	// Create @klines params.
 	var params []string
 	for _, product := range products {
 		for _, interval := range intervals {
-			params = append(params, product.Symbol+"@klines_"+string(*interval))
+			params = append(params, product.Symbol+"@klines_"+string(interval))
 		}
 	}
 
@@ -701,24 +701,24 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribeKlineData(messageId stri
 
 // SubscribePartialBookDepth subscribes to top {limit} bids and asks, pushed every second.
 // Prices are rounded by 1e{granularity}.
-func (go100XClient *Go100XWSClient) SubscribePartialBookDepth(messageId string, products []*types.Product, limits []*types.Limit, granularities []int64) error {
+func (go100XClient *Go100XWSClient) SubscribePartialBookDepth(messageId string, products []*types.Product, limits []types.Limit, granularities []int64) error {
 	return go100XClient.subscribeUnsubscribePartialBookDepth(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products, limits, granularities)
 }
 
 // UnubscribePartialBookDepth unsubscribes from top {limit} bids and asks, pushed every second.
 // Prices are rounded by 1e{granularity}.
-func (go100XClient *Go100XWSClient) UnubscribePartialBookDepth(messageId string, products []*types.Product, limits []*types.Limit, granularities []int64) error {
+func (go100XClient *Go100XWSClient) UnubscribePartialBookDepth(messageId string, products []*types.Product, limits []types.Limit, granularities []int64) error {
 	return go100XClient.subscribeUnsubscribePartialBookDepth(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products, limits, granularities)
 }
 
 // subscribeUnsubscribeKlineData subscribe or unsubscribe to/from Kline/Candlestick Stream.
-func (go100XClient *Go100XWSClient) subscribeUnsubscribePartialBookDepth(messageId string, method types.WSMethod, products []*types.Product, limits []*types.Limit, granularities []int64) error {
+func (go100XClient *Go100XWSClient) subscribeUnsubscribePartialBookDepth(messageId string, method types.WSMethod, products []*types.Product, limits []types.Limit, granularities []int64) error {
 	// Create @depth params.
 	var params []string
 	for _, product := range products {
 		for _, limit := range limits {
 			for _, granularity := range granularities {
-				params = append(params, product.Symbol+"@depth_"+strconv.FormatInt(int64(*limit), 10)+"_"+strconv.FormatInt(granularity, 10))
+				params = append(params, product.Symbol+"@depth_"+strconv.FormatInt(int64(limit), 10)+"_"+strconv.FormatInt(granularity, 10))
 			}
 		}
 	}
@@ -745,7 +745,7 @@ func (go100XClient *Go100XWSClient) Subscribe24hrPriceChangeStatistics(messageId
 // SubscribeSingleTrUnubscribe24hrPriceChangeStatisticsades unsubscribes from 24hr rolling window mini-ticker statistics.
 // These are NOT the statistics of the UTC day, but a 24hr rolling window for the previous 24hrs.
 // Pushed out every 5s.
-func (go100XClient *Go100XWSClient) Unubscribe24hrPriceChangeStatistics(messageId string, products []*types.Product) error {
+func (go100XClient *Go100XWSClient) Unsubscribe24hrPriceChangeStatistics(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribe24hrPriceChangeStatistics(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products)
 }
 
@@ -767,6 +767,35 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribe24hrPriceChangeStatistic
 
 	// Send RPC request.
 	return utils.SendRPCRequest(go100XClient.StreamConnection, request)
+}
+
+// ApproveUSDB approves 100x to spend USDB on your behalf.
+func (go100XClient *Go100XWSClient) ApproveUSDB(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
+	// Parse ABI
+	parsedABI, _ := abi.JSON(strings.NewReader(constants.ERC20_ABI))
+
+	// Pack transaction data
+	data, _ := parsedABI.Pack("approve", go100XClient.ciao, amount)
+
+	// Get transaction parameters
+	nonce, gasPrice, chainID, gasLimit, err := utils.GetTransactionParams(ctx, go100XClient.EthClient, go100XClient.privateKey, &go100XClient.address, &go100XClient.usdb, &data)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a new transaction
+	tx := geth_types.NewTransaction(nonce, go100XClient.usdb, big.NewInt(0), gasLimit, gasPrice, data)
+
+	// Sign transaction
+	signedTx, _ := geth_types.SignTx(tx, geth_types.NewEIP155Signer(chainID), go100XClient.privateKey)
+
+	// Send transaction
+	err = go100XClient.EthClient.SendTransaction(ctx, signedTx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send transaction: %v", err)
+	}
+
+	return signedTx, nil
 }
 
 // DepositUSDB sends USDB to 100x.
