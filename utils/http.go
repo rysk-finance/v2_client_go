@@ -9,9 +9,19 @@ import (
 	"github.com/eldief/go100x/types"
 )
 
-// GetHTTPClient initialize a new `http.Client` with custom `http.Transport` and timeout.
-// Transport is setup with 100 `MaxIdleConns`, 100 `MaxConnsPerHost` and 100 `MaxIdleConnsPerHost`.
-// Timeout can be configured via a `time.Duration` parameter.
+// GetHTTPClient initializes a new `http.Client` with custom `http.Transport` and timeout.
+// The `http.Transport` is configured with:
+//   - 100 `MaxIdleConns`
+//   - 100 `MaxConnsPerHost`
+//   - 100 `MaxIdleConnsPerHost`
+//
+// The timeout for the `http.Client` can be configured via the `time.Duration` parameter.
+//
+// Parameters:
+//   - timeout: Timeout duration for the `http.Client`.
+//
+// Returns:
+//   - *http.Client: Configured HTTP client instance.
 func GetHTTPClient(timeout time.Duration) *http.Client {
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.MaxIdleConns = 100
@@ -25,6 +35,16 @@ func GetHTTPClient(timeout time.Duration) *http.Client {
 }
 
 // CreateHTTPRequestWithBody creates a new HTTP request with a request body.
+//
+// Parameters:
+//   - method: HTTP method (GET, POST, PUT, DELETE, etc.).
+//   - uri: Request URI.
+//   - body: Request body to be included in the HTTP request. It can be a string,
+//     []byte, or any other type that can be marshaled into a valid HTTP request body.
+//
+// Returns:
+//   - *http.Request: Created HTTP request instance.
+//   - error: Any error encountered during request creation.
 func CreateHTTPRequestWithBody(method string, uri string, body interface{}) (*http.Request, error) {
 	// Marshal body into JSON.
 	bodyJSON, err := json.Marshal(body)
@@ -36,7 +56,15 @@ func CreateHTTPRequestWithBody(method string, uri string, body interface{}) (*ht
 	return http.NewRequest(method, uri, bytes.NewBuffer(bodyJSON))
 }
 
-// SendHTTPRequest send HTTP request using a `http.Client` and returns response as string.
+// SendHTTPRequest sends an HTTP request using a provided `http.Client` and returns the response.
+//
+// Parameters:
+//   - c: Custom HTTP client implementing `types.IHTTPClient`.
+//   - req: HTTP request instance to be sent.
+//
+// Returns:
+//   - *http.Response: HTTP response received from the server.
+//   - error: Any error encountered during the HTTP request or response handling.
 func SendHTTPRequest(c types.IHTTPClient, req *http.Request) (*http.Response, error) {
 	// Send request
 	res, err := c.Do(req)

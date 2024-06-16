@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	DOMAIN_NAME    string = "100x"         // `TypedDataDomain` name.
-	DOMAIN_VERSION string = "0.0.0"        // `TypedDataDomain` version.
-	EIP_712_DOMAIN string = "EIP712Domain" // `TypedDataDomain` key.
+	DOMAIN_NAME    string = "100x"
+	DOMAIN_VERSION string = "0.0.0"
+	EIP_712_DOMAIN string = "EIP712Domain"
 
 	PRIMARY_TYPE_LOGIN_MESSAGE         types.PrimaryType = "LoginMessage"
 	PRIMARY_TYPE_ORDER                 types.PrimaryType = "Order"

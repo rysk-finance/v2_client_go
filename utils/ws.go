@@ -7,7 +7,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// SendRPCRequest send a RPC request via Websocket connection and returns any error.
+// SendRPCRequest sends a RPC request via a WebSocket connection and returns any error encountered.
+//
+// Parameters:
+//   - connection: WebSocket connection implementing `types.IWSConnection` interface.
+//   - request: JSON-RPC request payload to be sent over the WebSocket connection.
+//
+// Returns:
+//   - error: Returns an error if there was any issue sending the RPC request.
 func SendRPCRequest(connection types.IWSConnection, request interface{}) error {
 	// Marshal request into JSON.
 	body, err := json.Marshal(request)

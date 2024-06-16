@@ -24,34 +24,42 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Go100XAPIClient configuration
+// Go100XWSClientConfiguration represents configuration settings for the 100x WebSocket client.
 type Go100XWSClientConfiguration struct {
-	Env          types.Environment // `constants.ENVIRONMENT_TESTNET` or `constants.ENVIRONMENT_MAINNET`.
-	PrivateKey   string            // Account private key with or without `0x` prefix.
-	RpcUrl       string            // e.g. `https://sepolia.blast.io` or `https://rpc.blastblockchain.com`.
-	SubAccountId uint8             // ID of the subaccount to use.
+	Env          types.Environment // Env specifies the environment: `constants.ENVIRONMENT_TESTNET` or `constants.ENVIRONMENT_MAINNET`.
+	PrivateKey   string            // PrivateKey is the account private key with or without `0x` prefix.
+	RpcUrl       string            // RpcUrl is the URL for the RPC server, e.g., `https://sepolia.blast.io` or `https://rpc.blastblockchain.com`.
+	SubAccountId uint8             // SubAccountId is the ID of the subaccount to use.
 }
 
-// 100x Websocket client.
+// Go100XWSClient is the WebSocket client for interacting with 100x services.
 type Go100XWSClient struct {
-	env              types.Environment
-	rpcUrl           string
-	streamUrl        string
-	privateKeyString string
-	addressString    string
-	privateKey       *ecdsa.PrivateKey
-	address          common.Address
-	ciao             common.Address
-	usdb             common.Address
-	domain           apitypes.TypedDataDomain
-	SubAccountId     int64
-	RPCConnection    *websocket.Conn
-	StreamConnection *websocket.Conn
-	EthClient        types.IEthClient
+	env              types.Environment        // env is the current environment setting.
+	rpcUrl           string                   // rpcUrl is the RPC server URL.
+	streamUrl        string                   // streamUrl is the WebSocket stream URL.
+	privateKeyString string                   // privateKeyString is the private key string.
+	addressString    string                   // addressString is the Ethereum address string derived from the private key.
+	privateKey       *ecdsa.PrivateKey        // privateKey is the ECDSA private key instance.
+	address          common.Address           // address is the Ethereum address derived from the private key.
+	ciao             common.Address           // ciao is a common address used in the context.
+	usdb             common.Address           // usdb is a common address used in the context.
+	domain           apitypes.TypedDataDomain // domain represents the typed data domain for API requests.
+	SubAccountId     int64                    // SubAccountId is the ID of the subaccount to use.
+	RPCConnection    *websocket.Conn          // RPCConnection is the WebSocket connection for RPC operations.
+	StreamConnection *websocket.Conn          // StreamConnection is the WebSocket connection for streaming operations.
+	EthClient        types.IEthClient         // EthClient is the Ethereum client interface.
 }
 
-// NewGo100XWSClient creates a new `Go100XWSClient` instance.
-// Initializes the client with the provided configuration.
+// NewGo100XWSClient creates a new `Go100XWSClient` instance based on the provided configuration.
+// It initializes and returns a new client that connects to the 100x WebSocket API.
+//
+// Parameters:
+//   - config: A pointer to a `Go100XWSClientConfiguration` struct that contains configuration parameters
+//     such as environment (`types.Environment`), private key (`string`), RPC URL (`string`), and subaccount ID (`uint8`).
+//
+// Returns:
+//   - *Go100XWSClient: A pointer to the initialized `Go100XWSClient` instance.
+//   - error: An error if the client initialization fails.
 func NewGo100XWSClient(config *Go100XWSClientConfiguration) (*Go100XWSClient, error) {
 	// Remove '0x' from private key.
 	privateKeyString := strings.TrimPrefix(config.PrivateKey, "0x")
@@ -112,7 +120,14 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) (*Go100XWSClient, er
 	}, nil
 }
 
-// ListProducts returns the list of products.
+// ListProducts sends a request to retrieve the list of products available on the 100x WebSocket API.
+// It subscribes to the `LIST_PRODUCTS` message identifier to fetch the products.
+//
+// Parameters:
+//   - messageId: The unique identifier for the message.
+//
+// Returns:
+//   - error: An error if the request to fetch the products fails.
 func (go100XClient *Go100XWSClient) ListProducts(messageId string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
@@ -125,7 +140,14 @@ func (go100XClient *Go100XWSClient) ListProducts(messageId string) error {
 	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
-// GetProduct returns details for a specific product.
+// GetProduct sends a request to retrieve details for a specific product using the 100x WebSocket API.
+//
+// Parameters:
+//   - messageId: The unique identifier for the message.
+//   - product: A pointer to the product details structure (types.Product) where the retrieved data will be stored.
+//
+// Returns:
+//   - error: An error if the request to fetch the product details fails.
 func (go100XClient *Go100XWSClient) GetProduct(messageId string, product *types.Product) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
@@ -143,7 +165,14 @@ func (go100XClient *Go100XWSClient) GetProduct(messageId string, product *types.
 	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
-// ServerTime tests connectivity and get the current server time.
+// ServerTime sends a request to test connectivity and retrieve the current server time
+// using the 100x WebSocket API.
+//
+// Parameters:
+//   - messageId: The unique identifier for the message.
+//
+// Returns:
+//   - error: An error if the request to fetch the server time fails.
 func (go100XClient *Go100XWSClient) ServerTime(messageId string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
@@ -156,8 +185,14 @@ func (go100XClient *Go100XWSClient) ServerTime(messageId string) error {
 	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
-// Login authenticate a websocket connection.
+// Login performs authentication for the WebSocket connection.
 // Authentication using signature is required to create and cancel orders, deposit and withdraw.
+//
+// Parameters:
+//   - messageId: The unique identifier for the message.
+//
+// Returns:
+//   - error: An error if the authentication fails.
 func (go100XClient *Go100XWSClient) Login(messageId string) error {
 	// Current timestamp in ms, will be rejected if older than 10s, easiest to send in a time in the future.
 	timestamp := uint64(time.Now().Add(10 * time.Second).UnixMilli())
@@ -203,7 +238,13 @@ func (go100XClient *Go100XWSClient) Login(messageId string) error {
 	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
-// SessionStatus checks active session and return the address currently authenticated.
+// SessionStatus checks the active session and returns the address currently authenticated.
+//
+// Parameters:
+//   - messageId: The unique identifier for the message.
+//
+// Returns:
+//   - error: An error if the session status retrieval fails.
 func (go100XClient *Go100XWSClient) SessionStatus(messageId string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
@@ -216,7 +257,13 @@ func (go100XClient *Go100XWSClient) SessionStatus(messageId string) error {
 	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
-// SubAccountList lists all sub accounts.
+// SubAccountList retrieves a list of all sub-accounts associated with the authenticated account.
+//
+// Parameters:
+//   - messageId: The unique identifier for the message.
+//
+// Returns:
+//   - error: An error if the sub-account list retrieval fails.
 func (go100XClient *Go100XWSClient) SubAccountList(messageId string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
@@ -234,17 +281,39 @@ func (go100XClient *Go100XWSClient) SubAccountList(messageId string) error {
 	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
-// ApproveSigner approves a Signer for a `SubAccount`.
+// ApproveSigner approves a signer for a sub-account.
+//
+// Parameters:
+//   - messageId: The unique identifier for the message.
+//   - params: Approval parameters including the signer details.
+//
+// Returns:
+//   - error: An error if the approval process fails.
 func (go100XClient *Go100XWSClient) ApproveSigner(messageId string, params *types.ApproveRevokeSignerRequest) error {
 	return go100XClient.approveRevokeSigner(messageId, params, true)
 }
 
-// RevokeSigner revokes a Signer for a `SubAccount`.
+// RevokeSigner revokes a signer for a sub-account.
+//
+// Parameters:
+//   - messageId: The unique identifier for the message.
+//   - params: Revocation parameters including the signer details.
+//
+// Returns:
+//   - error: An error if the revocation process fails.
 func (go100XClient *Go100XWSClient) RevokeSigner(messageId string, params *types.ApproveRevokeSignerRequest) error {
 	return go100XClient.approveRevokeSigner(messageId, params, false)
 }
 
-// approveRevokeSigner approves or revoke a signer for a `SubAccount`.
+// approveRevokeSigner approves or revokes a signer for a sub-account.
+//
+// Parameters:
+//   - messageId: The unique identifier for the message.
+//   - params: Approval or revocation parameters, including signer details.
+//   - isApproved: Boolean flag indicating whether to approve or revoke the signer.
+//
+// Returns:
+//   - error: An error if the operation fails.
 func (go100XClient *Go100XWSClient) approveRevokeSigner(messageId string, params *types.ApproveRevokeSignerRequest, isApproved bool) error {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
@@ -296,6 +365,13 @@ func (go100XClient *Go100XWSClient) approveRevokeSigner(messageId string, params
 }
 
 // NewOrder creates a new order on the SubAccount.
+//
+// Parameters:
+//   - messageId: The unique identifier for the message.
+//   - params: A struct containing details for the new order, such as product symbol, order type, quantity, price, etc.
+//
+// Returns:
+//   - error: An error if the operation fails.
 func (go100XClient *Go100XWSClient) NewOrder(messageId string, params *types.NewOrderRequest) error {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
@@ -367,6 +443,13 @@ func (go100XClient *Go100XWSClient) NewOrder(messageId string, params *types.New
 }
 
 // ListOpenOrders returns all open orders on the `SubAccount` per product.
+//
+// Parameters:
+//   - messageId: The unique identifier for the message.
+//   - params: A struct containing parameters to specify the product and additional filtering criteria for the orders.
+//
+// Returns:
+//   - error: An error if the operation fails.
 func (go100XClient *Go100XWSClient) ListOpenOrders(messageId string, params *types.ListOrdersRequest) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
@@ -396,7 +479,14 @@ func (go100XClient *Go100XWSClient) ListOpenOrders(messageId string, params *typ
 	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
-// CancelOrder cancel an active order on the `SubAccount`.
+// CancelOrder cancels an active order on the `SubAccount`.
+//
+// Parameters:
+//   - messageId: The unique identifier for the message.
+//   - params: A struct containing parameters to specify the order to be canceled.
+//
+// Returns:
+//   - error: An error if the operation fails.
 func (go100XClient *Go100XWSClient) CancelOrder(messageId string, params *types.CancelOrderRequest) error {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
@@ -443,7 +533,15 @@ func (go100XClient *Go100XWSClient) CancelOrder(messageId string, params *types.
 	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
-// CancelAllOpenOrders cancel all active orders on a product.
+// CancelAllOpenOrders cancels all active orders on a product for the `SubAccount`.
+//
+// Parameters:
+//   - messageId: The unique identifier for the message.
+//   - product: The product for which all active orders should be canceled.
+//
+// Returns:
+//   - error: An error if the operation fails.
+//
 // Returns number of deleted orders.
 func (go100XClient *Go100XWSClient) CancelAllOpenOrders(messageId string, product *types.Product) error {
 	// Generate RPC request.
@@ -467,6 +565,16 @@ func (go100XClient *Go100XWSClient) CancelAllOpenOrders(messageId string, produc
 }
 
 // OrderBook returns bids and asks for a market.
+//
+// It retrieves the order book data for the specified market based on the provided parameters.
+// The order book includes bids and asks, which represent buy and sell orders respectively.
+//
+// Parameters:
+//   - messageId: A unique identifier for the message.
+//   - params: An OrderBookRequest struct pointer containing parameters such as market ID.
+//
+// Returns:
+//   - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) OrderBook(messageId string, params *types.OrderBookRequest) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
@@ -489,6 +597,13 @@ func (go100XClient *Go100XWSClient) OrderBook(messageId string, params *types.Or
 }
 
 // GetPerpetualPosition returns perpetual position for sub account id.
+//
+// Parameters:
+//   - messageId: A unique identifier for the message.
+//   - products: A slice of Product pointers representing the products for which to retrieve perpetual positions.
+//
+// Returns:
+//   - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) GetPerpetualPosition(messageId string, products []*types.Product) error {
 	// Create ProductIds slice.
 	var productIds []int64
@@ -516,7 +631,14 @@ func (go100XClient *Go100XWSClient) GetPerpetualPosition(messageId string, produ
 	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
-// GetPerpetualPosition returns spot position for sub account id.
+// GetSpotBalances returns spot balances for sub account id.
+//
+// Parameters:
+//   - messageId: A unique identifier for the message.
+//   - assets: A slice of strings representing the assets for which to retrieve spot balances.
+//
+// Returns:
+//   - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) GetSpotBalances(messageId string, assets []string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
@@ -540,6 +662,12 @@ func (go100XClient *Go100XWSClient) GetSpotBalances(messageId string, assets []s
 
 // AccountUpdates returns immediate order updates on placement, execution, cancellation,
 // up to date spot balances and perp positions pushed out every 5s.
+//
+// Parameters:
+//   - messageId: A unique identifier for the message.
+//
+// Returns:
+//   - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) AccountUpdates(messageId string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
@@ -561,17 +689,39 @@ func (go100XClient *Go100XWSClient) AccountUpdates(messageId string) error {
 
 // SubscribeAggregateTrades subscribes to aggregate trade (aggTrade) that represents one or more individual trades.
 // Trades that fill at the same time, from the same taker order.
+//
+// Parameters:
+//   - messageId: A unique identifier for the message.
+//   - products: A slice of Product pointers representing the products to subscribe to for aggregate trades.
+//
+// Returns:
+//   - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) SubscribeAggregateTrades(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribeAggregateTrades(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products)
 }
 
-// UnubscribeAggregateTrades unsubscribes from aggregate trade (aggTrade) that represents one or more individual trades.
+// UnsubscribeAggregateTrades unsubscribes from aggregate trade (aggTrade) that represents one or more individual trades.
 // Trades that fill at the same time, from the same taker order.
+//
+// Parameters:
+//   - messageId: A unique identifier for the message.
+//   - products: A slice of Product pointers representing the products to unsubscribe from for aggregate trades.
+//
+// Returns:
+//   - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) UnsubscribeAggregateTrades(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribeAggregateTrades(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products)
 }
 
-// subscribeUnsubscribeAggregateTrades subscribe or unsubscribe to/from aggregate trade (aggTrade).
+// subscribeUnsubscribeAggregateTrades subscribes or unsubscribes to/from aggregate trade (aggTrade).
+//
+// Parameters:
+//   - messageId: A unique identifier for the message.
+//   - method: The WebSocket method (subscribe or unsubscribe).
+//   - products: A slice of Product pointers representing the products to subscribe or unsubscribe for aggregate trades.
+//
+// Returns:
+//   - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) subscribeUnsubscribeAggregateTrades(messageId string, method types.WSMethod, products []*types.Product) error {
 	// Create @aggTrade params.
 	var params []string
@@ -592,16 +742,38 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribeAggregateTrades(messageI
 }
 
 // SubscribeSingleTrades subscribes to Trade Streams that push raw trade information; each trade has a unique buyer and seller.
+//
+// Parameters:
+//   - messageId: A unique identifier for the message.
+//   - products: A slice of Product pointers representing the products to subscribe to for single trades.
+//
+// Returns:
+//   - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) SubscribeSingleTrades(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribeSingleTrades(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products)
 }
 
-// UnubscribeSingleTrades unsubscribes from Trade Streams that push raw trade information; each trade has a unique buyer and seller.
+// UnsubscribeSingleTrades unsubscribes from Trade Streams that push raw trade information; each trade has a unique buyer and seller.
+//
+// Parameters:
+//   - messageId: A unique identifier for the message.
+//   - products: A slice of Product pointers representing the products to unsubscribe from for single trades.
+//
+// Returns:
+//   - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) UnubscribeSingleTrades(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribeSingleTrades(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products)
 }
 
-// subscribeUnsubscribeSingleTrades subscribe or unsubscribe to/from Trade Streams.
+// subscribeUnsubscribeSingleTrades subscribes or unsubscribes to/from Trade Streams.
+//
+// Parameters:
+//   - messageId: A unique identifier for the message.
+//   - method: The WebSocket method (subscribe or unsubscribe).
+//   - products: A slice of Product pointers representing the products to subscribe or unsubscribe for single trades.
+//
+// Returns:
+//   - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) subscribeUnsubscribeSingleTrades(messageId string, method types.WSMethod, products []*types.Product) error {
 	// Create @trade params.
 	var params []string
@@ -622,16 +794,41 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribeSingleTrades(messageId s
 }
 
 // SubscribeKlineData subscribes to Kline/Candlestick Stream that push updates to the current klines/candlestick every second.
+//
+// Parameters:
+//   - messageId: A unique identifier for the message.
+//   - products: A slice of Product pointers representing the products to subscribe to for Kline/Candlestick data.
+//   - intervals: A slice of Interval values representing the time intervals for the Kline/Candlestick data.
+//
+// Returns:
+//   - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) SubscribeKlineData(messageId string, products []*types.Product, intervals []types.Interval) error {
 	return go100XClient.subscribeUnsubscribeKlineData(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products, intervals)
 }
 
-// SubscribeKlineData unsubscribes from Kline/Candlestick Stream that push updates to the current klines/candlestick every second.
+// UnsubscribeKlineData unsubscribes from Kline/Candlestick Stream that pushes updates to the current klines/candlestick every second.
+//
+// Parameters:
+//   - messageId: A unique identifier for the message.
+//   - products: A slice of Product pointers representing the products to unsubscribe from for Kline/Candlestick data.
+//   - intervals: A slice of Interval values representing the time intervals for the Kline/Candlestick data.
+//
+// Returns:
+//   - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) UnsubscribeKlineData(messageId string, products []*types.Product, intervals []types.Interval) error {
 	return go100XClient.subscribeUnsubscribeKlineData(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products, intervals)
 }
 
-// subscribeUnsubscribeKlineData subscribe or unsubscribe to/from Kline/Candlestick Stream.
+// subscribeUnsubscribeKlineData subscribes or unsubscribes to/from Kline/Candlestick Stream.
+//
+// Parameters:
+//   - messageId: A unique identifier for the message.
+//   - method: The WebSocket method (subscribe or unsubscribe).
+//   - products: A slice of Product pointers representing the products to subscribe or unsubscribe for Kline/Candlestick data.
+//   - intervals: A slice of Interval values representing the time intervals for the Kline/Candlestick data.
+//
+// Returns:
+//   - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) subscribeUnsubscribeKlineData(messageId string, method types.WSMethod, products []*types.Product, intervals []types.Interval) error {
 	// Create @klines params.
 	var params []string
@@ -655,17 +852,45 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribeKlineData(messageId stri
 
 // SubscribePartialBookDepth subscribes to top {limit} bids and asks, pushed every second.
 // Prices are rounded by 1e{granularity}.
+//
+// Parameters:
+// - messageId: A unique identifier for the message.
+// - products: A slice of Product pointers representing the products to subscribe to for partial book depth.
+// - limits: A slice of Limit values representing the depth limits for the book.
+// - granularities: A slice of int64 values representing the price rounding granularity.
+//
+// Returns:
+// - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) SubscribePartialBookDepth(messageId string, products []*types.Product, limits []types.Limit, granularities []int64) error {
 	return go100XClient.subscribeUnsubscribePartialBookDepth(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products, limits, granularities)
 }
 
-// UnubscribePartialBookDepth unsubscribes from top {limit} bids and asks, pushed every second.
+// UnsubscribePartialBookDepth unsubscribes from top {limit} bids and asks, pushed every second.
 // Prices are rounded by 1e{granularity}.
+//
+// Parameters:
+// - messageId: A unique identifier for the message.
+// - products: A slice of Product pointers representing the products to unsubscribe from for partial book depth.
+// - limits: A slice of Limit values representing the depth limits for the book.
+// - granularities: A slice of int64 values representing the price rounding granularity.
+//
+// Returns:
+// - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) UnsubscribePartialBookDepth(messageId string, products []*types.Product, limits []types.Limit, granularities []int64) error {
 	return go100XClient.subscribeUnsubscribePartialBookDepth(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products, limits, granularities)
 }
 
-// subscribeUnsubscribeKlineData subscribe or unsubscribe to/from Kline/Candlestick Stream.
+// subscribeUnsubscribePartialBookDepth subscribes or unsubscribes to/from partial book depth updates.
+//
+// Parameters:
+// - messageId: A unique identifier for the message.
+// - method: The WebSocket method (subscribe or unsubscribe).
+// - products: A slice of Product pointers representing the products to subscribe or unsubscribe for partial book depth updates.
+// - limits: A slice of Limit values representing the depth limits for the book.
+// - granularities: A slice of int64 values representing the price rounding granularities.
+//
+// Returns:
+// - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) subscribeUnsubscribePartialBookDepth(messageId string, method types.WSMethod, products []*types.Product, limits []types.Limit, granularities []int64) error {
 	// Create @depth params.
 	var params []string
@@ -689,21 +914,43 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribePartialBookDepth(message
 	return utils.SendRPCRequest(go100XClient.StreamConnection, request)
 }
 
-// SubscribeSingleTrades subscribes to 24hr rolling window mini-ticker statistics.
+// Subscribe24hrPriceChangeStatistics subscribes to 24hr rolling window mini-ticker statistics.
 // These are NOT the statistics of the UTC day, but a 24hr rolling window for the previous 24hrs.
 // Pushed out every 5s.
+//
+// Parameters:
+// - messageId: A unique identifier for the message.
+// - products: A slice of Product pointers representing the products to subscribe to for 24hr rolling window mini-ticker statistics.
+//
+// Returns:
+// - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) Subscribe24hrPriceChangeStatistics(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribe24hrPriceChangeStatistics(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products)
 }
 
-// SubscribeSingleTrUnubscribe24hrPriceChangeStatisticsades unsubscribes from 24hr rolling window mini-ticker statistics.
+// Unsubscribe24hrPriceChangeStatistics unsubscribes from 24hr rolling window mini-ticker statistics.
 // These are NOT the statistics of the UTC day, but a 24hr rolling window for the previous 24hrs.
 // Pushed out every 5s.
+//
+// Parameters:
+// - messageId: A unique identifier for the message.
+// - products: A slice of Product pointers representing the products to unsubscribe from for 24hr rolling window mini-ticker statistics.
+//
+// Returns:
+// - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) Unsubscribe24hrPriceChangeStatistics(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribe24hrPriceChangeStatistics(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products)
 }
 
-// subscribeUnsubscribeSingleTrades subscribe or unsubscribe to/from 24hr rolling window mini-ticker statistics.
+// subscribeUnsubscribe24hrPriceChangeStatistics subscribes or unsubscribes to/from 24hr rolling window mini-ticker statistics.
+//
+// Parameters:
+// - messageId: A unique identifier for the message.
+// - method: The WebSocket method (subscribe or unsubscribe).
+// - products: A slice of Product pointers representing the products to subscribe or unsubscribe for 24hr rolling window mini-ticker statistics.
+//
+// Returns:
+// - error: An error if the operation fails, nil otherwise.
 func (go100XClient *Go100XWSClient) subscribeUnsubscribe24hrPriceChangeStatistics(messageId string, method types.WSMethod, products []*types.Product) error {
 	// Create @ticker params.
 	var params []string
@@ -724,6 +971,14 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribe24hrPriceChangeStatistic
 }
 
 // ApproveUSDB approves 100x to spend USDB on your behalf.
+//
+// Parameters:
+//   - ctx: The context.Context for the Ethereum transaction.
+//   - amount: The amount of USDB tokens to approve, specified as a *big.Int.
+//
+// Returns:
+//   - A pointer to a geth_types.Transaction representing the Ethereum transaction.
+//   - An error if the Ethereum transaction fails or encounters an issue.
 func (go100XClient *Go100XWSClient) ApproveUSDB(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
 	// Parse ABI
 	parsedABI, _ := abi.JSON(strings.NewReader(constants.ERC20_ABI))
@@ -753,6 +1008,14 @@ func (go100XClient *Go100XWSClient) ApproveUSDB(ctx context.Context, amount *big
 }
 
 // DepositUSDB sends USDB to 100x.
+//
+// Parameters:
+//   - ctx: The context.Context for the Ethereum transaction.
+//   - amount: The amount of USDB tokens to deposit, specified as a *big.Int.
+//
+// Returns:
+//   - A pointer to a geth_types.Transaction representing the Ethereum transaction.
+//   - An error if the Ethereum transaction fails or encounters an issue.
 func (go100XClient *Go100XWSClient) DepositUSDB(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
 	// Parse ABI
 	parsedABI, _ := abi.JSON(strings.NewReader(constants.CIAO_ABI))
@@ -782,6 +1045,14 @@ func (go100XClient *Go100XWSClient) DepositUSDB(ctx context.Context, amount *big
 }
 
 // WaitTransaction waits for a transaction to be mined and returns its receipt.
+//
+// Parameters:
+//   - ctx: The context.Context for the Ethereum transaction.
+//   - transaction: The Ethereum transaction (*geth_types.Transaction) to monitor.
+//
+// Returns:
+//   - A pointer to a geth_types.Receipt containing the transaction receipt once the transaction is mined.
+//   - An error if the transaction fails to be mined or encounters an issue.
 func (go100XClient *Go100XWSClient) WaitTransaction(ctx context.Context, transaction *geth_types.Transaction) (*geth_types.Receipt, error) {
 	receipt, err := bind.WaitMined(ctx, go100XClient.EthClient, transaction)
 	if err != nil {

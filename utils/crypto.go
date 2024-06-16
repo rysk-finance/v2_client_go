@@ -11,6 +11,16 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+// AddressFromPrivateKey derives the Ethereum address from a hexadecimal private key string.
+//
+// This function takes a hexadecimal string representing an Ethereum private key
+// (with or without the '0x' prefix) and computes the corresponding Ethereum address.
+//
+// Parameters:
+//   - privateKeyHex: Hexadecimal string representing the Ethereum private key.
+//
+// Returns:
+//   - string: The Ethereum address derived from the private key.
 func AddressFromPrivateKey(privateKeyHex string) string {
 	// Convert private key hex string to an ECDSA private key
 	privateKey, err := crypto.HexToECDSA(privateKeyHex)
@@ -26,6 +36,29 @@ func AddressFromPrivateKey(privateKeyHex string) string {
 	return crypto.PubkeyToAddress(*publicKeyECDSA).Hex()
 }
 
+// GetTransactionParams retrieves transaction parameters required for sending a transaction.
+//
+// This function queries the Ethereum network using the provided Ethereum client (`ethClient`)
+// to fetch the following transaction parameters:
+// - Nonce: The transaction count of the sender's address.
+// - GasPrice: The current gas price for the transaction.
+// - ChainID: The ID of the Ethereum chain the transaction will be sent on.
+// - GasLimit: The maximum amount of gas that can be used for the transaction.
+//
+// Parameters:
+//   - ctx: The context for the Ethereum client operations.
+//   - ethClient: Interface for interacting with the Ethereum blockchain.
+//   - privateKey: The sender's private key for signing the transaction.
+//   - from: The sender's Ethereum address.
+//   - to: The recipient's Ethereum address (optional for contract creation).
+//   - data: The data payload for the transaction (optional).
+//
+// Returns:
+//   - nonce: The current nonce (transaction count) of the sender's address.
+//   - gasPrice: The current gas price in Wei.
+//   - chainID: The ID of the Ethereum chain.
+//   - gasLimit: The maximum gas limit for the transaction.
+//   - err: Any error encountered during the retrieval of parameters.
 func GetTransactionParams(
 	ctx context.Context,
 	ethClient types.IEthClient,
