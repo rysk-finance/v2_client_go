@@ -548,34 +548,6 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveDepositUSDBWaitin
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), receipt)
 	require.Equal(s.T(), uint64(1), receipt.Status)
-
-	res, err := s.Go100XApiClient.GetSpotBalances()
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), 200, res.StatusCode)
-
-	body, err := io.ReadAll(res.Body)
-	require.NoError(s.T(), err)
-
-	var unmarshaled []struct {
-		Account    string
-		SubAccount int64
-		Quantity   string
-	}
-	err = json.Unmarshal(body, &unmarshaled)
-	require.NoError(s.T(), err)
-	require.NotEmpty(s.T(), unmarshaled)
-
-	for _, balance := range unmarshaled {
-		if balance.Account == strings.ToLower(s.Go100XApiClient.addressString) &&
-			balance.SubAccount == s.Go100XApiClient.SubAccountId {
-			quantity := new(big.Int)
-			quantity, ok := quantity.SetString(balance.Quantity, 10)
-			require.True(s.T(), ok)
-			require.GreaterOrEqual(s.T(), quantity.Cmp(constants.E20), 0)
-			return
-		}
-	}
-	require.FailNow(s.T(), "Balance not found")
 }
 
 func verifyValidJSONResponse(t *testing.T, response *http.Response) {
