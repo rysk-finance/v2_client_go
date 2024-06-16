@@ -1882,7 +1882,7 @@ func (s *WSClientUnitTestSuite) TestUnit_UnubscribePartialBookDepth() {
 	s.Go100XWSClient.StreamConnection = rpcWebsocket
 	s.Go100XWSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.UnubscribePartialBookDepth("69420", products, limits, granularities)
+	err = s.Go100XWSClient.UnsubscribePartialBookDepth("69420", products, limits, granularities)
 	require.NoError(s.T(), err)
 	<-done
 }
