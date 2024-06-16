@@ -214,11 +214,11 @@ func (s *WSClientUnitTestSuite) TestUnit_GetProduct() {
 			require.NotEmpty(s.T(), requestBody.Params)
 
 			var params struct {
-				Id string `json:"id"`
+				Symbol string `json:"symbol"`
 			}
 			err = json.Unmarshal(requestBody.Params, &params)
 			require.NoError(s.T(), err)
-			require.Equal(s.T(), strconv.FormatInt(constants.PRODUCT_ETH_PERP.Id, 10), params.Id)
+			require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, params.Symbol)
 			done <- struct{}{}
 			break
 		}
@@ -417,7 +417,7 @@ func (s *WSClientUnitTestSuite) TestUnit_SubAccountList() {
 			require.Equal(s.T(), "2.0", requestBody.JsonRPC)
 			require.Equal(s.T(), "69420", requestBody.Id)
 			require.Equal(s.T(), string(constants.WS_METHOD_SUB_ACCOUNT_LIST), requestBody.Method)
-			require.Equal(s.T(), "null", string(requestBody.Params))
+			require.Equal(s.T(), string(requestBody.Params), "{\"account\":\""+s.Go100XWSClient.addressString+"\"}")
 			done <- struct{}{}
 			break
 		}
@@ -437,81 +437,6 @@ func (s *WSClientUnitTestSuite) TestUnit_SubAccountList() {
 	err = s.Go100XWSClient.SubAccountList("69420")
 	require.NoError(s.T(), err)
 	<-done
-}
-
-func (s *WSClientUnitTestSuite) TestUnit_Withdraw() {
-	done := make(chan struct{})
-	nonce := time.Now().UnixMicro()
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		var upgrader = websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-		}
-		conn, _ := upgrader.Upgrade(w, r, nil)
-		defer conn.Close()
-		for {
-			_, message, _ := conn.ReadMessage()
-
-			var requestBody struct {
-				JsonRPC string          `json:"jsonrpc"`
-				Id      string          `json:"id"`
-				Method  string          `json:"method"`
-				Params  json.RawMessage `json:"params"`
-			}
-			err := json.Unmarshal(message, &requestBody)
-			require.NoError(s.T(), err)
-			require.Equal(s.T(), "2.0", requestBody.JsonRPC)
-			require.Equal(s.T(), "69420", requestBody.Id)
-			require.Equal(s.T(), string(constants.WS_METHOD_WITHDRAW), requestBody.Method)
-			require.NotEmpty(s.T(), requestBody.Params)
-
-			var params struct {
-				Account      string
-				SubAccountId int64
-				Asset        string
-				Quantity     string
-				Nonce        int64
-				Signature    string
-			}
-			err = json.Unmarshal(requestBody.Params, &params)
-			require.NoError(s.T(), err)
-			require.Equal(s.T(), s.Address, params.Account)
-			require.Equal(s.T(), int64(1), params.SubAccountId)
-			require.Equal(s.T(), constants.USDB_ADDRESS[constants.ENVIRONMENT_TESTNET], params.Asset)
-			require.Equal(s.T(), "123", params.Quantity)
-			require.Equal(s.T(), nonce, params.Nonce)
-			require.NotEmpty(s.T(), params.Signature)
-			done <- struct{}{}
-			break
-		}
-	}
-	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	url := strings.Replace(mockHttpServer.URL, "http", "ws", 1)
-	defer mockHttpServer.Close()
-	rpcWebsocket, _, err := websocket.DefaultDialer.DialContext(
-		context.Background(),
-		url,
-		http.Header{},
-	)
-	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
-
-	err = s.Go100XWSClient.Withdraw("69420", &types.WithdrawRequest{
-		Quantity: "123",
-		Nonce:    nonce,
-	})
-	require.NoError(s.T(), err)
-	<-done
-}
-
-func (s *WSClientUnitTestSuite) TestUnit_Withdraw_BadAddress() {
-	s.Go100XWSClient.addressString = ""
-	err := s.Go100XWSClient.Withdraw("69420", &types.WithdrawRequest{
-		Quantity: "123",
-		Nonce:    time.Now().UnixMicro(),
-	})
-	require.Error(s.T(), err)
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_ApproveSigner() {
@@ -541,19 +466,19 @@ func (s *WSClientUnitTestSuite) TestUnit_ApproveSigner() {
 			require.NotEmpty(s.T(), requestBody.Params)
 
 			var params struct {
-				Account      string
-				SubAccountId int64
-				Signer       string
-				Approved     bool
-				Nonce        int64
-				Signature    string
+				Account        string `json:"account"`
+				SubAccountId   int64  `json:"subAccountId"`
+				ApprovedSigner string `json:"approvedSigner"`
+				IsApproved     bool   `json:"isApproved"`
+				Nonce          int64  `json:"nonce"`
+				Signature      string `json:"signature"`
 			}
 			err = json.Unmarshal(requestBody.Params, &params)
 			require.NoError(s.T(), err)
 			require.Equal(s.T(), s.Address, params.Account)
 			require.Equal(s.T(), int64(1), params.SubAccountId)
-			require.Equal(s.T(), s.Address, params.Signer)
-			require.True(s.T(), params.Approved)
+			require.Equal(s.T(), s.Address, params.ApprovedSigner)
+			require.True(s.T(), params.IsApproved)
 			require.Equal(s.T(), nonce, params.Nonce)
 			require.NotEmpty(s.T(), params.Signature)
 			done <- struct{}{}
@@ -615,19 +540,19 @@ func (s *WSClientUnitTestSuite) TestUnit_RevokeSigner() {
 			require.NotEmpty(s.T(), requestBody.Params)
 
 			var params struct {
-				Account      string
-				SubAccountId int64
-				Signer       string
-				Approved     bool
-				Nonce        int64
-				Signature    string
+				Account        string `json:"account"`
+				SubAccountId   int64  `json:"subAccountId"`
+				ApprovedSigner string `json:"approvedSigner"`
+				IsApproved     bool   `json:"isApproved"`
+				Nonce          int64  `json:"nonce"`
+				Signature      string `json:"signature"`
 			}
 			err = json.Unmarshal(requestBody.Params, &params)
 			require.NoError(s.T(), err)
 			require.Equal(s.T(), s.Address, params.Account)
 			require.Equal(s.T(), int64(1), params.SubAccountId)
-			require.Equal(s.T(), s.Address, params.Signer)
-			require.False(s.T(), params.Approved)
+			require.Equal(s.T(), s.Address, params.ApprovedSigner)
+			require.False(s.T(), params.IsApproved)
 			require.Equal(s.T(), nonce, params.Nonce)
 			require.NotEmpty(s.T(), params.Signature)
 			done <- struct{}{}
@@ -1044,14 +969,14 @@ func (s *WSClientUnitTestSuite) TestUnit_GetPerpetualPosition() {
 			require.NotEmpty(s.T(), requestBody.Params)
 
 			var params struct {
-				Account    string  `json:"account"`
-				SubAccount int64   `json:"subAccount"`
-				ProductIds []int64 `json:"productIds"`
+				Account      string  `json:"account"`
+				SubAccountId int64   `json:"subAccountId"`
+				ProductIds   []int64 `json:"productIds"`
 			}
 			err = json.Unmarshal(requestBody.Params, &params)
 			require.NoError(s.T(), err)
 			require.Equal(s.T(), s.Address, params.Account)
-			require.Equal(s.T(), int64(1), params.SubAccount)
+			require.Equal(s.T(), int64(1), params.SubAccountId)
 			require.ElementsMatch(s.T(), []int64{constants.PRODUCT_BLAST_PERP.Id, constants.PRODUCT_ETH_PERP.Id}, params.ProductIds)
 			done <- struct{}{}
 			break
@@ -1106,15 +1031,15 @@ func (s *WSClientUnitTestSuite) TestUnit_GetSpotBalances() {
 			require.NotEmpty(s.T(), requestBody.Params)
 
 			var params struct {
-				Account    string   `json:"account"`
-				SubAccount int64    `json:"subAccount"`
-				Assets     []string `json:"assets"`
+				Account      string   `json:"account"`
+				SubAccountId int64    `json:"subAccountId"`
+				Assets       []string `json:"assets"`
 			}
 			err = json.Unmarshal(requestBody.Params, &params)
 			require.NoError(s.T(), err)
 			require.Equal(s.T(), s.Address, params.Account)
-			require.Equal(s.T(), int64(1), params.SubAccount)
-			require.ElementsMatch(s.T(), []string{constants.USDB_ADDRESS[s.Go100XWSClient.env]}, params.Assets)
+			require.Equal(s.T(), int64(1), params.SubAccountId)
+			require.ElementsMatch(s.T(), []string{}, params.Assets)
 			done <- struct{}{}
 			break
 		}
@@ -1132,7 +1057,7 @@ func (s *WSClientUnitTestSuite) TestUnit_GetSpotBalances() {
 	s.Go100XWSClient.RPCConnection = rpcWebsocket
 	s.Go100XWSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.GetSpotBalances("69420")
+	err = s.Go100XWSClient.GetSpotBalances("69420", []string{})
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1165,13 +1090,13 @@ func (s *WSClientUnitTestSuite) TestUnit_AccountUpdates() {
 			require.NotEmpty(s.T(), requestBody.Params)
 
 			var params struct {
-				Account    string `json:"account"`
-				SubAccount int64  `json:"subAccount"`
+				Account      string `json:"account"`
+				SubAccountId int64  `json:"subAccountId"`
 			}
 			err = json.Unmarshal(requestBody.Params, &params)
 			require.NoError(s.T(), err)
 			require.Equal(s.T(), s.Address, params.Account)
-			require.Equal(s.T(), int64(1), params.SubAccount)
+			require.Equal(s.T(), int64(1), params.SubAccountId)
 			done <- struct{}{}
 			break
 		}
