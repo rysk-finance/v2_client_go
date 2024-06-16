@@ -133,6 +133,7 @@ func (s *WSClientUnitTestSuite) TestUnit_NewGo100XWSClient_InvalidStreamWebsocke
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_ListProducts() {
+	done := make(chan struct{})
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -155,6 +156,8 @@ func (s *WSClientUnitTestSuite) TestUnit_ListProducts() {
 			require.Equal(s.T(), "69420", requestBody.Id)
 			require.Equal(s.T(), string(constants.WS_METHOD_LIST_PRODUCTS), requestBody.Method)
 			require.Equal(s.T(), "null", string(requestBody.Params))
+			done <- struct{}{}
+			break
 		}
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
@@ -171,9 +174,11 @@ func (s *WSClientUnitTestSuite) TestUnit_ListProducts() {
 
 	err = s.Go100XWSClient.ListProducts("69420")
 	require.NoError(s.T(), err)
+	<-done
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_GetProduct() {
+	done := make(chan struct{})
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -203,6 +208,8 @@ func (s *WSClientUnitTestSuite) TestUnit_GetProduct() {
 			err = json.Unmarshal(requestBody.Params, &params)
 			require.NoError(s.T(), err)
 			require.Equal(s.T(), strconv.FormatInt(constants.PRODUCT_ETH_PERP.Id, 10), params.Id)
+			done <- struct{}{}
+			break
 		}
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
@@ -219,9 +226,11 @@ func (s *WSClientUnitTestSuite) TestUnit_GetProduct() {
 
 	err = s.Go100XWSClient.GetProduct("69420", &constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
+	<-done
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_ServerTime() {
+	done := make(chan struct{})
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -244,6 +253,8 @@ func (s *WSClientUnitTestSuite) TestUnit_ServerTime() {
 			require.Equal(s.T(), "69420", requestBody.Id)
 			require.Equal(s.T(), string(constants.WS_METHOD_SERVER_TIME), requestBody.Method)
 			require.Equal(s.T(), "null", string(requestBody.Params))
+			done <- struct{}{}
+			break
 		}
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
@@ -260,9 +271,11 @@ func (s *WSClientUnitTestSuite) TestUnit_ServerTime() {
 
 	err = s.Go100XWSClient.ServerTime("69420")
 	require.NoError(s.T(), err)
+	<-done
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_Login() {
+	done := make(chan struct{})
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -298,6 +311,8 @@ func (s *WSClientUnitTestSuite) TestUnit_Login() {
 			require.Equal(s.T(), "I want to log into 100x.finance", params.Message)
 			require.Greater(s.T(), params.Timestamp, uint64(0))
 			require.NotEmpty(s.T(), params.Signature)
+			done <- struct{}{}
+			break
 		}
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
@@ -314,9 +329,11 @@ func (s *WSClientUnitTestSuite) TestUnit_Login() {
 
 	err = s.Go100XWSClient.Login("69420")
 	require.NoError(s.T(), err)
+	<-done
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_SessionStatus() {
+	done := make(chan struct{})
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -339,6 +356,8 @@ func (s *WSClientUnitTestSuite) TestUnit_SessionStatus() {
 			require.Equal(s.T(), "69420", requestBody.Id)
 			require.Equal(s.T(), string(constants.WS_METHOD_SESSION_STATUS), requestBody.Method)
 			require.Equal(s.T(), "null", string(requestBody.Params))
+			done <- struct{}{}
+			break
 		}
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
@@ -355,9 +374,11 @@ func (s *WSClientUnitTestSuite) TestUnit_SessionStatus() {
 
 	err = s.Go100XWSClient.SessionStatus("69420")
 	require.NoError(s.T(), err)
+	<-done
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_SubAccountList() {
+	done := make(chan struct{})
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -380,6 +401,8 @@ func (s *WSClientUnitTestSuite) TestUnit_SubAccountList() {
 			require.Equal(s.T(), "69420", requestBody.Id)
 			require.Equal(s.T(), string(constants.WS_METHOD_SUB_ACCOUNT_LIST), requestBody.Method)
 			require.Equal(s.T(), "null", string(requestBody.Params))
+			done <- struct{}{}
+			break
 		}
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
@@ -396,9 +419,11 @@ func (s *WSClientUnitTestSuite) TestUnit_SubAccountList() {
 
 	err = s.Go100XWSClient.SubAccountList("69420")
 	require.NoError(s.T(), err)
+	<-done
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_Withdraw() {
+	done := make(chan struct{})
 	nonce := time.Now().UnixMicro()
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
@@ -439,6 +464,8 @@ func (s *WSClientUnitTestSuite) TestUnit_Withdraw() {
 			require.Equal(s.T(), "123", params.Quantity)
 			require.Equal(s.T(), nonce, params.Nonce)
 			require.NotEmpty(s.T(), params.Signature)
+			done <- struct{}{}
+			break
 		}
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
@@ -458,9 +485,11 @@ func (s *WSClientUnitTestSuite) TestUnit_Withdraw() {
 		Nonce:    nonce,
 	})
 	require.NoError(s.T(), err)
+	<-done
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_ApproveSigner() {
+	done := make(chan struct{})
 	nonce := time.Now().UnixMicro()
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
@@ -501,6 +530,8 @@ func (s *WSClientUnitTestSuite) TestUnit_ApproveSigner() {
 			require.True(s.T(), params.Approved)
 			require.Equal(s.T(), nonce, params.Nonce)
 			require.NotEmpty(s.T(), params.Signature)
+			done <- struct{}{}
+			break
 		}
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
@@ -520,9 +551,11 @@ func (s *WSClientUnitTestSuite) TestUnit_ApproveSigner() {
 		Nonce:          nonce,
 	})
 	require.NoError(s.T(), err)
+	<-done
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_RevokeSigner() {
+	done := make(chan struct{})
 	nonce := time.Now().UnixMicro()
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var upgrader = websocket.Upgrader{
@@ -563,6 +596,8 @@ func (s *WSClientUnitTestSuite) TestUnit_RevokeSigner() {
 			require.False(s.T(), params.Approved)
 			require.Equal(s.T(), nonce, params.Nonce)
 			require.NotEmpty(s.T(), params.Signature)
+			done <- struct{}{}
+			break
 		}
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
@@ -582,4 +617,5 @@ func (s *WSClientUnitTestSuite) TestUnit_RevokeSigner() {
 		Nonce:          nonce,
 	})
 	require.NoError(s.T(), err)
+	<-done
 }
