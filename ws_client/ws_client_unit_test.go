@@ -965,7 +965,7 @@ func (s *WSClientUnitTestSuite) TestUnit_GetPerpetualPosition() {
 			require.NoError(s.T(), err)
 			require.Equal(s.T(), "2.0", requestBody.JsonRPC)
 			require.Equal(s.T(), "69420", requestBody.Id)
-			require.Equal(s.T(), string(constants.WS_METHOD_ORDER_BOOK_DEPTH), requestBody.Method)
+			require.Equal(s.T(), string(constants.WS_METHOD_GET_PERPETUAL_POSITION), requestBody.Method)
 			require.NotEmpty(s.T(), requestBody.Params)
 
 			var params struct {
@@ -1027,7 +1027,7 @@ func (s *WSClientUnitTestSuite) TestUnit_GetSpotBalances() {
 			require.NoError(s.T(), err)
 			require.Equal(s.T(), "2.0", requestBody.JsonRPC)
 			require.Equal(s.T(), "69420", requestBody.Id)
-			require.Equal(s.T(), string(constants.WS_METHOD_ORDER_BOOK_DEPTH), requestBody.Method)
+			require.Equal(s.T(), string(constants.WS_METHOD_GET_SPOT_BALANCES), requestBody.Method)
 			require.NotEmpty(s.T(), requestBody.Params)
 
 			var params struct {
@@ -1781,7 +1781,7 @@ func (s *WSClientUnitTestSuite) TestUnit_SubscribePartialBookDepth() {
 			for _, product := range products {
 				for _, limit := range limits {
 					for _, granularity := range granularities {
-						expectedSymbol := product.Symbol + "@depth_" + strconv.FormatInt(int64(limit), 10) + "_" + strconv.FormatInt(granularity, 10)
+						expectedSymbol := product.Symbol + "@depth" + strconv.FormatInt(int64(limit), 10) + "_" + strconv.FormatInt(granularity, 10)
 						require.Contains(s.T(), params, expectedSymbol)
 					}
 				}
@@ -1860,7 +1860,7 @@ func (s *WSClientUnitTestSuite) TestUnit_UnubscribePartialBookDepth() {
 			for _, product := range products {
 				for _, limit := range limits {
 					for _, granularity := range granularities {
-						expectedSymbol := product.Symbol + "@depth_" + strconv.FormatInt(int64(limit), 10) + "_" + strconv.FormatInt(granularity, 10)
+						expectedSymbol := product.Symbol + "@depth" + strconv.FormatInt(int64(limit), 10) + "_" + strconv.FormatInt(granularity, 10)
 						require.Contains(s.T(), params, expectedSymbol)
 					}
 				}
