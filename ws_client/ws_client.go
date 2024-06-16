@@ -133,9 +133,9 @@ func (go100XClient *Go100XWSClient) GetProduct(messageId string, product *types.
 		ID:      messageId,
 		Method:  constants.WS_METHOD_GET_PRODUCT,
 		Params: &struct {
-			Id string `json:"id"`
+			Symbol string `json:"symbol"`
 		}{
-			Id: strconv.FormatInt(product.Id, 10),
+			Symbol: product.Symbol,
 		},
 	}
 
@@ -223,56 +223,10 @@ func (go100XClient *Go100XWSClient) SubAccountList(messageId string) error {
 		JsonRPC: constants.WS_JSON_RPC,
 		ID:      messageId,
 		Method:  constants.WS_METHOD_SUB_ACCOUNT_LIST,
-	}
-
-	// Send RPC request.
-	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
-}
-
-// Withdraw withdraws USDB from 100x account.
-func (go100XClient *Go100XWSClient) Withdraw(messageId string, params *types.WithdrawRequest) error {
-	// Generate EIP712 signature.
-	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
-		constants.PRIMARY_TYPE_WITHDRAW,
-		&struct {
-			Account      string `json:"account"`
-			SubAccountId string `json:"subAccountId"`
-			Asset        string `json:"asset"`
-			Quantity     string `json:"quantity"`
-			Nonce        string `json:"nonce"`
-		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
-			Asset:        constants.USDB_ADDRESS[go100XClient.env],
-			Quantity:     params.Quantity,
-			Nonce:        strconv.FormatInt(params.Nonce, 10),
-		},
-	)
-	if err != nil {
-		return err
-	}
-
-	// Generate RPC request.
-	request := &types.WebsocketRequest{
-		JsonRPC: constants.WS_JSON_RPC,
-		ID:      messageId,
-		Method:  constants.WS_METHOD_WITHDRAW,
 		Params: &struct {
-			Account      string
-			SubAccountId int64
-			Asset        string
-			Quantity     string
-			Nonce        int64
-			Signature    string
+			Account string `json:"account"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: go100XClient.SubAccountId,
-			Asset:        constants.USDB_ADDRESS[go100XClient.env],
-			Quantity:     params.Quantity,
-			Nonce:        params.Nonce,
-			Signature:    signature,
+			Account: go100XClient.addressString,
 		},
 	}
 
@@ -321,19 +275,19 @@ func (go100XClient *Go100XWSClient) approveRevokeSigner(messageId string, params
 		ID:      messageId,
 		Method:  constants.WS_METHOD_APPROVE_REVOKE_SIGNER,
 		Params: &struct {
-			Account      string
-			SubAccountId int64
-			Signer       string
-			Approved     bool
-			Nonce        int64
-			Signature    string
+			Account        string `json:"account"`
+			SubAccountId   int64  `json:"subAccountId"`
+			ApprovedSigner string `json:"approvedSigner"`
+			IsApproved     bool   `json:"isApproved"`
+			Nonce          int64  `json:"nonce"`
+			Signature      string `json:"signature"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: go100XClient.SubAccountId,
-			Signer:       params.ApprovedSigner,
-			Approved:     isApproved,
-			Nonce:        params.Nonce,
-			Signature:    signature,
+			Account:        go100XClient.addressString,
+			SubAccountId:   go100XClient.SubAccountId,
+			ApprovedSigner: params.ApprovedSigner,
+			IsApproved:     isApproved,
+			Nonce:          params.Nonce,
+			Signature:      signature,
 		},
 	}
 
@@ -382,17 +336,17 @@ func (go100XClient *Go100XWSClient) NewOrder(messageId string, params *types.New
 		ID:      messageId,
 		Method:  constants.WS_METHOD_NEW_ORDER,
 		Params: &struct {
-			Account      string
-			SubAccountId int64
-			ProductId    int64
-			IsBuy        bool
-			OrderType    int64
-			TimeInForce  int64
-			Expiration   int64
-			Price        string
-			Quantity     string
-			Nonce        int64
-			Signature    string
+			Account      string `json:"account"`
+			SubAccountId int64  `json:"subAccountId"`
+			ProductId    int64  `json:"productId"`
+			IsBuy        bool   `json:"isBuy"`
+			OrderType    int64  `json:"orderType"`
+			TimeInForce  int64  `json:"timeInForce"`
+			Expiration   int64  `json:"expiration"`
+			Price        string `json:"price"`
+			Quantity     string `json:"quantity"`
+			Nonce        int64  `json:"nonce"`
+			Signature    string `json:"signature"`
 		}{
 			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
@@ -420,13 +374,13 @@ func (go100XClient *Go100XWSClient) ListOpenOrders(messageId string, params *typ
 		ID:      messageId,
 		Method:  constants.WS_METHOD_ORDER_LIST,
 		Params: &struct {
-			Account      string
-			SubAccountId int64
-			ProductId    int64
-			OrderIds     []string
-			StartTime    int64
-			EndTime      int64
-			Limit        int64
+			Account      string   `json:"account"`
+			SubAccountId int64    `json:"subAccountId"`
+			ProductId    int64    `json:"productId"`
+			OrderIds     []string `json:"orderIds"`
+			StartTime    int64    `json:"startTime"`
+			EndTime      int64    `json:"endTime"`
+			Limit        int64    `json:"limit"`
 		}{
 			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
@@ -471,11 +425,11 @@ func (go100XClient *Go100XWSClient) CancelOrder(messageId string, params *types.
 		ID:      messageId,
 		Method:  constants.WS_METHOD_CANCEL_ORDER,
 		Params: &struct {
-			Account      string
-			SubAccountId int64
-			ProductId    int64
-			OrderId      string
-			Signature    string
+			Account      string `json:"account"`
+			SubAccountId int64  `json:"subAccountId"`
+			ProductId    int64  `json:"productId"`
+			OrderId      string `json:"orderId"`
+			Signature    string `json:"signature"`
 		}{
 			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
@@ -498,9 +452,9 @@ func (go100XClient *Go100XWSClient) CancelAllOpenOrders(messageId string, produc
 		ID:      messageId,
 		Method:  constants.WS_METHOD_CANCEL_ALL_OPEN_ORDERS,
 		Params: &struct {
-			Account      string
-			SubAccountId int64
-			ProductId    int64
+			Account      string `json:"account"`
+			SubAccountId int64  `json:"subAccountId"`
+			ProductId    int64  `json:"productId"`
 		}{
 			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
@@ -520,9 +474,9 @@ func (go100XClient *Go100XWSClient) OrderBook(messageId string, params *types.Or
 		ID:      messageId,
 		Method:  constants.WS_METHOD_ORDER_BOOK_DEPTH,
 		Params: &struct {
-			Symbol      string
-			Granularity int64
-			Limit       int64
+			Symbol      string `json:"symbol"`
+			Granularity int64  `json:"granularity"`
+			Limit       int64  `json:"limit"`
 		}{
 			Symbol:      params.Product.Symbol,
 			Granularity: params.Granularity,
@@ -546,15 +500,15 @@ func (go100XClient *Go100XWSClient) GetPerpetualPosition(messageId string, produ
 	request := &types.WebsocketRequest{
 		JsonRPC: constants.WS_JSON_RPC,
 		ID:      messageId,
-		Method:  constants.WS_METHOD_ORDER_BOOK_DEPTH,
+		Method:  constants.WS_METHOD_GET_PERPETUAL_POSITION,
 		Params: &struct {
-			Account    string
-			SubAccount int64
-			ProductIds []int64
+			Account      string  `json:"account"`
+			SubAccountId int64   `json:"subAccountId"`
+			ProductIds   []int64 `json:"productIds"`
 		}{
-			Account:    go100XClient.addressString,
-			SubAccount: go100XClient.SubAccountId,
-			ProductIds: productIds,
+			Account:      go100XClient.addressString,
+			SubAccountId: go100XClient.SubAccountId,
+			ProductIds:   productIds,
 		},
 	}
 
@@ -562,21 +516,21 @@ func (go100XClient *Go100XWSClient) GetPerpetualPosition(messageId string, produ
 	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
-// GetPerpetualPosition returns perpetual position for sub account id.
-func (go100XClient *Go100XWSClient) GetSpotBalances(messageId string) error {
+// GetPerpetualPosition returns spot position for sub account id.
+func (go100XClient *Go100XWSClient) GetSpotBalances(messageId string, assets []string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
 		JsonRPC: constants.WS_JSON_RPC,
 		ID:      messageId,
-		Method:  constants.WS_METHOD_ORDER_BOOK_DEPTH,
+		Method:  constants.WS_METHOD_GET_SPOT_BALANCES,
 		Params: &struct {
-			Account    string
-			SubAccount int64
-			Assets     []string
+			Account      string   `json:"account"`
+			SubAccountId int64    `json:"subAccountId"`
+			Assets       []string `json:"assets"`
 		}{
-			Account:    go100XClient.addressString,
-			SubAccount: go100XClient.SubAccountId,
-			Assets:     []string{constants.USDB_ADDRESS[go100XClient.env]},
+			Account:      go100XClient.addressString,
+			SubAccountId: go100XClient.SubAccountId,
+			Assets:       assets,
 		},
 	}
 
@@ -593,11 +547,11 @@ func (go100XClient *Go100XWSClient) AccountUpdates(messageId string) error {
 		ID:      messageId,
 		Method:  constants.WS_METHOD_ACCOUNT_UPDATES,
 		Params: &struct {
-			Account    string
-			SubAccount int64
+			Account      string `json:"account"`
+			SubAccountId int64  `json:"subAccountId"`
 		}{
-			Account:    go100XClient.addressString,
-			SubAccount: go100XClient.SubAccountId,
+			Account:      go100XClient.addressString,
+			SubAccountId: go100XClient.SubAccountId,
 		},
 	}
 
@@ -804,7 +758,7 @@ func (go100XClient *Go100XWSClient) DepositUSDB(ctx context.Context, amount *big
 	parsedABI, _ := abi.JSON(strings.NewReader(constants.CIAO_ABI))
 
 	// Pack transaction data
-	data, _ := parsedABI.Pack("deposit", go100XClient.addressString, uint8(go100XClient.SubAccountId), amount, go100XClient.usdb)
+	data, _ := parsedABI.Pack("deposit", go100XClient.address, uint8(go100XClient.SubAccountId), amount, go100XClient.usdb)
 
 	// Get transaction parameters
 	nonce, gasPrice, chainID, gasLimit, err := utils.GetTransactionParams(ctx, go100XClient.EthClient, go100XClient.privateKey, &go100XClient.address, &go100XClient.ciao, &data)

@@ -275,12 +275,12 @@ func (go100XClient *Go100XAPIClient) approveRevokeSigner(params *types.ApproveRe
 		http.MethodPost,
 		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_APPROVE_REVOKE_SIGNER),
 		&struct {
-			Account        string
-			SubAccountId   int64
-			Signature      string
-			ApprovedSigner string
-			Nonce          int64
-			IsApproved     bool
+			Account        string `json:"account"`
+			SubAccountId   int64  `json:"subAccountId"`
+			Signature      string `json:"signature"`
+			ApprovedSigner string `json:"approvedSigner"`
+			Nonce          int64  `json:"nonce"`
+			IsApproved     bool   `json:"isApproved"`
 		}{
 			Account:        go100XClient.addressString,
 			SubAccountId:   go100XClient.SubAccountId,
@@ -328,12 +328,12 @@ func (go100XClient *Go100XAPIClient) Withdraw(params *types.WithdrawRequest) (*h
 		http.MethodPost,
 		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_WITHDRAW),
 		&struct {
-			Account      string
-			SubAccountId int64
-			Asset        string
-			Quantity     string
-			Nonce        int64
-			Signature    string
+			Account      string `json:"account"`
+			SubAccountId int64  `json:"subAccountId"`
+			Asset        string `json:"asset"`
+			Quantity     string `json:"quantity"`
+			Nonce        int64  `json:"nonce"`
+			Signature    string `json:"signature"`
 		}{
 			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
@@ -391,17 +391,17 @@ func (go100XClient *Go100XAPIClient) NewOrder(params *types.NewOrderRequest) (*h
 		http.MethodPost,
 		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_NEW_ORDER),
 		&struct {
-			Account      string
-			SubAccountId int64
-			ProductId    int64
-			IsBuy        bool
-			OrderType    int64
-			TimeInForce  int64
-			Expiration   int64
-			Price        string
-			Quantity     string
-			Nonce        int64
-			Signature    string
+			Account      string `json:"account"`
+			SubAccountId int64  `json:"subAccountId"`
+			ProductId    int64  `json:"productId"`
+			IsBuy        bool   `json:"isBuy"`
+			OrderType    int64  `json:"orderType"`
+			TimeInForce  int64  `json:"timeInForce"`
+			Expiration   int64  `json:"expiration"`
+			Price        string `json:"price"`
+			Quantity     string `json:"quantity"`
+			Nonce        int64  `json:"nonce"`
+			Signature    string `json:"signature"`
 		}{
 			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
@@ -464,22 +464,22 @@ func (go100XClient *Go100XAPIClient) CancelOrderAndReplace(params *types.CancelO
 		http.MethodPost,
 		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_CANCEL_REPLACE_ORDER),
 		&struct {
-			IdToCancel string
-			NewOrder   interface{}
+			IdToCancel string      `json:"idToCancel"`
+			NewOrder   interface{} `json:"newOrder"`
 		}{
 			IdToCancel: params.IdToCancel,
 			NewOrder: &struct {
-				Account      string
-				SubAccountId int64
-				ProductId    int64
-				IsBuy        bool
-				OrderType    int64
-				TimeInForce  int64
-				Expiration   int64
-				Price        string
-				Quantity     string
-				Nonce        int64
-				Signature    string
+				Account      string `json:"account"`
+				SubAccountId int64  `json:"subAccountId"`
+				ProductId    int64  `json:"productId"`
+				IsBuy        bool   `json:"isBuy"`
+				OrderType    int64  `json:"orderType"`
+				TimeInForce  int64  `json:"timeInForce"`
+				Expiration   int64  `json:"expiration"`
+				Price        string `json:"price"`
+				Quantity     string `json:"quantity"`
+				Nonce        int64  `json:"nonce"`
+				Signature    string `json:"signature"`
 			}{
 				Account:      go100XClient.addressString,
 				SubAccountId: go100XClient.SubAccountId,
@@ -531,11 +531,11 @@ func (go100XClient *Go100XAPIClient) CancelOrder(params *types.CancelOrderReques
 		http.MethodDelete,
 		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_CANCEL_ORDER),
 		&struct {
-			Account      string
-			SubAccountId int64
-			ProductId    int64
-			OrderId      string
-			Signature    string
+			Account      string `json:"account"`
+			SubAccountId int64  `json:"subAccountId"`
+			ProductId    int64  `json:"productId"`
+			OrderId      string `json:"orderId"`
+			Signature    string `json:"signature"`
 		}{
 			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
@@ -578,10 +578,10 @@ func (go100XClient *Go100XAPIClient) CancelAllOpenOrders(product *types.Product)
 		http.MethodDelete,
 		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_CANCEL_ALL_OPEN_ORDERS),
 		&struct {
-			Account      string
-			SubAccountId int64
-			ProductId    int64
-			Signature    string
+			Account      string `json:"account"`
+			SubAccountId int64  `json:"subAccountId"`
+			ProductId    int64  `json:"productId"`
+			Signature    string `json:"signature"`
 		}{
 			Account:      go100XClient.addressString,
 			SubAccountId: go100XClient.SubAccountId,
