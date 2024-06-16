@@ -661,7 +661,7 @@ func (go100XClient *Go100XWSClient) SubscribePartialBookDepth(messageId string, 
 
 // UnubscribePartialBookDepth unsubscribes from top {limit} bids and asks, pushed every second.
 // Prices are rounded by 1e{granularity}.
-func (go100XClient *Go100XWSClient) UnubscribePartialBookDepth(messageId string, products []*types.Product, limits []types.Limit, granularities []int64) error {
+func (go100XClient *Go100XWSClient) UnsubscribePartialBookDepth(messageId string, products []*types.Product, limits []types.Limit, granularities []int64) error {
 	return go100XClient.subscribeUnsubscribePartialBookDepth(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products, limits, granularities)
 }
 
@@ -672,7 +672,7 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribePartialBookDepth(message
 	for _, product := range products {
 		for _, limit := range limits {
 			for _, granularity := range granularities {
-				params = append(params, product.Symbol+"@depth_"+strconv.FormatInt(int64(limit), 10)+"_"+strconv.FormatInt(granularity, 10))
+				params = append(params, product.Symbol+"@depth"+strconv.FormatInt(int64(limit), 10)+"_"+strconv.FormatInt(granularity, 10))
 			}
 		}
 	}
