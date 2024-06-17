@@ -550,6 +550,12 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveDepositUSDBWaitin
 	require.Equal(s.T(), uint64(1), receipt.Status)
 }
 
+func (s *ApiClientIntegrationTestSuite) TestIntegration_addReferee() {
+	res, err := s.Go100XApiClient.addReferee()
+	require.NoError(s.T(), err)
+	verifyValidJSONResponse(s.T(), res)
+}
+
 func verifyValidJSONResponse(t *testing.T, response *http.Response) {
 	// Read response
 	defer response.Body.Close()

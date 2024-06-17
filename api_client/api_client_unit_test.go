@@ -45,12 +45,14 @@ func (s *ApiClientUnitTestSuite) SetupSuite() {
 		fmt.Println("ApiClientUnitTestSuite.SetupSuite: Error loading .env file:", err)
 		return
 	}
-	apiClient, _ := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
+	apiClient, err := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
 		SubAccountId: 1,
 	})
+	require.NoError(s.T(), err)
+
 	s.Go100XApiClient = apiClient
 	s.PrivateKey = s.Go100XApiClient.privateKeyString
 	s.Address = utils.AddressFromPrivateKey(s.Go100XApiClient.privateKeyString)
@@ -1461,4 +1463,59 @@ func (s *ApiClientUnitTestSuite) TestUnit_WaitTransaction_WaitMinedError() {
 	receipt, err := s.Go100XApiClient.WaitTransaction(ctx, transaction)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), receipt)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_addReferee() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		require.NoError(s.T(), err)
+		defer req.Body.Close()
+
+		var requestBody struct {
+			Account   string `json:"account"`
+			Code      string `json:"code"`
+			Signature string `json:"signature"`
+		}
+		err = json.Unmarshal(body, &requestBody)
+		require.NoError(s.T(), err)
+		require.Equal(s.T(), http.MethodPost, req.Method)
+		require.Equal(s.T(), string(constants.API_ENDPOINT_ADD_REFEREE), req.URL.Path)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
+		require.Equal(s.T(), "eldief", requestBody.Code)
+		require.NotEmpty(s.T(), requestBody.Signature)
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XApiClient.addReferee()
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_addReferee_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.addressString = ""
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XApiClient.addReferee()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_addReferee_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XApiClient.addReferee()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
 }

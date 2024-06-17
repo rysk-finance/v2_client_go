@@ -189,4 +189,14 @@ var EIP712_TYPES = apitypes.Types{
 			Type: "uint8",
 		},
 	},
+	"Referral": {
+		{
+			Name: "account",
+			Type: "address",
+		},
+		{
+			Name: "code",
+			Type: "string",
+		},
+	},
 }

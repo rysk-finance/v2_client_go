@@ -16,6 +16,7 @@ const (
 	PRIMARY_TYPE_APPROVE_SIGNER        types.PrimaryType = "ApproveSigner"
 	PRIMARY_TYPE_WITHDRAW              types.PrimaryType = "Withdraw"
 	PRIMARY_TYPE_SIGNED_AUTHENTICATION types.PrimaryType = "SignedAuthentication"
+	PRIMARY_TYPE_REFERRAL              types.PrimaryType = "Referral"
 )
 
 const CIAO_ABI string = `[

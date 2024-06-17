@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -46,12 +47,15 @@ func (s *WSClientUnitTestSuite) SetupSuite() {
 		return
 	}
 
-	s.Go100XWSClient, _ = NewGo100XWSClient(&Go100XWSClientConfiguration{
+	wsClient, err := NewGo100XWSClient(&Go100XWSClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
 		SubAccountId: 1,
 	})
+	require.NoError(s.T(), err)
+
+	s.Go100XWSClient = wsClient
 	s.PrivateKey = s.Go100XWSClient.privateKeyString
 	s.Address = utils.AddressFromPrivateKey(s.Go100XWSClient.privateKeyString)
 	s.EthClient = s.Go100XWSClient.EthClient
@@ -76,6 +80,7 @@ func (s *WSClientUnitTestSuite) TestUnit_NewGo100XWSClient() {
 	})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), constants.ENVIRONMENT_TESTNET, wsClient.env)
+	require.Equal(s.T(), constants.API_BASE_URL[constants.ENVIRONMENT_TESTNET], wsClient.baseUrl)
 	require.Equal(s.T(), constants.WS_RPC_URL[constants.ENVIRONMENT_TESTNET], wsClient.rpcUrl)
 	require.Equal(s.T(), constants.WS_STREAM_URL[constants.ENVIRONMENT_TESTNET], wsClient.streamUrl)
 	require.Equal(s.T(), strings.TrimPrefix(string(os.Getenv("PRIVATE_KEYS")), "0x"), wsClient.privateKeyString)
@@ -2144,4 +2149,59 @@ func (s *WSClientUnitTestSuite) TestUnit_WaitTransaction_WaitMinedError() {
 	receipt, err := s.Go100XWSClient.WaitTransaction(ctx, transaction)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), receipt)
+}
+
+func (s *WSClientUnitTestSuite) TestUnit_addReferee() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		require.NoError(s.T(), err)
+		defer req.Body.Close()
+
+		var requestBody struct {
+			Account   string `json:"account"`
+			Code      string `json:"code"`
+			Signature string `json:"signature"`
+		}
+		err = json.Unmarshal(body, &requestBody)
+		require.NoError(s.T(), err)
+		require.Equal(s.T(), http.MethodPost, req.Method)
+		require.Equal(s.T(), string(constants.API_ENDPOINT_ADD_REFEREE), req.URL.Path)
+		require.Equal(s.T(), s.Go100XWSClient.addressString, requestBody.Account)
+		require.Equal(s.T(), "eldief", requestBody.Code)
+		require.NotEmpty(s.T(), requestBody.Signature)
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XWSClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XWSClient.addReferee()
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *WSClientUnitTestSuite) TestUnit_addReferee_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XWSClient.addressString = ""
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XWSClient.addReferee()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *WSClientUnitTestSuite) TestUnit_addReferee_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XWSClient.baseUrl = "://invalid-url"
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XWSClient.addReferee()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
 }

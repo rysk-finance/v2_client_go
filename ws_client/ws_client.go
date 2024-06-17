@@ -35,6 +35,7 @@ type Go100XWSClientConfiguration struct {
 // Go100XWSClient is the WebSocket client for interacting with 100x services.
 type Go100XWSClient struct {
 	env              types.Environment        // env is the current environment setting.
+	baseUrl          string                   // baseUrl is the HTTP Api base URL.
 	rpcUrl           string                   // rpcUrl is the RPC server URL.
 	streamUrl        string                   // streamUrl is the WebSocket stream URL.
 	privateKeyString string                   // privateKeyString is the private key string.
@@ -97,8 +98,9 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) (*Go100XWSClient, er
 	}
 
 	// Return a new `go100x.Client`.
-	return &Go100XWSClient{
+	wsClient := &Go100XWSClient{
 		env:              config.Env,
+		baseUrl:          constants.API_BASE_URL[config.Env],
 		rpcUrl:           constants.WS_RPC_URL[config.Env],
 		streamUrl:        constants.WS_STREAM_URL[config.Env],
 		privateKeyString: privateKeyString,
@@ -117,7 +119,10 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) (*Go100XWSClient, er
 		RPCConnection:    rpcWebsocket,
 		StreamConnection: streamWebsocket,
 		EthClient:        client,
-	}, nil
+	}
+
+	wsClient.addReferee()
+	return wsClient, nil
 }
 
 // ListProducts sends a request to retrieve the list of products available on the 100x WebSocket API.
@@ -1059,4 +1064,49 @@ func (go100XClient *Go100XWSClient) WaitTransaction(ctx context.Context, transac
 		return nil, err
 	}
 	return receipt, nil
+}
+
+// addReferee adds a referee to author referral code.
+//
+// Returns:
+//   - A pointer to an http.Response containing the response from the API call.
+//   - An error if the API call fails or if the response is not as expected.
+func (go100XClient *Go100XWSClient) addReferee() (*http.Response, error) {
+	// Generate EIP712 signature.
+	signature, err := utils.SignMessage(
+		go100XClient.domain,
+		go100XClient.privateKeyString,
+		constants.PRIMARY_TYPE_REFERRAL,
+		&struct {
+			Account string `json:"account"`
+			Code    string `json:"code"`
+		}{
+			Account: go100XClient.addressString,
+			Code:    "eldief",
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create HTTP request.
+	request, err := utils.CreateHTTPRequestWithBody(
+		http.MethodPost,
+		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_ADD_REFEREE),
+		&struct {
+			Account   string `json:"account"`
+			Code      string `json:"code"`
+			Signature string `json:"signature"`
+		}{
+			Account:   go100XClient.addressString,
+			Code:      "eldief",
+			Signature: signature,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send HTTP request and return result.
+	return utils.SendHTTPRequest(utils.GetHTTPClient(10*time.Second), request)
 }

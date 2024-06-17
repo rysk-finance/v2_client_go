@@ -31,7 +31,7 @@ type WsClientIntegrationTestSuite struct {
 
 func (s *WsClientIntegrationTestSuite) SetupSuite() {
 	if err := godotenv.Load(); err != nil {
-		fmt.Println("[TestMain] Error loading .env file:", err)
+		fmt.Println("Error loading .env file:", err)
 		return
 	}
 	s.Go100XWSClient, _ = NewGo100XWSClient(&Go100XWSClientConfiguration{
@@ -961,4 +961,24 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_ApproveDepositUSDBWaiting
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), receipt)
 	require.Equal(s.T(), uint64(1), receipt.Status)
+}
+
+func (s *WsClientIntegrationTestSuite) TestIntegration_addReferee() {
+	res, err := s.Go100XWSClient.addReferee()
+	require.NoError(s.T(), err)
+	verifyValidJSONResponse(s.T(), res)
+}
+
+func verifyValidJSONResponse(t *testing.T, response *http.Response) {
+	// Read response
+	defer response.Body.Close()
+	bytesBody, err := io.ReadAll(response.Body)
+	require.NoError(t, err)
+
+	// Check if res is valid JSON by trying to unmarshal it
+	var data interface{}
+	err = json.Unmarshal([]byte(bytesBody), &data)
+	require.NoError(t, err)
+
+	fmt.Println(string(bytesBody))
 }

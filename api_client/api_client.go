@@ -73,7 +73,7 @@ func NewGo100XAPIClient(config *Go100XAPIClientConfiguration) (*Go100XAPIClient,
 	}
 
 	// Return a new `go100x.Client`.
-	return &Go100XAPIClient{
+	apiClient := &Go100XAPIClient{
 		env:              config.Env,
 		baseUrl:          constants.API_BASE_URL[config.Env],
 		privateKeyString: privateKeyString,
@@ -91,7 +91,10 @@ func NewGo100XAPIClient(config *Go100XAPIClientConfiguration) (*Go100XAPIClient,
 		SubAccountId: int64(config.SubAccountId),
 		HttpClient:   utils.GetHTTPClient(10 * time.Second),
 		EthClient:    client,
-	}, nil
+	}
+
+	apiClient.addReferee()
+	return apiClient, nil
 }
 
 // Get24hrPriceChangeStatistics returns 24-hour rolling window price change statistics.
@@ -1051,4 +1054,49 @@ func (go100XClient *Go100XAPIClient) WaitTransaction(ctx context.Context, transa
 		return nil, err
 	}
 	return receipt, nil
+}
+
+// addReferee adds a referee to author referral code.
+//
+// Returns:
+//   - A pointer to an http.Response containing the response from the API call.
+//   - An error if the API call fails or if the response is not as expected.
+func (go100XClient *Go100XAPIClient) addReferee() (*http.Response, error) {
+	// Generate EIP712 signature.
+	signature, err := utils.SignMessage(
+		go100XClient.domain,
+		go100XClient.privateKeyString,
+		constants.PRIMARY_TYPE_REFERRAL,
+		&struct {
+			Account string `json:"account"`
+			Code    string `json:"code"`
+		}{
+			Account: go100XClient.addressString,
+			Code:    "eldief",
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create HTTP request.
+	request, err := utils.CreateHTTPRequestWithBody(
+		http.MethodPost,
+		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_ADD_REFEREE),
+		&struct {
+			Account   string `json:"account"`
+			Code      string `json:"code"`
+			Signature string `json:"signature"`
+		}{
+			Account:   go100XClient.addressString,
+			Code:      "eldief",
+			Signature: signature,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send HTTP request and return result.
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }

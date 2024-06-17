@@ -26,4 +26,5 @@ const (
 	API_ENDPOINT_LIST_APPROVED_SIGNERS                  types.APIEndpoint = "/approved-signers"
 	API_ENDPOINT_LIST_OPEN_ORDERS                       types.APIEndpoint = "/openOrders"
 	API_ENDPOINT_LIST_ORDERS                            types.APIEndpoint = "/orders"
+	API_ENDPOINT_ADD_REFEREE                            types.APIEndpoint = "/referral/add-referee"
 )
