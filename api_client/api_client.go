@@ -76,10 +76,10 @@ func NewGo100XAPIClient(config *Go100XAPIClientConfiguration) (*Go100XAPIClient,
 	apiClient := &Go100XAPIClient{
 		env:              config.Env,
 		baseUrl:          constants.API_BASE_URL[config.Env],
-		privateKeyString: privateKeyString,
-		addressString:    utils.AddressFromPrivateKey(privateKeyString),
 		privateKey:       privateKey,
+		privateKeyString: privateKeyString,
 		address:          common.HexToAddress(utils.AddressFromPrivateKey(privateKeyString)),
+		addressString:    utils.AddressFromPrivateKey(privateKeyString),
 		ciao:             common.HexToAddress(constants.CIAO_ADDRESS[config.Env]),
 		usdb:             common.HexToAddress(constants.USDB_ADDRESS[config.Env]),
 		domain: apitypes.TypedDataDomain{

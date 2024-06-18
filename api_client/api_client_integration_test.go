@@ -32,14 +32,14 @@ type ApiClientIntegrationTestSuite struct {
 
 func (s *ApiClientIntegrationTestSuite) SetupSuite() {
 	if err := godotenv.Load(); err != nil {
-		fmt.Println("[TestMain] Error loading .env file:", err)
+		fmt.Println("Error loading .env file:", err)
 		return
 	}
 	apiClient, _ := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
-		SubAccountId: 0,
+		SubAccountId: 1,
 	})
 	s.Go100XApiClient = apiClient
 }
@@ -321,7 +321,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() 
 
 	price := new(big.Int)
 	new(big.Float).Mul(big.NewFloat(priceFloat), new(big.Float).SetFloat64(1e18)).Int(price)
-	price = new(big.Int).Mul(new(big.Int).Div(price, big.NewInt(100)), big.NewInt(110))
+	price = new(big.Int).Mul(new(big.Int).Div(price, big.NewInt(100)), big.NewInt(120))
 
 	// get product increment
 	res, err = s.Go100XApiClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
@@ -348,11 +348,11 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() 
 	// new order at 10% market premium
 	res, err = s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
 		Product:     &constants.PRODUCT_ETH_PERP,
-		IsBuy:       true,
+		IsBuy:       false,
 		OrderType:   constants.ORDER_TYPE_LIMIT,
 		TimeInForce: constants.TIME_IN_FORCE_GTC,
 		Price:       adjustedPrice.String(),
-		Quantity:    constants.E16.String(),
+		Quantity:    constants.E18.String(),
 		Expiration:  time.Now().Add(24 * time.Hour).UnixMilli(),
 		Nonce:       time.Now().UnixMicro(),
 	})
@@ -374,7 +374,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() 
 		IdToCancel: order.ID,
 		NewOrder: &types.NewOrderRequest{
 			Product:     &constants.PRODUCT_ETH_PERP,
-			IsBuy:       true,
+			IsBuy:       false,
 			OrderType:   constants.ORDER_TYPE_LIMIT_MAKER,
 			TimeInForce: constants.TIME_IN_FORCE_GTC,
 			Price:       adjustedPrice.String(),
@@ -383,9 +383,9 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() 
 			Nonce:       time.Now().UnixMicro(),
 		},
 	})
+	verifyValidJSONResponse(s.T(), res)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
-	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrder() {
@@ -462,12 +462,19 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 
 	body, err = io.ReadAll(res.Body)
 	require.NoError(s.T(), err)
-	fmt.Println(string(body))
+
+	var unmarshaledOrderToCancel map[string]interface{}
+	err = json.Unmarshal(body, &unmarshaledOrderToCancel)
+	require.NoError(s.T(), err)
+
+	idToCancel, ok := unmarshaledOrderToCancel["id"].(string)
+	require.True(s.T(), ok)
+	require.NotEmpty(s.T(), idToCancel)
 
 	// cancel order
 	res, err = s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
 		Product:    &constants.PRODUCT_ETH_PERP,
-		IdToCancel: "1",
+		IdToCancel: idToCancel,
 	})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)

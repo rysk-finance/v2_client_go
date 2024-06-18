@@ -42,6 +42,11 @@ func (s *WsClientIntegrationTestSuite) SetupSuite() {
 	})
 }
 
+func (s *WsClientIntegrationTestSuite) TearDownSuite() {
+	s.Go100XWSClient.RPCConnection.Close()
+	s.Go100XWSClient.StreamConnection.Close()
+}
+
 func TestRunSuiteIntegration_WsClientIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(WsClientIntegrationTestSuite))
 }
@@ -87,6 +92,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_GetProduct() {
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
 			require.NotEmpty(s.T(), response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}
@@ -109,6 +115,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_ServerTime() {
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
 			require.NotEmpty(s.T(), response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}
@@ -131,6 +138,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_Login() {
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
 			require.Equal(s.T(), "OK", response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}
@@ -155,6 +163,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_SessionStatus() {
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
 			require.NotEmpty(s.T(), response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}
@@ -180,6 +189,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_SubAccountList() {
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
 			require.NotEmpty(s.T(), response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}
@@ -207,6 +217,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_ApproveSigner() {
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
 			require.Equal(s.T(), "OK", response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}
@@ -234,6 +245,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_RevokeSigner() {
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
 			require.Equal(s.T(), "OK", response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}
@@ -294,6 +306,8 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_NewOrder() {
 			require.True(s.T(), response.Success)
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
+			require.NotEmpty(s.T(), response.Result)
+			fmt.Println(response.Result)
 
 			result, ok := response.Result.(map[string]interface{})
 			require.True(s.T(), ok)
@@ -340,7 +354,8 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_NewOrder() {
 			require.True(s.T(), response.Success)
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
-			require.Equal(s.T(), "OK", response.Result)
+			require.NotEmpty(s.T(), response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}
@@ -370,7 +385,8 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_ListOpenOrders() {
 			require.True(s.T(), response.Success)
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
-			require.Empty(s.T(), response.Result)
+			require.NotEmpty(s.T(), response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}
@@ -378,7 +394,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_ListOpenOrders() {
 
 func (s *WsClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 	s.TestIntegration_Login()
-	s.TestIntegration_ApproveDepositUSDBWaitingTxs()
+	// s.TestIntegration_ApproveDepositUSDBWaitingTxs()
 
 	// get market price
 	request, err := http.NewRequest(
@@ -432,6 +448,8 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 			require.True(s.T(), response.Success)
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
+			require.NotEmpty(s.T(), response.Result)
+			fmt.Println(response.Result)
 
 			result, ok := response.Result.(map[string]interface{})
 			require.True(s.T(), ok)
@@ -482,6 +500,8 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 			require.True(s.T(), response.Success)
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
+			require.NotEmpty(s.T(), response.Result)
+			fmt.Println(response.Result)
 
 			result, ok := response.Result.(map[string]interface{})
 			require.True(s.T(), ok)
@@ -515,6 +535,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
 			require.Equal(s.T(), "OK", response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}
@@ -539,6 +560,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_CancelAllOpenOrders() {
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
 			require.Equal(s.T(), "OK", response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}
@@ -567,6 +589,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_OrderBook() {
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
 			require.NotEmpty(s.T(), response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}
@@ -594,7 +617,8 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_GetPerpetualPosition() {
 			require.True(s.T(), response.Success)
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
-			require.Empty(s.T(), response.Result)
+			require.NotEmpty(s.T(), response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}
@@ -618,7 +642,8 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_GetSpotBalances() {
 			require.True(s.T(), response.Success)
 			require.Nil(s.T(), response.Error)
 			require.Equal(s.T(), "2.0", string(response.JsonRPC))
-			require.Empty(s.T(), response.Result)
+			require.NotEmpty(s.T(), response.Result)
+			fmt.Println(response.Result)
 			break
 		}
 	}

@@ -103,10 +103,10 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) (*Go100XWSClient, er
 		baseUrl:          constants.API_BASE_URL[config.Env],
 		rpcUrl:           constants.WS_RPC_URL[config.Env],
 		streamUrl:        constants.WS_STREAM_URL[config.Env],
-		privateKeyString: privateKeyString,
-		addressString:    utils.AddressFromPrivateKey(privateKeyString),
-		address:          common.HexToAddress(utils.AddressFromPrivateKey(privateKeyString)),
 		privateKey:       privateKey,
+		privateKeyString: privateKeyString,
+		address:          common.HexToAddress(utils.AddressFromPrivateKey(privateKeyString)),
+		addressString:    utils.AddressFromPrivateKey(privateKeyString),
 		ciao:             common.HexToAddress(constants.CIAO_ADDRESS[config.Env]),
 		usdb:             common.HexToAddress(constants.USDB_ADDRESS[config.Env]),
 		domain: apitypes.TypedDataDomain{
