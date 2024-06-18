@@ -142,6 +142,7 @@ func signEIP712Message(unsignedMessage []byte, privateKey *ecdsa.PrivateKey) (st
 	if err != nil {
 		return "", err
 	}
+	signature[64] += 27
 
 	// Convert the signature to a hex string.
 	signatureHex := common.Bytes2Hex(signature)
