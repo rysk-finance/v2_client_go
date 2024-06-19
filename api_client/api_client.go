@@ -813,6 +813,50 @@ func (go100XClient *Go100XAPIClient) GetPerpetualPosition(product *types.Product
 	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
+// GetPerpetualPositionAllProducts retrieves the perpetual position for all products for a SubAccount.
+//
+// Returns:
+//   - A pointer to an http.Response containing the response from the API call.
+//   - An error if the API call fails or if the response is not as expected.
+func (go100XClient *Go100XAPIClient) GetPerpetualPositionAllProducts() (*http.Response, error) {
+	// Generate EIP712 signature.
+	signature, err := utils.SignMessage(
+		go100XClient.domain,
+		go100XClient.privateKeyString,
+		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
+		&struct {
+			Account      string `json:"account"`
+			SubAccountId string `json:"subAccountId"`
+		}{
+			Account:      go100XClient.addressString,
+			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create HTTP request.
+	request, err := http.NewRequest(
+		http.MethodGet,
+		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_GET_PERPETUAL_POSITION),
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add query parameters and URL encode HTTP request.
+	query := request.URL.Query()
+	query.Add("account", go100XClient.addressString)
+	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("signature", signature)
+	request.URL.RawQuery = query.Encode()
+
+	// Send HTTP request and return result.
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+}
+
 // ListApprovedSigners retrieves a list of all approved signers for a specific `SubAccount`.
 //
 // Returns:
@@ -905,6 +949,50 @@ func (go100XClient *Go100XAPIClient) ListOpenOrders(product *types.Product) (*ht
 	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
 }
 
+// ListOpenOrdersAllProducts retrieves all open orders on the `SubAccount` for a all products.
+//
+// Returns:
+//   - A pointer to an http.Response containing the response from the API call.
+//   - An error if the API call fails or if the response is not as expected.
+func (go100XClient *Go100XAPIClient) ListOpenOrdersAllProducts() (*http.Response, error) {
+	// Generate EIP712 signature.
+	signature, err := utils.SignMessage(
+		go100XClient.domain,
+		go100XClient.privateKeyString,
+		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
+		&struct {
+			Account      string `json:"account"`
+			SubAccountId string `json:"subAccountId"`
+		}{
+			Account:      go100XClient.addressString,
+			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create HTTP request.
+	request, err := http.NewRequest(
+		http.MethodGet,
+		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_LIST_OPEN_ORDERS),
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add query parameters and URL encode HTTP request.
+	query := request.URL.Query()
+	query.Add("account", go100XClient.addressString)
+	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("signature", signature)
+	request.URL.RawQuery = query.Encode()
+
+	// Send HTTP request and return result.
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+}
+
 // ListOrders retrieves all orders on the `SubAccount` for a specific product.
 //
 // Parameters:
@@ -947,6 +1035,56 @@ func (go100XClient *Go100XAPIClient) ListOrders(params *types.ListOrdersRequest)
 	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
 	query.Add("symbol", params.Product.Symbol)
 	for _, id := range params.Ids {
+		query.Add("ids", id)
+	}
+	query.Add("signature", signature)
+	request.URL.RawQuery = query.Encode()
+
+	// Send HTTP request and return result.
+	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+}
+
+// ListOrders retrieves all orders on the `SubAccount` for a specific product.
+//
+// Parameters:
+//   - params: A pointer to a `types.ListOrdersRequest` struct containing parameters for listing orders.
+//
+// Returns:
+//   - A pointer to an http.Response containing the response from the API call.
+//   - An error if the API call fails or if the response is not as expected.
+func (go100XClient *Go100XAPIClient) ListOrdersAllProducts(ids []string) (*http.Response, error) {
+	// Generate EIP712 signature.
+	signature, err := utils.SignMessage(
+		go100XClient.domain,
+		go100XClient.privateKeyString,
+		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
+		&struct {
+			Account      string `json:"account"`
+			SubAccountId string `json:"subAccountId"`
+		}{
+			Account:      go100XClient.addressString,
+			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create HTTP request.
+	request, err := http.NewRequest(
+		http.MethodGet,
+		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_LIST_ORDERS),
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add query parameters and URL encode HTTP request.
+	query := request.URL.Query()
+	query.Add("account", go100XClient.addressString)
+	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	for _, id := range ids {
 		query.Add("ids", id)
 	}
 	query.Add("signature", signature)

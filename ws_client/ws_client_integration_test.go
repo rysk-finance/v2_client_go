@@ -394,7 +394,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_ListOpenOrders() {
 
 func (s *WsClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 	s.TestIntegration_Login()
-	// s.TestIntegration_ApproveDepositUSDBWaitingTxs()
+	s.TestIntegration_ApproveDepositUSDBWaitingTxs()
 
 	// get market price
 	request, err := http.NewRequest(

@@ -502,6 +502,13 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_GetPerpetualPosition() {
 	verifyValidJSONResponse(s.T(), res)
 }
 
+func (s *ApiClientIntegrationTestSuite) TestIntegration_GetPerpetualPositionAllProducts() {
+	res, err := s.Go100XApiClient.GetPerpetualPositionAllProducts()
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
+}
+
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListApproveSigners() {
 	res, err := s.Go100XApiClient.ListApprovedSigners()
 	require.NoError(s.T(), err)
@@ -516,11 +523,42 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOpenOrders() {
 	verifyValidJSONResponse(s.T(), res)
 }
 
-func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrders() {
+func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOpenOrdersAllProducts() {
+	res, err := s.Go100XApiClient.ListOpenOrdersAllProducts()
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
+}
+
+func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrders_EmptyIds() {
 	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
 		Product: &constants.PRODUCT_BTC_PERP,
 		Ids:     []string{},
 	})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
+}
+
+func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrders() {
+	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
+		Product: &constants.PRODUCT_BTC_PERP,
+		Ids:     []string{"123", "456", "789"},
+	})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
+}
+
+func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrdersAllProducts() {
+	res, err := s.Go100XApiClient.ListOrdersAllProducts([]string{"123", "456", "789"})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+	verifyValidJSONResponse(s.T(), res)
+}
+
+func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrdersAllProducts_EmptyIds() {
+	res, err := s.Go100XApiClient.ListOrdersAllProducts([]string{})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)

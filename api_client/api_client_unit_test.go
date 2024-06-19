@@ -1164,6 +1164,50 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPosition_BadBaseURL() {
 	require.Nil(s.T(), res)
 }
 
+func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPositionAllProducts() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(s.T(), string(constants.API_ENDPOINT_GET_PERPETUAL_POSITION), req.URL.Path)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XApiClient.GetPerpetualPositionAllProducts()
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPositionAllProducts_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.addressString = ""
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XApiClient.GetPerpetualPositionAllProducts()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPositionAllProducts_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XApiClient.GetPerpetualPositionAllProducts()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
 func (s *ApiClientUnitTestSuite) TestUnit_ListApprovedSigners() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_APPROVED_SIGNERS), req.URL.Path)
@@ -1253,6 +1297,50 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrders_BadBaseURL() {
 	require.Nil(s.T(), res)
 }
 
+func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrdersAllProducts() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_OPEN_ORDERS), req.URL.Path)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XApiClient.ListOpenOrdersAllProducts()
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrdersAllProducts_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.addressString = ""
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XApiClient.ListOpenOrdersAllProducts()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrdersAllProducts_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XApiClient.ListOpenOrdersAllProducts()
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
 func (s *ApiClientUnitTestSuite) TestUnit_ListOrders() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_ORDERS), req.URL.Path)
@@ -1328,6 +1416,71 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrders_BadBaseURL() {
 		Product: &constants.PRODUCT_BLAST_PERP,
 		Ids:     []string{"123"},
 	})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListOrdersAllProducts() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_ORDERS), req.URL.Path)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), "123", req.URL.Query().Get("ids"))
+		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XApiClient.ListOrdersAllProducts([]string{"123"})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListOrdersAllProducts_MultipleIds() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_ORDERS), req.URL.Path)
+		require.Equal(s.T(), http.MethodGet, req.Method)
+		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Contains(s.T(), req.URL.Query()["ids"], "123")
+		require.Contains(s.T(), req.URL.Query()["ids"], "456")
+		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XApiClient.ListOrdersAllProducts([]string{"123", "456"})
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 200, res.StatusCode)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListOrdersAllProducts_BadAddress() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.addressString = ""
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XApiClient.ListOrdersAllProducts([]string{"123"})
+	require.Error(s.T(), err)
+	require.Nil(s.T(), res)
+}
+
+func (s *ApiClientUnitTestSuite) TestUnit_ListOrdersAllProducts_BadBaseURL() {
+	handler := func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}
+	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
+	s.Go100XApiClient.baseUrl = "://invalid-url"
+	defer mockHttpServer.Close()
+
+	res, err := s.Go100XApiClient.ListOrdersAllProducts([]string{"123"})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
