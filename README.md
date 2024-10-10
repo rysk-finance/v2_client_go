@@ -1,8 +1,8 @@
-# GO 100x
+# Rysk V2 Client
 
-Go100x is a Go SDK for interacting with the 100x API and JSON-RPC Websocket, providing tools and utilities to streamline integration and interaction with 100x's services.
+v2_client_go is a Go SDK for interacting with the Rysk V2 API and JSON-RPC Websocket, providing tools and utilities to streamline integration and interaction with Rysk V2 services.
 
-100x: [https://app.100x.finance/](https://app.100x.finance/)
+Rysk V2: [https://app.rysk.finance/](https://app.rysk.finance/)
 
 ## Table of Contents
 
@@ -20,34 +20,34 @@ Before you start, ensure you have the following installed:
 
 ### Installation
 
-To install `go100x` as a Go module, simply use `go get`:
+To install `v2_client_go` as a Go module, simply use `go get`:
 
-    $ go get github.com/eldief/go100x
+    $ go get github.com/rysk-finance/v2_client_go
     
-This command will download and install go100x and its dependencies.
+This command will download and install v2_client_go and its dependencies.
 
 
 ## Usage
 
-This package follows [100x API documentation](https://100x.readme.io/reference/100x-api-introduction)
+This package follows [Rysk V2 API documentation](https://100x.readme.io/reference/100x-api-introduction)
 
 
 Includes:
-- REST HTTP client: `Go100XAPIClient` 
-- JSON RPC Websocket: `Go100XWSClient`
+- REST HTTP client: `RyskV2APIClient` 
+- JSON RPC Websocket: `RyskV2WSClient`
 
 
 ## Examples
 
-- Look [here](https://github.com/eldief/go100x/tree/master/examples/rest) for REST API Client examples
-- Look [here](https://github.com/eldief/go100x/tree/master/examples/websocket) for Websocket Client examples
+- Look [here](https://github.com/rysk-finance/v2_client_go/tree/master/examples/rest) for REST API Client examples
+- Look [here](https://github.com/rysk-finance/v2_client_go/tree/master/examples/websocket) for Websocket Client examples
 
 
 ## Testing
 
 Before running integration tests add a new `.env` file in both `api_client` and `ws_client` folder following both `.env.example` files.
 
-To run tests for GO 100x, you can use the provided Makefile:
+To run tests for GO v2_client_go, you can use the provided Makefile:
 
 ```
 # Run all tests
@@ -71,7 +71,7 @@ $ make coverage
 
 ## Contributing
 
-Contributions to GO 100x are welcome! Follow these steps to contribute:
+Contributions to GO v2_client_go are welcome! Follow these steps to contribute:
 
 - Fork the repository and create your branch (git checkout -b feature/myfeature).
 - Commit your changes (git commit -am 'Add new feature').

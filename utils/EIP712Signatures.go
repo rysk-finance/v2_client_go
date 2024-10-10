@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/eldief/go100x/constants"
-	"github.com/eldief/go100x/types"
+	"github.com/rysk-finance/v2_client_go/constants"
+	"github.com/rysk-finance/v2_client_go/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"

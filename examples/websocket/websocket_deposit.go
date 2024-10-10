@@ -5,55 +5,56 @@ import (
 	"log"
 	"os"
 
-	"github.com/eldief/go100x/constants"
-	"github.com/eldief/go100x/ws_client"
 	"github.com/joho/godotenv"
+	"github.com/rysk-finance/v2_client_go/constants"
+	"github.com/rysk-finance/v2_client_go/ws_client"
 )
 
 func Deposit() {
 	// Load ".env" file
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("Deposit:: Error loading .env file:", err)
-		return
+		log.Fatalf("Deposit:: %v", err)
 	}
 
 	// Get Private Key from environment
 	privateKey := os.Getenv("PRIVATE_KEYS")
 	if privateKey == "" {
-		log.Fatalf("Deposit:: no PRIVATE_KEYS found in .env file")
+		log.Fatalf("Deposit:: no PRIVATE_KEYS found")
 	}
 
-	// Initialize new Go100XAPIClient
-	client, err := ws_client.NewGo100XWSClient(&ws_client.Go100XWSClientConfiguration{
-		Env:          constants.ENVIRONMENT_MAINNET, // Blast Mainnet
-		PrivateKey:   privateKey,                    // Your private key
-		RpcUrl:       "https://rpc.blast.io",        // Public Blast Mainnet RPC url
-		SubAccountId: 0,                             // Default frontend subaccount
+	// Initialize new RyskV2APIClient
+	client, err := ws_client.NewRyskV2WSClient(&ws_client.RyskV2WSClientConfiguration{
+		Env:          constants.ENVIRONMENT_TESTNET,                  // Arbistrum sepolia testnet
+		PrivateKey:   privateKey,                                     // Your private key
+		RpcUrl:       "https://arbitrum-sepolia.gateway.tenderly.co", // Public Arbistrum sepolia testnet RPC url
+		SubAccountId: 0,                                              // Default frontend subaccount
 	})
 	if err != nil {
-		log.Fatalf("Deposit:: error intializing Go100XAPIClient: %v", err)
+		log.Fatalf("Deposit:: %v", err)
 	}
 
-	// Approve USDB to 100x
-	transaction, err := client.ApproveUSDB(context.Background(), constants.E20)
+	// Approve USDC to Rysk V2
+	transaction, err := client.ApproveUSDC(context.Background(), constants.E10)
 	if err != nil {
-		log.Fatalf("Deposit:: error dispatching approve USDB transaction: %v", err)
+		log.Fatalf("Deposit:: %v", err)
 	}
+
 	receipt, err := client.WaitTransaction(context.Background(), transaction)
 	if err != nil {
-		log.Fatalf("Deposit:: error waiting for approve USDB transaction: %v", err)
+		log.Fatalf("Deposit:: %v", err)
 	}
-	log.Printf("Deposit:: approve USDB transaction receipt received: %s", receipt.TxHash)
+	log.Printf("Deposit:: approve USDC transaction receipt received: %s", receipt.TxHash)
 
-	// Deposit USDB to 100x
-	transaction, err = client.DepositUSDB(context.Background(), constants.E20)
+	// Deposit USDC to Rysk V2
+	transaction, err = client.DepositUSDC(context.Background(), constants.E10)
 	if err != nil {
-		log.Fatalf("Deposit:: error dispatching deposit USDB transaction: %v", err)
+		log.Fatalf("Deposit:: %v", err)
 	}
+
 	receipt, err = client.WaitTransaction(context.Background(), transaction)
 	if err != nil {
-		log.Fatalf("Deposit:: error waiting for deposit USDB transaction: %v", err)
+		log.Fatalf("Deposit:: %v", err)
 	}
-	log.Printf("Deposit:: deposit USDB transaction receipt received: %s", receipt.TxHash)
+	log.Printf("Deposit:: deposit USDC transaction receipt received: %s", receipt.TxHash)
 }

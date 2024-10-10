@@ -3,8 +3,8 @@ package utils
 import (
 	"encoding/json"
 
-	"github.com/eldief/go100x/types"
 	"github.com/gorilla/websocket"
+	"github.com/rysk-finance/v2_client_go/types"
 )
 
 // SendRPCRequest sends a RPC request via a WebSocket connection and returns any error encountered.

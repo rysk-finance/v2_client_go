@@ -18,14 +18,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eldief/go100x/constants"
-	"github.com/eldief/go100x/types"
-	"github.com/eldief/go100x/utils"
-	"github.com/eldief/go100x/utils/mocks"
 	geth_types "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
+	"github.com/rysk-finance/v2_client_go/constants"
+	"github.com/rysk-finance/v2_client_go/types"
+	"github.com/rysk-finance/v2_client_go/utils"
+	"github.com/rysk-finance/v2_client_go/utils/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -37,7 +37,7 @@ type WSClientUnitTestSuite struct {
 	Address        string
 	BaseUrl        string
 	RpcUrl         string
-	Go100XWSClient *Go100XWSClient
+	RyskV2WSClient *RyskV2WSClient
 	EthClient      types.IEthClient
 }
 
@@ -47,7 +47,7 @@ func (s *WSClientUnitTestSuite) SetupSuite() {
 		return
 	}
 
-	wsClient, err := NewGo100XWSClient(&Go100XWSClientConfiguration{
+	wsClient, err := NewRyskV2WSClient(&RyskV2WSClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
@@ -55,24 +55,24 @@ func (s *WSClientUnitTestSuite) SetupSuite() {
 	})
 	require.NoError(s.T(), err)
 
-	s.Go100XWSClient = wsClient
-	s.PrivateKey = s.Go100XWSClient.privateKeyString
-	s.Address = utils.AddressFromPrivateKey(s.Go100XWSClient.privateKeyString)
-	s.EthClient = s.Go100XWSClient.EthClient
+	s.RyskV2WSClient = wsClient
+	s.PrivateKey = s.RyskV2WSClient.privateKeyString
+	s.Address = utils.AddressFromPrivateKey(s.RyskV2WSClient.privateKeyString)
+	s.EthClient = s.RyskV2WSClient.EthClient
 }
 
 func (s *WSClientUnitTestSuite) SetupTest() {
-	s.Go100XWSClient.privateKeyString = s.PrivateKey
-	s.Go100XWSClient.addressString = s.Address
-	s.Go100XWSClient.EthClient = s.EthClient
+	s.RyskV2WSClient.privateKeyString = s.PrivateKey
+	s.RyskV2WSClient.addressString = s.Address
+	s.RyskV2WSClient.EthClient = s.EthClient
 }
 
 func TestRunSuiteUnit_WsClientUnitTestSuite(t *testing.T) {
 	suite.Run(t, new(WSClientUnitTestSuite))
 }
 
-func (s *WSClientUnitTestSuite) TestUnit_NewGo100XWSClient() {
-	wsClient, err := NewGo100XWSClient(&Go100XWSClientConfiguration{
+func (s *WSClientUnitTestSuite) TestUnit_NewRyskV2WSClient() {
+	wsClient, err := NewRyskV2WSClient(&RyskV2WSClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
@@ -88,7 +88,7 @@ func (s *WSClientUnitTestSuite) TestUnit_NewGo100XWSClient() {
 	require.Equal(s.T(), utils.AddressFromPrivateKey(strings.TrimPrefix(string(os.Getenv("PRIVATE_KEYS")), "0x")), wsClient.address.String())
 	require.Equal(s.T(), strings.TrimPrefix(string(os.Getenv("PRIVATE_KEYS")), "0x"), hex.EncodeToString(crypto.FromECDSA(wsClient.privateKey)))
 	require.Equal(s.T(), constants.CIAO_ADDRESS[constants.ENVIRONMENT_TESTNET], wsClient.ciao.String())
-	require.Equal(s.T(), constants.USDB_ADDRESS[constants.ENVIRONMENT_TESTNET], wsClient.usdb.String())
+	require.Equal(s.T(), constants.USDC_ADDRESS[constants.ENVIRONMENT_TESTNET], wsClient.usdc.String())
 	require.NotNil(s.T(), wsClient.domain)
 	require.Equal(s.T(), constants.DOMAIN_NAME, wsClient.domain.Name)
 	require.Equal(s.T(), constants.DOMAIN_VERSION, wsClient.domain.Version)
@@ -98,8 +98,8 @@ func (s *WSClientUnitTestSuite) TestUnit_NewGo100XWSClient() {
 	require.NotNil(s.T(), wsClient.EthClient)
 }
 
-func (s *WSClientUnitTestSuite) TestUnitNewGo100XWSClient_InvalidPrivateKey() {
-	apiClient, err := NewGo100XWSClient(&Go100XWSClientConfiguration{
+func (s *WSClientUnitTestSuite) TestUnitNewRyskV2WSClient_InvalidPrivateKey() {
+	apiClient, err := NewRyskV2WSClient(&RyskV2WSClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   "0x123",
 		RpcUrl:       os.Getenv("RPC_URL"),
@@ -109,8 +109,8 @@ func (s *WSClientUnitTestSuite) TestUnitNewGo100XWSClient_InvalidPrivateKey() {
 	require.Nil(s.T(), apiClient)
 }
 
-func (s *WSClientUnitTestSuite) TestUnit_NewGo100XWSClient_InvalidRPCURL() {
-	apiClient, err := NewGo100XWSClient(&Go100XWSClientConfiguration{
+func (s *WSClientUnitTestSuite) TestUnit_NewRyskV2WSClient_InvalidRPCURL() {
+	apiClient, err := NewRyskV2WSClient(&RyskV2WSClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       "",
@@ -120,10 +120,10 @@ func (s *WSClientUnitTestSuite) TestUnit_NewGo100XWSClient_InvalidRPCURL() {
 	require.Nil(s.T(), apiClient)
 }
 
-func (s *WSClientUnitTestSuite) TestUnit_NewGo100XWSClient_InvalidRPCWebsocketURL() {
+func (s *WSClientUnitTestSuite) TestUnit_NewRyskV2WSClient_InvalidRPCWebsocketURL() {
 	ogRPCURL := constants.WS_RPC_URL[constants.ENVIRONMENT_TESTNET]
 	constants.WS_RPC_URL[constants.ENVIRONMENT_TESTNET] = "invalid_rpc_url"
-	apiClient, err := NewGo100XWSClient(&Go100XWSClientConfiguration{
+	apiClient, err := NewRyskV2WSClient(&RyskV2WSClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
@@ -134,10 +134,10 @@ func (s *WSClientUnitTestSuite) TestUnit_NewGo100XWSClient_InvalidRPCWebsocketUR
 	constants.WS_RPC_URL[constants.ENVIRONMENT_TESTNET] = ogRPCURL
 }
 
-func (s *WSClientUnitTestSuite) TestUnit_NewGo100XWSClient_InvalidStreamWebsocketURL() {
+func (s *WSClientUnitTestSuite) TestUnit_NewRyskV2WSClient_InvalidStreamWebsocketURL() {
 	ogStreamURL := constants.WS_STREAM_URL[constants.ENVIRONMENT_TESTNET]
 	constants.WS_STREAM_URL[constants.ENVIRONMENT_TESTNET] = "invalid_stream_url"
-	apiClient, err := NewGo100XWSClient(&Go100XWSClientConfiguration{
+	apiClient, err := NewRyskV2WSClient(&RyskV2WSClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
@@ -185,10 +185,10 @@ func (s *WSClientUnitTestSuite) TestUnit_ListProducts() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.ListProducts("69420")
+	err = s.RyskV2WSClient.ListProducts("69420")
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -237,10 +237,10 @@ func (s *WSClientUnitTestSuite) TestUnit_GetProduct() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.GetProduct("69420", &constants.PRODUCT_ETH_PERP)
+	err = s.RyskV2WSClient.GetProduct("69420", &constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -282,10 +282,10 @@ func (s *WSClientUnitTestSuite) TestUnit_ServerTime() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.ServerTime("69420")
+	err = s.RyskV2WSClient.ServerTime("69420")
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -324,7 +324,7 @@ func (s *WSClientUnitTestSuite) TestUnit_Login() {
 			err = json.Unmarshal(requestBody.Params, &params)
 			require.NoError(s.T(), err)
 			require.Equal(s.T(), s.Address, params.Account)
-			require.Equal(s.T(), "I want to log into 100x.finance", params.Message)
+			require.Equal(s.T(), "I want to log into rysk.finance", params.Message)
 			require.Greater(s.T(), params.Timestamp, uint64(0))
 			require.NotEmpty(s.T(), params.Signature)
 			done <- struct{}{}
@@ -340,17 +340,17 @@ func (s *WSClientUnitTestSuite) TestUnit_Login() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.Login("69420")
+	err = s.RyskV2WSClient.Login("69420")
 	require.NoError(s.T(), err)
 	<-done
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_Login_BadAddress() {
-	s.Go100XWSClient.addressString = ""
-	err := s.Go100XWSClient.Login("69420")
+	s.RyskV2WSClient.addressString = ""
+	err := s.RyskV2WSClient.Login("69420")
 	require.Error(s.T(), err)
 }
 
@@ -391,10 +391,10 @@ func (s *WSClientUnitTestSuite) TestUnit_SessionStatus() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.SessionStatus("69420")
+	err = s.RyskV2WSClient.SessionStatus("69420")
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -422,7 +422,7 @@ func (s *WSClientUnitTestSuite) TestUnit_SubAccountList() {
 			require.Equal(s.T(), "2.0", requestBody.JsonRPC)
 			require.Equal(s.T(), "69420", requestBody.Id)
 			require.Equal(s.T(), string(constants.WS_METHOD_SUB_ACCOUNT_LIST), requestBody.Method)
-			require.Equal(s.T(), string(requestBody.Params), "{\"account\":\""+s.Go100XWSClient.addressString+"\"}")
+			require.Equal(s.T(), string(requestBody.Params), "{\"account\":\""+s.RyskV2WSClient.addressString+"\"}")
 			done <- struct{}{}
 			break
 		}
@@ -436,10 +436,10 @@ func (s *WSClientUnitTestSuite) TestUnit_SubAccountList() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.SubAccountList("69420")
+	err = s.RyskV2WSClient.SubAccountList("69420")
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -499,10 +499,10 @@ func (s *WSClientUnitTestSuite) TestUnit_ApproveSigner() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.ApproveSigner("69420", &types.ApproveRevokeSignerRequest{
+	err = s.RyskV2WSClient.ApproveSigner("69420", &types.ApproveRevokeSignerRequest{
 		ApprovedSigner: s.Address,
 		Nonce:          nonce,
 	})
@@ -511,7 +511,7 @@ func (s *WSClientUnitTestSuite) TestUnit_ApproveSigner() {
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_ApproveSigner_BadAddress() {
-	err := s.Go100XWSClient.ApproveSigner("69420", &types.ApproveRevokeSignerRequest{
+	err := s.RyskV2WSClient.ApproveSigner("69420", &types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "",
 		Nonce:          time.Now().UnixMicro(),
 	})
@@ -573,10 +573,10 @@ func (s *WSClientUnitTestSuite) TestUnit_RevokeSigner() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.RevokeSigner("69420", &types.ApproveRevokeSignerRequest{
+	err = s.RyskV2WSClient.RevokeSigner("69420", &types.ApproveRevokeSignerRequest{
 		ApprovedSigner: s.Address,
 		Nonce:          nonce,
 	})
@@ -585,7 +585,7 @@ func (s *WSClientUnitTestSuite) TestUnit_RevokeSigner() {
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_RevokeSigner_BadAddress() {
-	err := s.Go100XWSClient.RevokeSigner("69420", &types.ApproveRevokeSignerRequest{
+	err := s.RyskV2WSClient.RevokeSigner("69420", &types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "",
 		Nonce:          time.Now().UnixMicro(),
 	})
@@ -635,7 +635,7 @@ func (s *WSClientUnitTestSuite) TestUnit_NewOrder() {
 			require.NoError(s.T(), err)
 			require.Equal(s.T(), s.Address, params.Account)
 			require.Equal(s.T(), int64(1), params.SubAccountId)
-			require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Id, params.ProductId)
+			require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Id, params.ProductId)
 			require.True(s.T(), params.IsBuy)
 
 			require.Equal(s.T(), int64(1), params.OrderType)
@@ -659,11 +659,11 @@ func (s *WSClientUnitTestSuite) TestUnit_NewOrder() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.NewOrder("69420", &types.NewOrderRequest{
-		Product:     &constants.PRODUCT_BLAST_PERP,
+	err = s.RyskV2WSClient.NewOrder("69420", &types.NewOrderRequest{
+		Product:     &constants.PRODUCT_ETH_PERP,
 		IsBuy:       true,
 		OrderType:   types.OrderType(1),
 		TimeInForce: types.TimeInForce(1),
@@ -677,10 +677,10 @@ func (s *WSClientUnitTestSuite) TestUnit_NewOrder() {
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_NewOrder_BadAddress() {
-	s.Go100XWSClient.addressString = ""
+	s.RyskV2WSClient.addressString = ""
 	nonce := time.Now().UnixMicro()
-	err := s.Go100XWSClient.NewOrder("69420", &types.NewOrderRequest{
-		Product:     &constants.PRODUCT_BLAST_PERP,
+	err := s.RyskV2WSClient.NewOrder("69420", &types.NewOrderRequest{
+		Product:     &constants.PRODUCT_ETH_PERP,
 		IsBuy:       true,
 		OrderType:   types.OrderType(1),
 		TimeInForce: types.TimeInForce(1),
@@ -731,7 +731,7 @@ func (s *WSClientUnitTestSuite) TestUnit_ListOpenOrders() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), s.Address, params.Account)
 		require.Equal(s.T(), int64(1), params.SubAccountId)
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Id, params.ProductId)
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Id, params.ProductId)
 		require.Equal(s.T(), []string{"order1", "order2"}, params.OrderIds)
 		require.Equal(s.T(), int64(1627801200), params.StartTime)
 		require.Equal(s.T(), int64(1627801800), params.EndTime)
@@ -748,11 +748,11 @@ func (s *WSClientUnitTestSuite) TestUnit_ListOpenOrders() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.ListOpenOrders("69420", &types.ListOrdersRequest{
-		Product:   &constants.PRODUCT_BLAST_PERP,
+	err = s.RyskV2WSClient.ListOpenOrders("69420", &types.ListOrdersRequest{
+		Product:   &constants.PRODUCT_ETH_PERP,
 		Ids:       []string{"order1", "order2"},
 		StartTime: 1627801200,
 		EndTime:   1627801800,
@@ -799,7 +799,7 @@ func (s *WSClientUnitTestSuite) TestUnit_CancelOrder() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), s.Address, params.Account)
 		require.Equal(s.T(), int64(1), params.SubAccountId)
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Id, params.ProductId)
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Id, params.ProductId)
 		require.Equal(s.T(), "order123", params.OrderId)
 		require.NotEmpty(s.T(), params.Signature)
 		done <- struct{}{}
@@ -813,11 +813,11 @@ func (s *WSClientUnitTestSuite) TestUnit_CancelOrder() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.CancelOrder("69420", &types.CancelOrderRequest{
-		Product:    &constants.PRODUCT_BLAST_PERP,
+	err = s.RyskV2WSClient.CancelOrder("69420", &types.CancelOrderRequest{
+		Product:    &constants.PRODUCT_ETH_PERP,
 		IdToCancel: "order123",
 	})
 	require.NoError(s.T(), err)
@@ -825,9 +825,9 @@ func (s *WSClientUnitTestSuite) TestUnit_CancelOrder() {
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_CancelOrder_BadAddress() {
-	s.Go100XWSClient.addressString = ""
-	err := s.Go100XWSClient.CancelOrder("69420", &types.CancelOrderRequest{
-		Product:    &constants.PRODUCT_BLAST_PERP,
+	s.RyskV2WSClient.addressString = ""
+	err := s.RyskV2WSClient.CancelOrder("69420", &types.CancelOrderRequest{
+		Product:    &constants.PRODUCT_ETH_PERP,
 		IdToCancel: "order123",
 	})
 	require.Error(s.T(), err)
@@ -867,7 +867,7 @@ func (s *WSClientUnitTestSuite) TestUnit_CancelAllOpenOrders() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), s.Address, params.Account)
 		require.Equal(s.T(), int64(1), params.SubAccountId)
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Id, params.ProductId)
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Id, params.ProductId)
 		done <- struct{}{}
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
@@ -879,10 +879,10 @@ func (s *WSClientUnitTestSuite) TestUnit_CancelAllOpenOrders() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.CancelAllOpenOrders("69420", &constants.PRODUCT_BLAST_PERP)
+	err = s.RyskV2WSClient.CancelAllOpenOrders("69420", &constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -920,7 +920,7 @@ func (s *WSClientUnitTestSuite) TestUnit_OrderBook() {
 		}
 		err = json.Unmarshal(requestBody.Params, &params)
 		require.NoError(s.T(), err)
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, params.Symbol)
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, params.Symbol)
 		require.Equal(s.T(), int64(1), params.Granularity)
 		require.Equal(s.T(), int64(100), params.Limit)
 		done <- struct{}{}
@@ -934,11 +934,11 @@ func (s *WSClientUnitTestSuite) TestUnit_OrderBook() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.OrderBook("69420", &types.OrderBookRequest{
-		Product:     &constants.PRODUCT_BLAST_PERP,
+	err = s.RyskV2WSClient.OrderBook("69420", &types.OrderBookRequest{
+		Product:     &constants.PRODUCT_ETH_PERP,
 		Granularity: 1,
 		Limit:       100,
 	})
@@ -982,7 +982,7 @@ func (s *WSClientUnitTestSuite) TestUnit_GetPerpetualPosition() {
 			require.NoError(s.T(), err)
 			require.Equal(s.T(), s.Address, params.Account)
 			require.Equal(s.T(), int64(1), params.SubAccountId)
-			require.ElementsMatch(s.T(), []int64{constants.PRODUCT_BLAST_PERP.Id, constants.PRODUCT_ETH_PERP.Id}, params.ProductIds)
+			require.ElementsMatch(s.T(), []int64{constants.PRODUCT_ETH_PERP.Id, constants.PRODUCT_ETH_PERP.Id}, params.ProductIds)
 			done <- struct{}{}
 			break
 		}
@@ -997,11 +997,11 @@ func (s *WSClientUnitTestSuite) TestUnit_GetPerpetualPosition() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.GetPerpetualPosition("69420", []*types.Product{
-		&constants.PRODUCT_BLAST_PERP,
+	err = s.RyskV2WSClient.GetPerpetualPosition("69420", []*types.Product{
+		&constants.PRODUCT_ETH_PERP,
 		&constants.PRODUCT_ETH_PERP,
 	})
 	require.NoError(s.T(), err)
@@ -1059,10 +1059,10 @@ func (s *WSClientUnitTestSuite) TestUnit_GetSpotBalances() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.GetSpotBalances("69420", []string{})
+	err = s.RyskV2WSClient.GetSpotBalances("69420", []string{})
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1116,10 +1116,10 @@ func (s *WSClientUnitTestSuite) TestUnit_AccountUpdates() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.RPCConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.RPCConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.AccountUpdates("69420")
+	err = s.RyskV2WSClient.AccountUpdates("69420")
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1170,10 +1170,10 @@ func (s *WSClientUnitTestSuite) TestUnit_SubscribeAggregateTrades_ZeroProducts()
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.SubscribeAggregateTrades("69420", []*types.Product{})
+	err = s.RyskV2WSClient.SubscribeAggregateTrades("69420", []*types.Product{})
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1229,14 +1229,14 @@ func (s *WSClientUnitTestSuite) TestUnit_SubscribeAggregateTrades() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
 	products := []*types.Product{
 		&constants.PRODUCT_ETH_PERP,
 		&constants.PRODUCT_BTC_PERP,
 	}
-	err = s.Go100XWSClient.SubscribeAggregateTrades("69420", products)
+	err = s.RyskV2WSClient.SubscribeAggregateTrades("69420", products)
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1287,10 +1287,10 @@ func (s *WSClientUnitTestSuite) TestUnit_UnsubscribeAggregateTrades_ZeroProducts
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.UnsubscribeAggregateTrades("69420", []*types.Product{})
+	err = s.RyskV2WSClient.UnsubscribeAggregateTrades("69420", []*types.Product{})
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1346,14 +1346,14 @@ func (s *WSClientUnitTestSuite) TestUnit_UnsubscribeAggregateTrades() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
 	products := []*types.Product{
 		&constants.PRODUCT_ETH_PERP,
 		&constants.PRODUCT_BTC_PERP,
 	}
-	err = s.Go100XWSClient.UnsubscribeAggregateTrades("69420", products)
+	err = s.RyskV2WSClient.UnsubscribeAggregateTrades("69420", products)
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1404,10 +1404,10 @@ func (s *WSClientUnitTestSuite) TestUnit_SubscribeSingleTrades_ZeroProducts() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.SubscribeSingleTrades("69420", []*types.Product{})
+	err = s.RyskV2WSClient.SubscribeSingleTrades("69420", []*types.Product{})
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1463,14 +1463,14 @@ func (s *WSClientUnitTestSuite) TestUnit_SubscribeSingleTrades() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
 	products := []*types.Product{
 		&constants.PRODUCT_ETH_PERP,
 		&constants.PRODUCT_BTC_PERP,
 	}
-	err = s.Go100XWSClient.SubscribeSingleTrades("69420", products)
+	err = s.RyskV2WSClient.SubscribeSingleTrades("69420", products)
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1521,10 +1521,10 @@ func (s *WSClientUnitTestSuite) TestUnit_UnsubscribeSingleTrades_ZeroProducts() 
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.UnubscribeSingleTrades("69420", []*types.Product{})
+	err = s.RyskV2WSClient.UnubscribeSingleTrades("69420", []*types.Product{})
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1580,14 +1580,14 @@ func (s *WSClientUnitTestSuite) TestUnit_UnsubscribeSingleTrades() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
 	products := []*types.Product{
 		&constants.PRODUCT_ETH_PERP,
 		&constants.PRODUCT_BTC_PERP,
 	}
-	err = s.Go100XWSClient.UnubscribeSingleTrades("69420", products)
+	err = s.RyskV2WSClient.UnubscribeSingleTrades("69420", products)
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1655,10 +1655,10 @@ func (s *WSClientUnitTestSuite) TestUnit_SubscribeKlineData() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.SubscribeKlineData("69420", products, intervals)
+	err = s.RyskV2WSClient.SubscribeKlineData("69420", products, intervals)
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1726,10 +1726,10 @@ func (s *WSClientUnitTestSuite) TestUnit_UnsubscribeKlineData() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.UnsubscribeKlineData("69420", products, intervals)
+	err = s.RyskV2WSClient.UnsubscribeKlineData("69420", products, intervals)
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1805,10 +1805,10 @@ func (s *WSClientUnitTestSuite) TestUnit_SubscribePartialBookDepth() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.SubscribePartialBookDepth("69420", products, limits, granularities)
+	err = s.RyskV2WSClient.SubscribePartialBookDepth("69420", products, limits, granularities)
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1884,10 +1884,10 @@ func (s *WSClientUnitTestSuite) TestUnit_UnubscribePartialBookDepth() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.UnsubscribePartialBookDepth("69420", products, limits, granularities)
+	err = s.RyskV2WSClient.UnsubscribePartialBookDepth("69420", products, limits, granularities)
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -1947,10 +1947,10 @@ func (s *WSClientUnitTestSuite) TestUnit_Subscribe24hrPriceChangeStatistics() {
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.Subscribe24hrPriceChangeStatistics("69420", products)
+	err = s.RyskV2WSClient.Subscribe24hrPriceChangeStatistics("69420", products)
 	require.NoError(s.T(), err)
 	<-done
 }
@@ -2010,106 +2010,106 @@ func (s *WSClientUnitTestSuite) TestUnit_Unsubscribe24hrPriceChangeStatistics() 
 		http.Header{},
 	)
 	require.NoError(s.T(), err)
-	s.Go100XWSClient.StreamConnection = rpcWebsocket
-	s.Go100XWSClient.rpcUrl = url
+	s.RyskV2WSClient.StreamConnection = rpcWebsocket
+	s.RyskV2WSClient.rpcUrl = url
 
-	err = s.Go100XWSClient.Unsubscribe24hrPriceChangeStatistics("69420", products)
+	err = s.RyskV2WSClient.Unsubscribe24hrPriceChangeStatistics("69420", products)
 	require.NoError(s.T(), err)
 	<-done
 }
 
-func (s *WSClientUnitTestSuite) TestUnit_ApproveUSDB() {
+func (s *WSClientUnitTestSuite) TestUnit_ApproveUSDC() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XWSClient.EthClient = mockEthClient
+	s.RyskV2WSClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
 	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
 
-	transaction, err := s.Go100XWSClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2WSClient.ApproveUSDC(context.Background(), big.NewInt(1000))
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 }
 
-func (s *WSClientUnitTestSuite) TestUnit_ApproveUSDB_ErrorGettingParameters() {
+func (s *WSClientUnitTestSuite) TestUnit_ApproveUSDC_ErrorGettingParameters() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XWSClient.EthClient = mockEthClient
+	s.RyskV2WSClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
 	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), fmt.Errorf("error getting parameters"))
 
-	transaction, err := s.Go100XWSClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2WSClient.ApproveUSDC(context.Background(), big.NewInt(1000))
 	require.Error(s.T(), err)
 	require.Nil(s.T(), transaction)
 }
 
-func (s *WSClientUnitTestSuite) TestUnit_ApproveUSDB_ErrorSendTransaction() {
+func (s *WSClientUnitTestSuite) TestUnit_ApproveUSDC_ErrorSendTransaction() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XWSClient.EthClient = mockEthClient
+	s.RyskV2WSClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
 	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
 	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send transaction"))
 
-	transaction, err := s.Go100XWSClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2WSClient.ApproveUSDC(context.Background(), big.NewInt(1000))
 	require.Error(s.T(), err)
 	require.Nil(s.T(), transaction)
 }
 
-func (s *WSClientUnitTestSuite) TestUnit_DepositUSDB() {
+func (s *WSClientUnitTestSuite) TestUnit_DepositUSDC() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XWSClient.EthClient = mockEthClient
+	s.RyskV2WSClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
 	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
 
-	transaction, err := s.Go100XWSClient.DepositUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2WSClient.DepositUSDC(context.Background(), big.NewInt(1000))
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 }
 
-func (s *WSClientUnitTestSuite) TestUnit_DepositUSDB_ErrorApproveSigner() {
-	s.Go100XWSClient.addressString = ""
-	transaction, err := s.Go100XWSClient.DepositUSDB(context.Background(), big.NewInt(1000))
+func (s *WSClientUnitTestSuite) TestUnit_DepositUSDC_ErrorApproveSigner() {
+	s.RyskV2WSClient.addressString = ""
+	transaction, err := s.RyskV2WSClient.DepositUSDC(context.Background(), big.NewInt(1000))
 	require.Error(s.T(), err)
 	require.Nil(s.T(), transaction)
 }
 
-func (s *WSClientUnitTestSuite) TestUnit_DepositUSDB_ErrorGettingParameters() {
+func (s *WSClientUnitTestSuite) TestUnit_DepositUSDC_ErrorGettingParameters() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XWSClient.EthClient = mockEthClient
+	s.RyskV2WSClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
 	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), fmt.Errorf("error getting parameters"))
 
-	transaction, err := s.Go100XWSClient.DepositUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2WSClient.DepositUSDC(context.Background(), big.NewInt(1000))
 	require.Error(s.T(), err)
 	require.Nil(s.T(), transaction)
 }
 
-func (s *WSClientUnitTestSuite) TestUnit_DepositUSDB_ErrorSendTransaction() {
+func (s *WSClientUnitTestSuite) TestUnit_DepositUSDC_ErrorSendTransaction() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XWSClient.EthClient = mockEthClient
+	s.RyskV2WSClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
 	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
 	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send transaction"))
 
-	transaction, err := s.Go100XWSClient.DepositUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2WSClient.DepositUSDC(context.Background(), big.NewInt(1000))
 	require.Error(s.T(), err)
 	require.Nil(s.T(), transaction)
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_WaitTransaction() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XWSClient.EthClient = mockEthClient
+	s.RyskV2WSClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
@@ -2117,18 +2117,18 @@ func (s *WSClientUnitTestSuite) TestUnit_WaitTransaction() {
 	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
 	mockEthClient.On("TransactionReceipt", mock.Anything, mock.Anything).Return(&geth_types.Receipt{}, nil)
 
-	transaction, err := s.Go100XWSClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2WSClient.ApproveUSDC(context.Background(), big.NewInt(1000))
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 
-	receipt, err := s.Go100XWSClient.WaitTransaction(context.Background(), transaction)
+	receipt, err := s.RyskV2WSClient.WaitTransaction(context.Background(), transaction)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), receipt)
 }
 
 func (s *WSClientUnitTestSuite) TestUnit_WaitTransaction_WaitMinedError() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XWSClient.EthClient = mockEthClient
+	s.RyskV2WSClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
@@ -2136,7 +2136,7 @@ func (s *WSClientUnitTestSuite) TestUnit_WaitTransaction_WaitMinedError() {
 	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
 	mockEthClient.On("TransactionReceipt", mock.Anything, mock.Anything).Return((*geth_types.Receipt)(nil), fmt.Errorf("failed to wait transaction"))
 
-	transaction, err := s.Go100XWSClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2WSClient.ApproveUSDC(context.Background(), big.NewInt(1000))
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 
@@ -2146,7 +2146,7 @@ func (s *WSClientUnitTestSuite) TestUnit_WaitTransaction_WaitMinedError() {
 		cancel()
 	}()
 
-	receipt, err := s.Go100XWSClient.WaitTransaction(ctx, transaction)
+	receipt, err := s.RyskV2WSClient.WaitTransaction(ctx, transaction)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), receipt)
 }
@@ -2166,16 +2166,16 @@ func (s *WSClientUnitTestSuite) TestUnit_addReferee() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), http.MethodPost, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_ADD_REFEREE), req.URL.Path)
-		require.Equal(s.T(), s.Go100XWSClient.addressString, requestBody.Account)
+		require.Equal(s.T(), s.RyskV2WSClient.addressString, requestBody.Account)
 		require.Equal(s.T(), "eldief", requestBody.Code)
 		require.NotEmpty(s.T(), requestBody.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XWSClient.baseUrl = mockHttpServer.URL
+	s.RyskV2WSClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XWSClient.addReferee()
+	res, err := s.RyskV2WSClient.addReferee()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -2185,10 +2185,10 @@ func (s *WSClientUnitTestSuite) TestUnit_addReferee_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XWSClient.addressString = ""
+	s.RyskV2WSClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XWSClient.addReferee()
+	res, err := s.RyskV2WSClient.addReferee()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -2198,10 +2198,10 @@ func (s *WSClientUnitTestSuite) TestUnit_addReferee_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XWSClient.baseUrl = "://invalid-url"
+	s.RyskV2WSClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XWSClient.addReferee()
+	res, err := s.RyskV2WSClient.addReferee()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }

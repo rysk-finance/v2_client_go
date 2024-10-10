@@ -1,4 +1,4 @@
-module github.com/eldief/go100x
+module github.com/rysk-finance/v2_client_go
 
 go 1.22.2
 

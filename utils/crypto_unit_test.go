@@ -11,9 +11,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/eldief/go100x/utils/mocks"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/rysk-finance/v2_client_go/utils/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"

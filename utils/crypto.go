@@ -5,10 +5,10 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 
-	"github.com/eldief/go100x/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/rysk-finance/v2_client_go/types"
 )
 
 // AddressFromPrivateKey derives the Ethereum address from a hexadecimal private key string.

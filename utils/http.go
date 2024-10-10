@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/eldief/go100x/types"
+	"github.com/rysk-finance/v2_client_go/types"
 )
 
 // GetHTTPClient initializes a new `http.Client` with custom `http.Transport` and timeout.

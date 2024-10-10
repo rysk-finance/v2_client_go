@@ -7,36 +7,35 @@ import (
 	"os"
 	"time"
 
-	"github.com/eldief/go100x/constants"
-	"github.com/eldief/go100x/types"
-	"github.com/eldief/go100x/ws_client"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
+	"github.com/rysk-finance/v2_client_go/constants"
+	"github.com/rysk-finance/v2_client_go/types"
+	"github.com/rysk-finance/v2_client_go/ws_client"
 )
 
 func PlaceOrder() {
 	// Load ".env" file
 	err := godotenv.Load()
 	if err != nil {
-		log.Println("PlaceOrder:: Error loading .env file:", err)
-		return
+		log.Fatalf("PlaceOrder:: %v", err)
 	}
 
 	// Get Private Key from environment
 	privateKey := os.Getenv("PRIVATE_KEYS")
 	if privateKey == "" {
-		log.Fatalf("PlaceOrder:: no PRIVATE_KEYS found in %q file", ".env")
+		log.Fatalf("PlaceOrder:: no PRIVATE_KEYS found")
 	}
 
-	// Initialize Go100XWSClient
-	client, err := ws_client.NewGo100XWSClient(&ws_client.Go100XWSClientConfiguration{
-		Env:          constants.ENVIRONMENT_MAINNET, // Blast Mainnet
-		PrivateKey:   privateKey,                    // Your private key
-		RpcUrl:       "https://rpc.blast.io",        // Public Blast Mainnet RPC url
-		SubAccountId: 0,                             // Default frontend subaccount
+	// Initialize RyskV2WSClient
+	client, err := ws_client.NewRyskV2WSClient(&ws_client.RyskV2WSClientConfiguration{
+		Env:          constants.ENVIRONMENT_TESTNET,                  // Arbistrum sepolia testnet
+		PrivateKey:   privateKey,                                     // Your private key
+		RpcUrl:       "https://arbitrum-sepolia.gateway.tenderly.co", // Public Arbistrum sepolia testnet RPC url
+		SubAccountId: 0,                                              // Default frontend subaccount
 	})
 	if err != nil {
-		log.Fatalf("PlaceOrder:: error during %q: %v", "ws_client.NewGo100XWSClient", err)
+		log.Fatalf("PlaceOrder:: %v", err)
 	}
 
 	// Start sending pings periodically
@@ -58,7 +57,7 @@ func PlaceOrder() {
 	// Login
 	err = client.Login("LOGIN")
 	if err != nil {
-		log.Fatalf("PlaceOrder:: error performing Login: %v", err)
+		log.Fatalf("PlaceOrder:: %v", err)
 	}
 
 	// Send order
@@ -67,46 +66,46 @@ func PlaceOrder() {
 		IsBuy:       true,
 		OrderType:   constants.ORDER_TYPE_LIMIT,
 		TimeInForce: constants.TIME_IN_FORCE_GTC,
-		Price:       new(big.Int).Mul(big.NewInt(3150), constants.E18).String(),
-		Quantity:    constants.E16.String(),
+		Price:       new(big.Int).Mul(big.NewInt(3150), constants.E17).String(),
+		Quantity:    constants.E4.String(),
 		Expiration:  time.Now().Add(10 * time.Minute).UnixMilli(),
 		Nonce:       time.Now().UnixMicro(),
 	})
 	if err != nil {
-		log.Fatalf("PlaceOrder:: error performing NewOrder: %v", err)
+		log.Fatalf("PlaceOrder:: %v", err)
 	}
 
 	// Keep alive
 	select {}
 }
 
-func startPinging(client *ws_client.Go100XWSClient) {
+func startPinging(client *ws_client.RyskV2WSClient) {
 	log.Println("startPinging:: start sending Pings...")
 
 	for {
 		err := client.RPCConnection.WriteMessage(websocket.PingMessage, []byte{})
 		if err != nil {
-			log.Fatalf("startPinging:: error sending ping: %v", err)
+			log.Fatalf("startPinging:: %v", err)
 		}
 		time.Sleep(30 * time.Second)
 	}
 }
 
-func listenForRPCResponses(client *ws_client.Go100XWSClient, responseChan chan types.WebsocketResponse) {
+func listenForRPCResponses(client *ws_client.RyskV2WSClient, responseChan chan types.WebsocketResponse) {
 	log.Println("listenForStreamResponses:: start listening for RPC responses...")
 
 	for {
 		// Wait for messages
 		_, data, err := client.RPCConnection.ReadMessage()
 		if err != nil {
-			log.Fatalf("listenForRPCResponses:: error during reading message: %v", err)
+			log.Fatalf("listenForRPCResponses:: %v", err)
 		}
 
 		// Unmarshal response
 		var response types.WebsocketResponse
 		err = json.Unmarshal(data, &response)
 		if err != nil {
-			log.Printf("listenForRPCResponses:: error during unmarshaling response: %v", err)
+			log.Printf("listenForRPCResponses:: %v", err)
 			continue
 		}
 
@@ -115,21 +114,21 @@ func listenForRPCResponses(client *ws_client.Go100XWSClient, responseChan chan t
 	}
 }
 
-func listenForStreamResponses(client *ws_client.Go100XWSClient, responseChan chan types.WebsocketResponse) {
+func listenForStreamResponses(client *ws_client.RyskV2WSClient, responseChan chan types.WebsocketResponse) {
 	log.Println("listenForStreamResponses:: start listening for Stream responses...")
 
 	for {
 		// Wait for messages
 		_, data, err := client.StreamConnection.ReadMessage()
 		if err != nil {
-			log.Fatalf("listenForStreamResponses:: error during reading %q message: %v", "Login", err)
+			log.Fatalf("listenForStreamResponses:: %v", err)
 		}
 
 		// Unmarshal response
 		var response types.WebsocketResponse
 		err = json.Unmarshal(data, &response)
 		if err != nil {
-			log.Printf("listenForStreamResponses:: error during unmarshaling response: %v", err)
+			log.Printf("listenForStreamResponses:: %v", err)
 			continue
 		}
 

@@ -1,10 +1,10 @@
 package constants
 
-import "github.com/eldief/go100x/types"
+import "github.com/rysk-finance/v2_client_go/types"
 
 var API_BASE_URL = map[types.Environment]string{
-	ENVIRONMENT_MAINNET: "https://api.100x.finance/v1",
-	ENVIRONMENT_TESTNET: "https://api.staging.100x.finance/v1",
+	ENVIRONMENT_MAINNET: "https://arbitrum-api.prod.rysk.finance/v1",
+	ENVIRONMENT_TESTNET: "https://arbitrum-api.staging.rysk.finance/v1",
 }
 
 const (

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eldief/go100x/constants"
-	"github.com/eldief/go100x/types"
-	"github.com/eldief/go100x/utils"
+	"github.com/rysk-finance/v2_client_go/constants"
+	"github.com/rysk-finance/v2_client_go/types"
+	"github.com/rysk-finance/v2_client_go/utils"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -23,16 +23,16 @@ import (
 	"github.com/ethereum/go-ethereum/signer/core/apitypes"
 )
 
-// Go100XAPIClientConfiguration holds the configuration for the Go100X API client.
-type Go100XAPIClientConfiguration struct {
+// RyskV2APIClientConfiguration holds the configuration for the RyskV2 API client.
+type RyskV2APIClientConfiguration struct {
 	Env          types.Environment // `constants.ENVIRONMENT_TESTNET` or `constants.ENVIRONMENT_MAINNET`.
 	PrivateKey   string            // Private key as a string, e.g., `0x2638b4...` or `2638b4...`.
-	RpcUrl       string            // RPC URL of the Ethereum client, e.g., `https://sepolia.blast.io` or `https://rpc.blastblockchain.com`.
+	RpcUrl       string            // RPC URL of the Ethereum client.
 	SubAccountId uint8             // ID of the subaccount to use.
 }
 
-// Go100XAPIClient is the main client for interacting with the 100X API.
-type Go100XAPIClient struct {
+// RyskV2APIClient is the main client for interacting with the RyskV2 API.
+type RyskV2APIClient struct {
 	env              types.Environment        // Environment (testnet or mainnet).
 	baseUrl          string                   // Base URL for the API.
 	privateKeyString string                   // Private key as a string.
@@ -40,23 +40,23 @@ type Go100XAPIClient struct {
 	privateKey       *ecdsa.PrivateKey        // ECDSA private key.
 	address          common.Address           // Common address derived from the private key.
 	ciao             common.Address           // Address for the CIAO contract.
-	usdb             common.Address           // Address for the USDB contract.
+	usdb             common.Address           // Address for the USDC contract.
 	domain           apitypes.TypedDataDomain // Typed data domain for EIP-712.
 	SubAccountId     int64                    // Subaccount ID.
 	HttpClient       *http.Client             // HTTP client for making requests.
 	EthClient        types.IEthClient         // Ethereum client for interacting with the blockchain.
 }
 
-// NewGo100XAPIClient creates a new Go100XAPIClient instance.
+// NewRyskV2APIClient creates a new RyskV2APIClient instance.
 // Initializes the client with the provided configuration.
 //
 // Parameters:
-//   - config: A pointer to Go100XAPIClientConfiguration containing the configuration settings.
+//   - config: A pointer to RyskV2APIClientConfiguration containing the configuration settings.
 //
 // Returns:
-//   - A pointer to Go100XAPIClient.
+//   - A pointer to RyskV2APIClient.
 //   - An error if initialization fails.
-func NewGo100XAPIClient(config *Go100XAPIClientConfiguration) (*Go100XAPIClient, error) {
+func NewRyskV2APIClient(config *RyskV2APIClientConfiguration) (*RyskV2APIClient, error) {
 	// Remove '0x' from private key.
 	privateKeyString := strings.TrimPrefix(config.PrivateKey, "0x")
 
@@ -72,8 +72,8 @@ func NewGo100XAPIClient(config *Go100XAPIClientConfiguration) (*Go100XAPIClient,
 		return nil, fmt.Errorf("failed to connect to the Ethereum client: %v", err)
 	}
 
-	// Return a new `go100x.Client`.
-	apiClient := &Go100XAPIClient{
+	// Return a new `RyskV2.Client`.
+	apiClient := &RyskV2APIClient{
 		env:              config.Env,
 		baseUrl:          constants.API_BASE_URL[config.Env],
 		privateKey:       privateKey,
@@ -81,12 +81,12 @@ func NewGo100XAPIClient(config *Go100XAPIClientConfiguration) (*Go100XAPIClient,
 		address:          common.HexToAddress(utils.AddressFromPrivateKey(privateKeyString)),
 		addressString:    utils.AddressFromPrivateKey(privateKeyString),
 		ciao:             common.HexToAddress(constants.CIAO_ADDRESS[config.Env]),
-		usdb:             common.HexToAddress(constants.USDB_ADDRESS[config.Env]),
+		usdb:             common.HexToAddress(constants.USDC_ADDRESS[config.Env]),
 		domain: apitypes.TypedDataDomain{
 			Name:              constants.DOMAIN_NAME,
 			Version:           constants.DOMAIN_VERSION,
 			ChainId:           constants.CHAIN_ID[config.Env],
-			VerifyingContract: constants.VERIFIER_ADDRESS[config.Env],
+			VerifyingContract: constants.ORDER_DISPATCHER_ADDRESS[config.Env],
 		},
 		SubAccountId: int64(config.SubAccountId),
 		HttpClient:   utils.GetHTTPClient(10 * time.Second),
@@ -108,11 +108,11 @@ func NewGo100XAPIClient(config *Go100XAPIClientConfiguration) (*Go100XAPIClient,
 // Returns:
 //   - A pointer to an http.Response containing the response from the server.
 //   - An error if the request fails.
-func (go100XClient *Go100XAPIClient) Get24hrPriceChangeStatistics(product *types.Product) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) Get24hrPriceChangeStatistics(product *types.Product) (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		go100XClient.baseUrl+string(constants.API_ENDPOINT_GET_24H_TICKER_PRICE_CHANGE_STATISTICS),
+		RyskV2Client.baseUrl+string(constants.API_ENDPOINT_GET_24H_TICKER_PRICE_CHANGE_STATISTICS),
 		nil,
 	)
 	if err != nil {
@@ -127,7 +127,7 @@ func (go100XClient *Go100XAPIClient) Get24hrPriceChangeStatistics(product *types
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // GetProduct returns details for a specific product by its symbol.
@@ -138,11 +138,11 @@ func (go100XClient *Go100XAPIClient) Get24hrPriceChangeStatistics(product *types
 // Returns:
 //   - A pointer to an http.Response containing the response from the server with product details.
 //   - An error if the request fails.
-func (go100XClient *Go100XAPIClient) GetProduct(symbol string) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) GetProduct(symbol string) (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		go100XClient.baseUrl+string(constants.API_ENDPOINT_GET_PRODUCT)+symbol,
+		RyskV2Client.baseUrl+string(constants.API_ENDPOINT_GET_PRODUCT)+symbol,
 		nil,
 	)
 	if err != nil {
@@ -150,7 +150,7 @@ func (go100XClient *Go100XAPIClient) GetProduct(symbol string) (*http.Response, 
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // GetProductById retrieves details for a specific product by its unique identifier.
@@ -161,11 +161,11 @@ func (go100XClient *Go100XAPIClient) GetProduct(symbol string) (*http.Response, 
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) GetProductById(id int64) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) GetProductById(id int64) (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		go100XClient.baseUrl+string(constants.API_ENDPOINT_GET_PRODUCT_BY_ID)+strconv.FormatInt(id, 10),
+		RyskV2Client.baseUrl+string(constants.API_ENDPOINT_GET_PRODUCT_BY_ID)+strconv.FormatInt(id, 10),
 		nil,
 	)
 	if err != nil {
@@ -173,7 +173,7 @@ func (go100XClient *Go100XAPIClient) GetProductById(id int64) (*http.Response, e
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // GetKlineData retrieves Kline/Candlestick bars for a symbol based on the provided parameters.
@@ -185,11 +185,11 @@ func (go100XClient *Go100XAPIClient) GetProductById(id int64) (*http.Response, e
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) GetKlineData(params *types.KlineDataRequest) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) GetKlineData(params *types.KlineDataRequest) (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_GET_KLINE_DATA),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_GET_KLINE_DATA),
 		nil,
 	)
 	if err != nil {
@@ -214,7 +214,7 @@ func (go100XClient *Go100XAPIClient) GetKlineData(params *types.KlineDataRequest
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // ListProducts retrieves a list of products available for trading on the platform.
@@ -222,11 +222,11 @@ func (go100XClient *Go100XAPIClient) GetKlineData(params *types.KlineDataRequest
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) ListProducts() (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) ListProducts() (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_LIST_PRODUCTS),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_LIST_PRODUCTS),
 		nil,
 	)
 	if err != nil {
@@ -234,7 +234,7 @@ func (go100XClient *Go100XAPIClient) ListProducts() (*http.Response, error) {
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // OrderBook retrieves the order book (bids and asks) for a specific market.
@@ -245,11 +245,11 @@ func (go100XClient *Go100XAPIClient) ListProducts() (*http.Response, error) {
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) OrderBook(params *types.OrderBookRequest) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) OrderBook(params *types.OrderBookRequest) (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_ORDER_BOOK),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_ORDER_BOOK),
 		nil,
 	)
 	if err != nil {
@@ -268,7 +268,7 @@ func (go100XClient *Go100XAPIClient) OrderBook(params *types.OrderBookRequest) (
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // ServerTime retrieves the current server time from the API.
@@ -276,11 +276,11 @@ func (go100XClient *Go100XAPIClient) OrderBook(params *types.OrderBookRequest) (
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) ServerTime() (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) ServerTime() (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_SERVER_TIME),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_SERVER_TIME),
 		nil,
 	)
 	if err != nil {
@@ -288,7 +288,7 @@ func (go100XClient *Go100XAPIClient) ServerTime() (*http.Response, error) {
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // ApproveSigner approves a Signer for a SubAccount. This operation allows the specified
@@ -301,8 +301,8 @@ func (go100XClient *Go100XAPIClient) ServerTime() (*http.Response, error) {
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) ApproveSigner(params *types.ApproveRevokeSignerRequest) (*http.Response, error) {
-	return go100XClient.approveRevokeSigner(params, true)
+func (RyskV2Client *RyskV2APIClient) ApproveSigner(params *types.ApproveRevokeSignerRequest) (*http.Response, error) {
+	return RyskV2Client.approveRevokeSigner(params, true)
 }
 
 // RevokeSigner revokes a Signer for a SubAccount. This operation disables the specified
@@ -315,8 +315,8 @@ func (go100XClient *Go100XAPIClient) ApproveSigner(params *types.ApproveRevokeSi
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) RevokeSigner(params *types.ApproveRevokeSignerRequest) (*http.Response, error) {
-	return go100XClient.approveRevokeSigner(params, false)
+func (RyskV2Client *RyskV2APIClient) RevokeSigner(params *types.ApproveRevokeSignerRequest) (*http.Response, error) {
+	return RyskV2Client.approveRevokeSigner(params, false)
 }
 
 // approveRevokeSigner approves or revokes a signer for a `SubAccount`.
@@ -331,11 +331,11 @@ func (go100XClient *Go100XAPIClient) RevokeSigner(params *types.ApproveRevokeSig
 // Returns:
 //   - *http.Response: The HTTP response received from the API after the operation.
 //   - error: An error if the operation encountered any issues.
-func (go100XClient *Go100XAPIClient) approveRevokeSigner(params *types.ApproveRevokeSignerRequest, isApproved bool) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) approveRevokeSigner(params *types.ApproveRevokeSignerRequest, isApproved bool) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_APPROVE_SIGNER,
 		&struct {
 			Account        string `json:"account"`
@@ -344,8 +344,8 @@ func (go100XClient *Go100XAPIClient) approveRevokeSigner(params *types.ApproveRe
 			IsApproved     bool   `json:"isApproved"`
 			Nonce          string `json:"nonce"`
 		}{
-			Account:        go100XClient.addressString,
-			SubAccountId:   strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Account:        RyskV2Client.addressString,
+			SubAccountId:   strconv.FormatInt(RyskV2Client.SubAccountId, 10),
 			ApprovedSigner: params.ApprovedSigner,
 			IsApproved:     isApproved,
 			Nonce:          strconv.FormatInt(params.Nonce, 10),
@@ -358,7 +358,7 @@ func (go100XClient *Go100XAPIClient) approveRevokeSigner(params *types.ApproveRe
 	// Create HTTP request.
 	request, err := utils.CreateHTTPRequestWithBody(
 		http.MethodPost,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_APPROVE_REVOKE_SIGNER),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_APPROVE_REVOKE_SIGNER),
 		&struct {
 			Account        string `json:"account"`
 			SubAccountId   int64  `json:"subAccountId"`
@@ -367,8 +367,8 @@ func (go100XClient *Go100XAPIClient) approveRevokeSigner(params *types.ApproveRe
 			Nonce          int64  `json:"nonce"`
 			IsApproved     bool   `json:"isApproved"`
 		}{
-			Account:        go100XClient.addressString,
-			SubAccountId:   go100XClient.SubAccountId,
+			Account:        RyskV2Client.addressString,
+			SubAccountId:   RyskV2Client.SubAccountId,
 			ApprovedSigner: params.ApprovedSigner,
 			Nonce:          params.Nonce,
 			Signature:      signature,
@@ -380,10 +380,10 @@ func (go100XClient *Go100XAPIClient) approveRevokeSigner(params *types.ApproveRe
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
-// Withdraw initiates a withdrawal of USDB from the 100x account.
+// Withdraw initiates a withdrawal of USDC from the Rysk V2 account.
 //
 // Params:
 //   - params: An instance of types.WithdrawRequest containing the withdrawal parameters,
@@ -392,11 +392,11 @@ func (go100XClient *Go100XAPIClient) approveRevokeSigner(params *types.ApproveRe
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) Withdraw(params *types.WithdrawRequest) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) Withdraw(params *types.WithdrawRequest) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_WITHDRAW,
 		&struct {
 			Account      string `json:"account"`
@@ -405,9 +405,9 @@ func (go100XClient *Go100XAPIClient) Withdraw(params *types.WithdrawRequest) (*h
 			Quantity     string `json:"quantity"`
 			Nonce        string `json:"nonce"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
-			Asset:        constants.USDB_ADDRESS[go100XClient.env],
+			Account:      RyskV2Client.addressString,
+			SubAccountId: strconv.FormatInt(RyskV2Client.SubAccountId, 10),
+			Asset:        constants.USDC_ADDRESS[RyskV2Client.env],
 			Quantity:     params.Quantity,
 			Nonce:        strconv.FormatInt(params.Nonce, 10),
 		},
@@ -419,7 +419,7 @@ func (go100XClient *Go100XAPIClient) Withdraw(params *types.WithdrawRequest) (*h
 	// Create HTTP request.
 	request, err := utils.CreateHTTPRequestWithBody(
 		http.MethodPost,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_WITHDRAW),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_WITHDRAW),
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId int64  `json:"subAccountId"`
@@ -428,9 +428,9 @@ func (go100XClient *Go100XAPIClient) Withdraw(params *types.WithdrawRequest) (*h
 			Nonce        int64  `json:"nonce"`
 			Signature    string `json:"signature"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: go100XClient.SubAccountId,
-			Asset:        constants.USDB_ADDRESS[go100XClient.env],
+			Account:      RyskV2Client.addressString,
+			SubAccountId: RyskV2Client.SubAccountId,
+			Asset:        constants.USDC_ADDRESS[RyskV2Client.env],
 			Quantity:     params.Quantity,
 			Nonce:        params.Nonce,
 			Signature:    signature,
@@ -441,7 +441,7 @@ func (go100XClient *Go100XAPIClient) Withdraw(params *types.WithdrawRequest) (*h
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // NewOrder creates a new order on the SubAccount.
@@ -453,11 +453,11 @@ func (go100XClient *Go100XAPIClient) Withdraw(params *types.WithdrawRequest) (*h
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) NewOrder(params *types.NewOrderRequest) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) NewOrder(params *types.NewOrderRequest) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_ORDER,
 		&struct {
 			Account      string `json:"account"`
@@ -471,8 +471,8 @@ func (go100XClient *Go100XAPIClient) NewOrder(params *types.NewOrderRequest) (*h
 			Quantity     string `json:"quantity"`
 			Nonce        string `json:"nonce"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Account:      RyskV2Client.addressString,
+			SubAccountId: strconv.FormatInt(RyskV2Client.SubAccountId, 10),
 			ProductId:    strconv.FormatInt(params.Product.Id, 10),
 			IsBuy:        params.IsBuy,
 			OrderType:    strconv.FormatInt(int64(params.OrderType), 10),
@@ -490,7 +490,7 @@ func (go100XClient *Go100XAPIClient) NewOrder(params *types.NewOrderRequest) (*h
 	// Create HTTP request.
 	request, err := utils.CreateHTTPRequestWithBody(
 		http.MethodPost,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_NEW_ORDER),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_NEW_ORDER),
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId int64  `json:"subAccountId"`
@@ -504,8 +504,8 @@ func (go100XClient *Go100XAPIClient) NewOrder(params *types.NewOrderRequest) (*h
 			Nonce        int64  `json:"nonce"`
 			Signature    string `json:"signature"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: go100XClient.SubAccountId,
+			Account:      RyskV2Client.addressString,
+			SubAccountId: RyskV2Client.SubAccountId,
 			ProductId:    params.Product.Id,
 			IsBuy:        params.IsBuy,
 			OrderType:    int64(params.OrderType),
@@ -522,7 +522,7 @@ func (go100XClient *Go100XAPIClient) NewOrder(params *types.NewOrderRequest) (*h
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // CancelOrderAndReplace cancels an order and creates a new order on the SubAccount.
@@ -534,11 +534,11 @@ func (go100XClient *Go100XAPIClient) NewOrder(params *types.NewOrderRequest) (*h
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) CancelOrderAndReplace(params *types.CancelOrderAndReplaceRequest) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) CancelOrderAndReplace(params *types.CancelOrderAndReplaceRequest) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_ORDER,
 		&struct {
 			Account      string `json:"account"`
@@ -552,8 +552,8 @@ func (go100XClient *Go100XAPIClient) CancelOrderAndReplace(params *types.CancelO
 			Quantity     string `json:"quantity"`
 			Nonce        string `json:"nonce"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Account:      RyskV2Client.addressString,
+			SubAccountId: strconv.FormatInt(RyskV2Client.SubAccountId, 10),
 			ProductId:    strconv.FormatInt(params.NewOrder.Product.Id, 10),
 			IsBuy:        params.NewOrder.IsBuy,
 			OrderType:    strconv.FormatInt(int64(params.NewOrder.OrderType), 10),
@@ -571,7 +571,7 @@ func (go100XClient *Go100XAPIClient) CancelOrderAndReplace(params *types.CancelO
 	// Create HTTP request.
 	request, err := utils.CreateHTTPRequestWithBody(
 		http.MethodPost,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_CANCEL_REPLACE_ORDER),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_CANCEL_REPLACE_ORDER),
 		&struct {
 			IdToCancel string      `json:"idToCancel"`
 			NewOrder   interface{} `json:"newOrder"`
@@ -590,8 +590,8 @@ func (go100XClient *Go100XAPIClient) CancelOrderAndReplace(params *types.CancelO
 				Nonce        int64  `json:"nonce"`
 				Signature    string `json:"signature"`
 			}{
-				Account:      go100XClient.addressString,
-				SubAccountId: go100XClient.SubAccountId,
+				Account:      RyskV2Client.addressString,
+				SubAccountId: RyskV2Client.SubAccountId,
 				ProductId:    params.NewOrder.Product.Id,
 				IsBuy:        params.NewOrder.IsBuy,
 				OrderType:    int64(params.NewOrder.OrderType),
@@ -609,7 +609,7 @@ func (go100XClient *Go100XAPIClient) CancelOrderAndReplace(params *types.CancelO
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // CancelOrder cancels an active order on the SubAccount.
@@ -621,11 +621,11 @@ func (go100XClient *Go100XAPIClient) CancelOrderAndReplace(params *types.CancelO
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) CancelOrder(params *types.CancelOrderRequest) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) CancelOrder(params *types.CancelOrderRequest) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_CANCEL_ORDER,
 		&struct {
 			Account      string `json:"account"`
@@ -633,8 +633,8 @@ func (go100XClient *Go100XAPIClient) CancelOrder(params *types.CancelOrderReques
 			ProductId    string `json:"productId"`
 			OrderId      string `json:"orderId"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Account:      RyskV2Client.addressString,
+			SubAccountId: strconv.FormatInt(RyskV2Client.SubAccountId, 10),
 			ProductId:    strconv.FormatInt(params.Product.Id, 10),
 			OrderId:      params.IdToCancel,
 		},
@@ -646,7 +646,7 @@ func (go100XClient *Go100XAPIClient) CancelOrder(params *types.CancelOrderReques
 	// Create HTTP request.
 	request, err := utils.CreateHTTPRequestWithBody(
 		http.MethodDelete,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_CANCEL_ORDER),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_CANCEL_ORDER),
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId int64  `json:"subAccountId"`
@@ -654,8 +654,8 @@ func (go100XClient *Go100XAPIClient) CancelOrder(params *types.CancelOrderReques
 			OrderId      string `json:"orderId"`
 			Signature    string `json:"signature"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: go100XClient.SubAccountId,
+			Account:      RyskV2Client.addressString,
+			SubAccountId: RyskV2Client.SubAccountId,
 			ProductId:    params.Product.Id,
 			OrderId:      params.IdToCancel,
 			Signature:    signature,
@@ -666,7 +666,7 @@ func (go100XClient *Go100XAPIClient) CancelOrder(params *types.CancelOrderReques
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // CancelAllOpenOrders cancels all active orders on a specific product for the SubAccount.
@@ -677,19 +677,19 @@ func (go100XClient *Go100XAPIClient) CancelOrder(params *types.CancelOrderReques
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) CancelAllOpenOrders(product *types.Product) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) CancelAllOpenOrders(product *types.Product) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_CANCEL_ORDERS,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 			ProductId    string `json:"productId"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Account:      RyskV2Client.addressString,
+			SubAccountId: strconv.FormatInt(RyskV2Client.SubAccountId, 10),
 			ProductId:    strconv.FormatInt(product.Id, 10),
 		},
 	)
@@ -700,15 +700,15 @@ func (go100XClient *Go100XAPIClient) CancelAllOpenOrders(product *types.Product)
 	// Create HTTP request.
 	request, err := utils.CreateHTTPRequestWithBody(
 		http.MethodDelete,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_CANCEL_ALL_OPEN_ORDERS),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_CANCEL_ALL_OPEN_ORDERS),
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId int64  `json:"subAccountId"`
 			ProductId    int64  `json:"productId"`
 			Signature    string `json:"signature"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: go100XClient.SubAccountId,
+			Account:      RyskV2Client.addressString,
+			SubAccountId: RyskV2Client.SubAccountId,
 			ProductId:    product.Id,
 			Signature:    signature,
 		},
@@ -718,7 +718,7 @@ func (go100XClient *Go100XAPIClient) CancelAllOpenOrders(product *types.Product)
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // GetSpotBalances retrieves spot balances for the SubAccount.
@@ -726,18 +726,18 @@ func (go100XClient *Go100XAPIClient) CancelAllOpenOrders(product *types.Product)
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) GetSpotBalances() (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) GetSpotBalances() (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Account:      RyskV2Client.addressString,
+			SubAccountId: strconv.FormatInt(RyskV2Client.SubAccountId, 10),
 		},
 	)
 	if err != nil {
@@ -747,7 +747,7 @@ func (go100XClient *Go100XAPIClient) GetSpotBalances() (*http.Response, error) {
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_GET_SPOT_BALANCES),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_GET_SPOT_BALANCES),
 		nil,
 	)
 	if err != nil {
@@ -756,13 +756,13 @@ func (go100XClient *Go100XAPIClient) GetSpotBalances() (*http.Response, error) {
 
 	// Add query parameters and URL encode HTTP request.
 	query := request.URL.Query()
-	query.Add("account", go100XClient.addressString)
-	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("account", RyskV2Client.addressString)
+	query.Add("subAccountId", strconv.FormatInt(RyskV2Client.SubAccountId, 10))
 	query.Add("signature", signature)
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // GetPerpetualPosition retrieves the perpetual position for a specific product and SubAccount.
@@ -773,18 +773,18 @@ func (go100XClient *Go100XAPIClient) GetSpotBalances() (*http.Response, error) {
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) GetPerpetualPosition(product *types.Product) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) GetPerpetualPosition(product *types.Product) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Account:      RyskV2Client.addressString,
+			SubAccountId: strconv.FormatInt(RyskV2Client.SubAccountId, 10),
 		},
 	)
 	if err != nil {
@@ -794,7 +794,7 @@ func (go100XClient *Go100XAPIClient) GetPerpetualPosition(product *types.Product
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_GET_PERPETUAL_POSITION),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_GET_PERPETUAL_POSITION),
 		nil,
 	)
 	if err != nil {
@@ -803,14 +803,14 @@ func (go100XClient *Go100XAPIClient) GetPerpetualPosition(product *types.Product
 
 	// Add query parameters and URL encode HTTP request.
 	query := request.URL.Query()
-	query.Add("account", go100XClient.addressString)
-	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("account", RyskV2Client.addressString)
+	query.Add("subAccountId", strconv.FormatInt(RyskV2Client.SubAccountId, 10))
 	query.Add("symbol", product.Symbol)
 	query.Add("signature", signature)
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // GetPerpetualPositionAllProducts retrieves the perpetual position for all products for a SubAccount.
@@ -818,18 +818,18 @@ func (go100XClient *Go100XAPIClient) GetPerpetualPosition(product *types.Product
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) GetPerpetualPositionAllProducts() (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) GetPerpetualPositionAllProducts() (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Account:      RyskV2Client.addressString,
+			SubAccountId: strconv.FormatInt(RyskV2Client.SubAccountId, 10),
 		},
 	)
 	if err != nil {
@@ -839,7 +839,7 @@ func (go100XClient *Go100XAPIClient) GetPerpetualPositionAllProducts() (*http.Re
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_GET_PERPETUAL_POSITION),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_GET_PERPETUAL_POSITION),
 		nil,
 	)
 	if err != nil {
@@ -848,13 +848,13 @@ func (go100XClient *Go100XAPIClient) GetPerpetualPositionAllProducts() (*http.Re
 
 	// Add query parameters and URL encode HTTP request.
 	query := request.URL.Query()
-	query.Add("account", go100XClient.addressString)
-	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("account", RyskV2Client.addressString)
+	query.Add("subAccountId", strconv.FormatInt(RyskV2Client.SubAccountId, 10))
 	query.Add("signature", signature)
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // ListApprovedSigners retrieves a list of all approved signers for a specific `SubAccount`.
@@ -862,18 +862,18 @@ func (go100XClient *Go100XAPIClient) GetPerpetualPositionAllProducts() (*http.Re
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) ListApprovedSigners() (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) ListApprovedSigners() (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Account:      RyskV2Client.addressString,
+			SubAccountId: strconv.FormatInt(RyskV2Client.SubAccountId, 10),
 		},
 	)
 	if err != nil {
@@ -883,7 +883,7 @@ func (go100XClient *Go100XAPIClient) ListApprovedSigners() (*http.Response, erro
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_LIST_APPROVED_SIGNERS),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_LIST_APPROVED_SIGNERS),
 		nil,
 	)
 	if err != nil {
@@ -892,13 +892,13 @@ func (go100XClient *Go100XAPIClient) ListApprovedSigners() (*http.Response, erro
 
 	// Add query parameters and URL encode HTTP request.
 	query := request.URL.Query()
-	query.Add("account", go100XClient.addressString)
-	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("account", RyskV2Client.addressString)
+	query.Add("subAccountId", strconv.FormatInt(RyskV2Client.SubAccountId, 10))
 	query.Add("signature", signature)
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // ListOpenOrders retrieves all open orders on the `SubAccount` for a specific product.
@@ -909,18 +909,18 @@ func (go100XClient *Go100XAPIClient) ListApprovedSigners() (*http.Response, erro
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) ListOpenOrders(product *types.Product) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) ListOpenOrders(product *types.Product) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Account:      RyskV2Client.addressString,
+			SubAccountId: strconv.FormatInt(RyskV2Client.SubAccountId, 10),
 		},
 	)
 	if err != nil {
@@ -930,7 +930,7 @@ func (go100XClient *Go100XAPIClient) ListOpenOrders(product *types.Product) (*ht
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_LIST_OPEN_ORDERS),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_LIST_OPEN_ORDERS),
 		nil,
 	)
 	if err != nil {
@@ -939,14 +939,14 @@ func (go100XClient *Go100XAPIClient) ListOpenOrders(product *types.Product) (*ht
 
 	// Add query parameters and URL encode HTTP request.
 	query := request.URL.Query()
-	query.Add("account", go100XClient.addressString)
-	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("account", RyskV2Client.addressString)
+	query.Add("subAccountId", strconv.FormatInt(RyskV2Client.SubAccountId, 10))
 	query.Add("symbol", product.Symbol)
 	query.Add("signature", signature)
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // ListOpenOrdersAllProducts retrieves all open orders on the `SubAccount` for a all products.
@@ -954,18 +954,18 @@ func (go100XClient *Go100XAPIClient) ListOpenOrders(product *types.Product) (*ht
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) ListOpenOrdersAllProducts() (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) ListOpenOrdersAllProducts() (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Account:      RyskV2Client.addressString,
+			SubAccountId: strconv.FormatInt(RyskV2Client.SubAccountId, 10),
 		},
 	)
 	if err != nil {
@@ -975,7 +975,7 @@ func (go100XClient *Go100XAPIClient) ListOpenOrdersAllProducts() (*http.Response
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_LIST_OPEN_ORDERS),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_LIST_OPEN_ORDERS),
 		nil,
 	)
 	if err != nil {
@@ -984,13 +984,13 @@ func (go100XClient *Go100XAPIClient) ListOpenOrdersAllProducts() (*http.Response
 
 	// Add query parameters and URL encode HTTP request.
 	query := request.URL.Query()
-	query.Add("account", go100XClient.addressString)
-	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("account", RyskV2Client.addressString)
+	query.Add("subAccountId", strconv.FormatInt(RyskV2Client.SubAccountId, 10))
 	query.Add("signature", signature)
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // ListOrders retrieves all orders on the `SubAccount` for a specific product.
@@ -1001,18 +1001,18 @@ func (go100XClient *Go100XAPIClient) ListOpenOrdersAllProducts() (*http.Response
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) ListOrders(params *types.ListOrdersRequest) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) ListOrders(params *types.ListOrdersRequest) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Account:      RyskV2Client.addressString,
+			SubAccountId: strconv.FormatInt(RyskV2Client.SubAccountId, 10),
 		},
 	)
 	if err != nil {
@@ -1022,7 +1022,7 @@ func (go100XClient *Go100XAPIClient) ListOrders(params *types.ListOrdersRequest)
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_LIST_ORDERS),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_LIST_ORDERS),
 		nil,
 	)
 	if err != nil {
@@ -1031,8 +1031,8 @@ func (go100XClient *Go100XAPIClient) ListOrders(params *types.ListOrdersRequest)
 
 	// Add query parameters and URL encode HTTP request.
 	query := request.URL.Query()
-	query.Add("account", go100XClient.addressString)
-	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("account", RyskV2Client.addressString)
+	query.Add("subAccountId", strconv.FormatInt(RyskV2Client.SubAccountId, 10))
 	query.Add("symbol", params.Product.Symbol)
 	for _, id := range params.Ids {
 		query.Add("ids", id)
@@ -1041,7 +1041,7 @@ func (go100XClient *Go100XAPIClient) ListOrders(params *types.ListOrdersRequest)
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
 // ListOrders retrieves all orders on the `SubAccount` for a specific product.
@@ -1052,18 +1052,18 @@ func (go100XClient *Go100XAPIClient) ListOrders(params *types.ListOrdersRequest)
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) ListOrdersAllProducts(ids []string) (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) ListOrdersAllProducts(ids []string) (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_SIGNED_AUTHENTICATION,
 		&struct {
 			Account      string `json:"account"`
 			SubAccountId string `json:"subAccountId"`
 		}{
-			Account:      go100XClient.addressString,
-			SubAccountId: strconv.FormatInt(go100XClient.SubAccountId, 10),
+			Account:      RyskV2Client.addressString,
+			SubAccountId: strconv.FormatInt(RyskV2Client.SubAccountId, 10),
 		},
 	)
 	if err != nil {
@@ -1073,7 +1073,7 @@ func (go100XClient *Go100XAPIClient) ListOrdersAllProducts(ids []string) (*http.
 	// Create HTTP request.
 	request, err := http.NewRequest(
 		http.MethodGet,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_LIST_ORDERS),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_LIST_ORDERS),
 		nil,
 	)
 	if err != nil {
@@ -1082,8 +1082,8 @@ func (go100XClient *Go100XAPIClient) ListOrdersAllProducts(ids []string) (*http.
 
 	// Add query parameters and URL encode HTTP request.
 	query := request.URL.Query()
-	query.Add("account", go100XClient.addressString)
-	query.Add("subAccountId", strconv.FormatInt(go100XClient.SubAccountId, 10))
+	query.Add("account", RyskV2Client.addressString)
+	query.Add("subAccountId", strconv.FormatInt(RyskV2Client.SubAccountId, 10))
 	for _, id := range ids {
 		query.Add("ids", id)
 	}
@@ -1091,39 +1091,39 @@ func (go100XClient *Go100XAPIClient) ListOrdersAllProducts(ids []string) (*http.
 	request.URL.RawQuery = query.Encode()
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }
 
-// ApproveUSDB approves 100x to spend USDB on your behalf.
+// ApproveUSDC approves Rysk V2 to spend USDC on your behalf.
 //
 // Parameters:
 //   - ctx: The context.Context for the Ethereum transaction.
-//   - amount: The amount of USDB tokens to approve, specified as a *big.Int.
+//   - amount: The amount of USDC tokens to approve, specified as a *big.Int.
 //
 // Returns:
 //   - A pointer to a geth_types.Transaction representing the Ethereum transaction.
 //   - An error if the Ethereum transaction fails or encounters an issue.
-func (go100XClient *Go100XAPIClient) ApproveUSDB(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
+func (RyskV2Client *RyskV2APIClient) ApproveUSDC(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
 	// Parse ABI
 	parsedABI, _ := abi.JSON(strings.NewReader(constants.ERC20_ABI))
 
 	// Pack transaction data
-	data, _ := parsedABI.Pack("approve", go100XClient.ciao, amount)
+	data, _ := parsedABI.Pack("approve", RyskV2Client.ciao, amount)
 
 	// Get transaction parameters
-	nonce, gasPrice, chainID, gasLimit, err := utils.GetTransactionParams(ctx, go100XClient.EthClient, go100XClient.privateKey, &go100XClient.address, &go100XClient.usdb, &data)
+	nonce, gasPrice, chainID, gasLimit, err := utils.GetTransactionParams(ctx, RyskV2Client.EthClient, RyskV2Client.privateKey, &RyskV2Client.address, &RyskV2Client.usdb, &data)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a new transaction
-	tx := geth_types.NewTransaction(nonce, go100XClient.usdb, big.NewInt(0), gasLimit, gasPrice, data)
+	tx := geth_types.NewTransaction(nonce, RyskV2Client.usdb, big.NewInt(0), gasLimit, gasPrice, data)
 
 	// Sign transaction
-	signedTx, _ := geth_types.SignTx(tx, geth_types.NewEIP155Signer(chainID), go100XClient.privateKey)
+	signedTx, _ := geth_types.SignTx(tx, geth_types.NewEIP155Signer(chainID), RyskV2Client.privateKey)
 
 	// Send transaction
-	err = go100XClient.EthClient.SendTransaction(ctx, signedTx)
+	err = RyskV2Client.EthClient.SendTransaction(ctx, signedTx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send transaction: %v", err)
 	}
@@ -1131,19 +1131,19 @@ func (go100XClient *Go100XAPIClient) ApproveUSDB(ctx context.Context, amount *bi
 	return signedTx, nil
 }
 
-// DepositUSDB sends USDB to 100x.
+// DepositUSDC sends USDC to Rysk V2.
 //
 // Parameters:
 //   - ctx: The context.Context for the Ethereum transaction.
-//   - amount: The amount of USDB tokens to deposit, specified as a *big.Int.
+//   - amount: The amount of USDC tokens to deposit, specified as a *big.Int.
 //
 // Returns:
 //   - A pointer to a geth_types.Transaction representing the Ethereum transaction.
 //   - An error if the Ethereum transaction fails or encounters an issue.
-func (go100XClient *Go100XAPIClient) DepositUSDB(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
+func (RyskV2Client *RyskV2APIClient) DepositUSDC(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
 	// Approve self as signer
-	_, err := go100XClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: go100XClient.addressString,
+	_, err := RyskV2Client.ApproveSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: RyskV2Client.addressString,
 		Nonce:          time.Now().UnixMicro(),
 	})
 	if err != nil {
@@ -1154,22 +1154,22 @@ func (go100XClient *Go100XAPIClient) DepositUSDB(ctx context.Context, amount *bi
 	parsedABI, _ := abi.JSON(strings.NewReader(constants.CIAO_ABI))
 
 	// Pack transaction data
-	data, _ := parsedABI.Pack("deposit", go100XClient.address, uint8(go100XClient.SubAccountId), amount, go100XClient.usdb)
+	data, _ := parsedABI.Pack("deposit", RyskV2Client.address, uint8(RyskV2Client.SubAccountId), amount, RyskV2Client.usdb)
 
 	// Get transaction parameters
-	nonce, gasPrice, chainID, gasLimit, err := utils.GetTransactionParams(ctx, go100XClient.EthClient, go100XClient.privateKey, &go100XClient.address, &go100XClient.ciao, &data)
+	nonce, gasPrice, chainID, gasLimit, err := utils.GetTransactionParams(ctx, RyskV2Client.EthClient, RyskV2Client.privateKey, &RyskV2Client.address, &RyskV2Client.ciao, &data)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a new transaction
-	tx := geth_types.NewTransaction(nonce, go100XClient.ciao, big.NewInt(0), gasLimit, gasPrice, data)
+	tx := geth_types.NewTransaction(nonce, RyskV2Client.ciao, big.NewInt(0), gasLimit, gasPrice, data)
 
 	// Sign transaction
-	signedTx, _ := geth_types.SignTx(tx, geth_types.NewEIP155Signer(chainID), go100XClient.privateKey)
+	signedTx, _ := geth_types.SignTx(tx, geth_types.NewEIP155Signer(chainID), RyskV2Client.privateKey)
 
 	// Send transaction
-	err = go100XClient.EthClient.SendTransaction(ctx, signedTx)
+	err = RyskV2Client.EthClient.SendTransaction(ctx, signedTx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send transaction: %v", err)
 	}
@@ -1186,8 +1186,8 @@ func (go100XClient *Go100XAPIClient) DepositUSDB(ctx context.Context, amount *bi
 // Returns:
 //   - A pointer to a geth_types.Receipt containing the transaction receipt once the transaction is mined.
 //   - An error if the transaction fails to be mined or encounters an issue.
-func (go100XClient *Go100XAPIClient) WaitTransaction(ctx context.Context, transaction *geth_types.Transaction) (*geth_types.Receipt, error) {
-	receipt, err := bind.WaitMined(ctx, go100XClient.EthClient, transaction)
+func (RyskV2Client *RyskV2APIClient) WaitTransaction(ctx context.Context, transaction *geth_types.Transaction) (*geth_types.Receipt, error) {
+	receipt, err := bind.WaitMined(ctx, RyskV2Client.EthClient, transaction)
 	if err != nil {
 		return nil, err
 	}
@@ -1199,17 +1199,17 @@ func (go100XClient *Go100XAPIClient) WaitTransaction(ctx context.Context, transa
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XAPIClient) addReferee() (*http.Response, error) {
+func (RyskV2Client *RyskV2APIClient) addReferee() (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
-		go100XClient.domain,
-		go100XClient.privateKeyString,
+		RyskV2Client.domain,
+		RyskV2Client.privateKeyString,
 		constants.PRIMARY_TYPE_REFERRAL,
 		&struct {
 			Account string `json:"account"`
 			Code    string `json:"code"`
 		}{
-			Account: go100XClient.addressString,
+			Account: RyskV2Client.addressString,
 			Code:    "eldief",
 		},
 	)
@@ -1220,13 +1220,13 @@ func (go100XClient *Go100XAPIClient) addReferee() (*http.Response, error) {
 	// Create HTTP request.
 	request, err := utils.CreateHTTPRequestWithBody(
 		http.MethodPost,
-		string(go100XClient.baseUrl)+string(constants.API_ENDPOINT_ADD_REFEREE),
+		string(RyskV2Client.baseUrl)+string(constants.API_ENDPOINT_ADD_REFEREE),
 		&struct {
 			Account   string `json:"account"`
 			Code      string `json:"code"`
 			Signature string `json:"signature"`
 		}{
-			Account:   go100XClient.addressString,
+			Account:   RyskV2Client.addressString,
 			Code:      "eldief",
 			Signature: signature,
 		},
@@ -1236,5 +1236,5 @@ func (go100XClient *Go100XAPIClient) addReferee() (*http.Response, error) {
 	}
 
 	// Send HTTP request and return result.
-	return utils.SendHTTPRequest(go100XClient.HttpClient, request)
+	return utils.SendHTTPRequest(RyskV2Client.HttpClient, request)
 }

@@ -8,8 +8,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/eldief/go100x/utils/mocks"
 	"github.com/gorilla/websocket"
+	"github.com/rysk-finance/v2_client_go/utils/mocks"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )

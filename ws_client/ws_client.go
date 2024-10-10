@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eldief/go100x/constants"
-	"github.com/eldief/go100x/types"
-	"github.com/eldief/go100x/utils"
+	"github.com/rysk-finance/v2_client_go/constants"
+	"github.com/rysk-finance/v2_client_go/types"
+	"github.com/rysk-finance/v2_client_go/utils"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -24,26 +24,26 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Go100XWSClientConfiguration represents configuration settings for the 100x WebSocket client.
-type Go100XWSClientConfiguration struct {
+// RyskV2WSClientConfiguration represents configuration settings for the Rysk V2 WebSocket client.
+type RyskV2WSClientConfiguration struct {
 	Env          types.Environment // Env specifies the environment: `constants.ENVIRONMENT_TESTNET` or `constants.ENVIRONMENT_MAINNET`.
 	PrivateKey   string            // PrivateKey is the account private key with or without `0x` prefix.
-	RpcUrl       string            // RpcUrl is the URL for the RPC server, e.g., `https://sepolia.blast.io` or `https://rpc.blastblockchain.com`.
+	RpcUrl       string            // RPC URL of the Ethereum client.
 	SubAccountId uint8             // SubAccountId is the ID of the subaccount to use.
 }
 
-// Go100XWSClient is the WebSocket client for interacting with 100x services.
-type Go100XWSClient struct {
+// RyskV2WSClient is the WebSocket client for interacting with Rysk V2 services.
+type RyskV2WSClient struct {
 	env              types.Environment        // env is the current environment setting.
 	baseUrl          string                   // baseUrl is the HTTP Api base URL.
-	rpcUrl           string                   // rpcUrl is the RPC server URL.
+	rpcUrl           string                   // rpcUrl of the Ethereum client.
 	streamUrl        string                   // streamUrl is the WebSocket stream URL.
 	privateKeyString string                   // privateKeyString is the private key string.
 	addressString    string                   // addressString is the Ethereum address string derived from the private key.
 	privateKey       *ecdsa.PrivateKey        // privateKey is the ECDSA private key instance.
 	address          common.Address           // address is the Ethereum address derived from the private key.
 	ciao             common.Address           // ciao is a common address used in the context.
-	usdb             common.Address           // usdb is a common address used in the context.
+	usdc             common.Address           // usdc is a common address used in the context.
 	domain           apitypes.TypedDataDomain // domain represents the typed data domain for API requests.
 	SubAccountId     int64                    // SubAccountId is the ID of the subaccount to use.
 	RPCConnection    *websocket.Conn          // RPCConnection is the WebSocket connection for RPC operations.
@@ -51,17 +51,17 @@ type Go100XWSClient struct {
 	EthClient        types.IEthClient         // EthClient is the Ethereum client interface.
 }
 
-// NewGo100XWSClient creates a new `Go100XWSClient` instance based on the provided configuration.
-// It initializes and returns a new client that connects to the 100x WebSocket API.
+// NewRyskV2WSClient creates a new `RyskV2WSClient` instance based on the provided configuration.
+// It initializes and returns a new client that connects to the Rysk V2 WebSocket API.
 //
 // Parameters:
-//   - config: A pointer to a `Go100XWSClientConfiguration` struct that contains configuration parameters
+//   - config: A pointer to a `RyskV2WSClientConfiguration` struct that contains configuration parameters
 //     such as environment (`types.Environment`), private key (`string`), RPC URL (`string`), and subaccount ID (`uint8`).
 //
 // Returns:
-//   - *Go100XWSClient: A pointer to the initialized `Go100XWSClient` instance.
+//   - *RyskV2WSClient: A pointer to the initialized `RyskV2WSClient` instance.
 //   - error: An error if the client initialization fails.
-func NewGo100XWSClient(config *Go100XWSClientConfiguration) (*Go100XWSClient, error) {
+func NewRyskV2WSClient(config *RyskV2WSClientConfiguration) (*RyskV2WSClient, error) {
 	// Remove '0x' from private key.
 	privateKeyString := strings.TrimPrefix(config.PrivateKey, "0x")
 
@@ -97,8 +97,8 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) (*Go100XWSClient, er
 		return nil, fmt.Errorf("failed to connect to stream websocket: %v", err)
 	}
 
-	// Return a new `go100x.Client`.
-	wsClient := &Go100XWSClient{
+	// Return a new `RyskV2WSClient`.
+	wsClient := &RyskV2WSClient{
 		env:              config.Env,
 		baseUrl:          constants.API_BASE_URL[config.Env],
 		rpcUrl:           constants.WS_RPC_URL[config.Env],
@@ -108,12 +108,12 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) (*Go100XWSClient, er
 		address:          common.HexToAddress(utils.AddressFromPrivateKey(privateKeyString)),
 		addressString:    utils.AddressFromPrivateKey(privateKeyString),
 		ciao:             common.HexToAddress(constants.CIAO_ADDRESS[config.Env]),
-		usdb:             common.HexToAddress(constants.USDB_ADDRESS[config.Env]),
+		usdc:             common.HexToAddress(constants.USDC_ADDRESS[config.Env]),
 		domain: apitypes.TypedDataDomain{
 			Name:              constants.DOMAIN_NAME,
 			Version:           constants.DOMAIN_VERSION,
 			ChainId:           constants.CHAIN_ID[config.Env],
-			VerifyingContract: constants.VERIFIER_ADDRESS[config.Env],
+			VerifyingContract: constants.ORDER_DISPATCHER_ADDRESS[config.Env],
 		},
 		SubAccountId:     int64(config.SubAccountId),
 		RPCConnection:    rpcWebsocket,
@@ -125,7 +125,7 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) (*Go100XWSClient, er
 	return wsClient, nil
 }
 
-// ListProducts sends a request to retrieve the list of products available on the 100x WebSocket API.
+// ListProducts sends a request to retrieve the list of products available on the Rysk V2 WebSocket API.
 // It subscribes to the `LIST_PRODUCTS` message identifier to fetch the products.
 //
 // Parameters:
@@ -133,7 +133,7 @@ func NewGo100XWSClient(config *Go100XWSClientConfiguration) (*Go100XWSClient, er
 //
 // Returns:
 //   - error: An error if the request to fetch the products fails.
-func (go100XClient *Go100XWSClient) ListProducts(messageId string) error {
+func (go100XClient *RyskV2WSClient) ListProducts(messageId string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
 		JsonRPC: constants.WS_JSON_RPC,
@@ -145,7 +145,7 @@ func (go100XClient *Go100XWSClient) ListProducts(messageId string) error {
 	return utils.SendRPCRequest(go100XClient.RPCConnection, request)
 }
 
-// GetProduct sends a request to retrieve details for a specific product using the 100x WebSocket API.
+// GetProduct sends a request to retrieve details for a specific product using the Rysk V2 WebSocket API.
 //
 // Parameters:
 //   - messageId: The unique identifier for the message.
@@ -153,7 +153,7 @@ func (go100XClient *Go100XWSClient) ListProducts(messageId string) error {
 //
 // Returns:
 //   - error: An error if the request to fetch the product details fails.
-func (go100XClient *Go100XWSClient) GetProduct(messageId string, product *types.Product) error {
+func (go100XClient *RyskV2WSClient) GetProduct(messageId string, product *types.Product) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
 		JsonRPC: constants.WS_JSON_RPC,
@@ -171,14 +171,14 @@ func (go100XClient *Go100XWSClient) GetProduct(messageId string, product *types.
 }
 
 // ServerTime sends a request to test connectivity and retrieve the current server time
-// using the 100x WebSocket API.
+// using the Rysk V2 WebSocket API.
 //
 // Parameters:
 //   - messageId: The unique identifier for the message.
 //
 // Returns:
 //   - error: An error if the request to fetch the server time fails.
-func (go100XClient *Go100XWSClient) ServerTime(messageId string) error {
+func (go100XClient *RyskV2WSClient) ServerTime(messageId string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
 		JsonRPC: constants.WS_JSON_RPC,
@@ -198,7 +198,7 @@ func (go100XClient *Go100XWSClient) ServerTime(messageId string) error {
 //
 // Returns:
 //   - error: An error if the authentication fails.
-func (go100XClient *Go100XWSClient) Login(messageId string) error {
+func (go100XClient *RyskV2WSClient) Login(messageId string) error {
 	// Current timestamp in ms, will be rejected if older than 10s, easiest to send in a time in the future.
 	timestamp := uint64(time.Now().Add(10 * time.Second).UnixMilli())
 
@@ -213,7 +213,7 @@ func (go100XClient *Go100XWSClient) Login(messageId string) error {
 			Timestamp uint64 `json:"timestamp"`
 		}{
 			Account:   go100XClient.addressString,
-			Message:   "I want to log into 100x.finance",
+			Message:   "I want to log into rysk.finance",
 			Timestamp: timestamp,
 		},
 	)
@@ -233,7 +233,7 @@ func (go100XClient *Go100XWSClient) Login(messageId string) error {
 			Signature string `json:"signature"`
 		}{
 			Account:   go100XClient.addressString,
-			Message:   "I want to log into 100x.finance",
+			Message:   "I want to log into rysk.finance",
 			Timestamp: timestamp,
 			Signature: signature,
 		},
@@ -250,7 +250,7 @@ func (go100XClient *Go100XWSClient) Login(messageId string) error {
 //
 // Returns:
 //   - error: An error if the session status retrieval fails.
-func (go100XClient *Go100XWSClient) SessionStatus(messageId string) error {
+func (go100XClient *RyskV2WSClient) SessionStatus(messageId string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
 		JsonRPC: constants.WS_JSON_RPC,
@@ -269,7 +269,7 @@ func (go100XClient *Go100XWSClient) SessionStatus(messageId string) error {
 //
 // Returns:
 //   - error: An error if the sub-account list retrieval fails.
-func (go100XClient *Go100XWSClient) SubAccountList(messageId string) error {
+func (go100XClient *RyskV2WSClient) SubAccountList(messageId string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
 		JsonRPC: constants.WS_JSON_RPC,
@@ -294,7 +294,7 @@ func (go100XClient *Go100XWSClient) SubAccountList(messageId string) error {
 //
 // Returns:
 //   - error: An error if the approval process fails.
-func (go100XClient *Go100XWSClient) ApproveSigner(messageId string, params *types.ApproveRevokeSignerRequest) error {
+func (go100XClient *RyskV2WSClient) ApproveSigner(messageId string, params *types.ApproveRevokeSignerRequest) error {
 	return go100XClient.approveRevokeSigner(messageId, params, true)
 }
 
@@ -306,7 +306,7 @@ func (go100XClient *Go100XWSClient) ApproveSigner(messageId string, params *type
 //
 // Returns:
 //   - error: An error if the revocation process fails.
-func (go100XClient *Go100XWSClient) RevokeSigner(messageId string, params *types.ApproveRevokeSignerRequest) error {
+func (go100XClient *RyskV2WSClient) RevokeSigner(messageId string, params *types.ApproveRevokeSignerRequest) error {
 	return go100XClient.approveRevokeSigner(messageId, params, false)
 }
 
@@ -319,7 +319,7 @@ func (go100XClient *Go100XWSClient) RevokeSigner(messageId string, params *types
 //
 // Returns:
 //   - error: An error if the operation fails.
-func (go100XClient *Go100XWSClient) approveRevokeSigner(messageId string, params *types.ApproveRevokeSignerRequest, isApproved bool) error {
+func (go100XClient *RyskV2WSClient) approveRevokeSigner(messageId string, params *types.ApproveRevokeSignerRequest, isApproved bool) error {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
@@ -377,7 +377,7 @@ func (go100XClient *Go100XWSClient) approveRevokeSigner(messageId string, params
 //
 // Returns:
 //   - error: An error if the operation fails.
-func (go100XClient *Go100XWSClient) NewOrder(messageId string, params *types.NewOrderRequest) error {
+func (go100XClient *RyskV2WSClient) NewOrder(messageId string, params *types.NewOrderRequest) error {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
@@ -455,7 +455,7 @@ func (go100XClient *Go100XWSClient) NewOrder(messageId string, params *types.New
 //
 // Returns:
 //   - error: An error if the operation fails.
-func (go100XClient *Go100XWSClient) ListOpenOrders(messageId string, params *types.ListOrdersRequest) error {
+func (go100XClient *RyskV2WSClient) ListOpenOrders(messageId string, params *types.ListOrdersRequest) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
 		JsonRPC: constants.WS_JSON_RPC,
@@ -492,7 +492,7 @@ func (go100XClient *Go100XWSClient) ListOpenOrders(messageId string, params *typ
 //
 // Returns:
 //   - error: An error if the operation fails.
-func (go100XClient *Go100XWSClient) CancelOrder(messageId string, params *types.CancelOrderRequest) error {
+func (go100XClient *RyskV2WSClient) CancelOrder(messageId string, params *types.CancelOrderRequest) error {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,
@@ -548,7 +548,7 @@ func (go100XClient *Go100XWSClient) CancelOrder(messageId string, params *types.
 //   - error: An error if the operation fails.
 //
 // Returns number of deleted orders.
-func (go100XClient *Go100XWSClient) CancelAllOpenOrders(messageId string, product *types.Product) error {
+func (go100XClient *RyskV2WSClient) CancelAllOpenOrders(messageId string, product *types.Product) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
 		JsonRPC: constants.WS_JSON_RPC,
@@ -580,7 +580,7 @@ func (go100XClient *Go100XWSClient) CancelAllOpenOrders(messageId string, produc
 //
 // Returns:
 //   - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) OrderBook(messageId string, params *types.OrderBookRequest) error {
+func (go100XClient *RyskV2WSClient) OrderBook(messageId string, params *types.OrderBookRequest) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
 		JsonRPC: constants.WS_JSON_RPC,
@@ -609,7 +609,7 @@ func (go100XClient *Go100XWSClient) OrderBook(messageId string, params *types.Or
 //
 // Returns:
 //   - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) GetPerpetualPosition(messageId string, products []*types.Product) error {
+func (go100XClient *RyskV2WSClient) GetPerpetualPosition(messageId string, products []*types.Product) error {
 	// Create ProductIds slice.
 	var productIds []int64
 	for _, product := range products {
@@ -644,7 +644,7 @@ func (go100XClient *Go100XWSClient) GetPerpetualPosition(messageId string, produ
 //
 // Returns:
 //   - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) GetSpotBalances(messageId string, assets []string) error {
+func (go100XClient *RyskV2WSClient) GetSpotBalances(messageId string, assets []string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
 		JsonRPC: constants.WS_JSON_RPC,
@@ -673,7 +673,7 @@ func (go100XClient *Go100XWSClient) GetSpotBalances(messageId string, assets []s
 //
 // Returns:
 //   - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) AccountUpdates(messageId string) error {
+func (go100XClient *RyskV2WSClient) AccountUpdates(messageId string) error {
 	// Generate RPC request.
 	request := &types.WebsocketRequest{
 		JsonRPC: constants.WS_JSON_RPC,
@@ -701,7 +701,7 @@ func (go100XClient *Go100XWSClient) AccountUpdates(messageId string) error {
 //
 // Returns:
 //   - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) SubscribeAggregateTrades(messageId string, products []*types.Product) error {
+func (go100XClient *RyskV2WSClient) SubscribeAggregateTrades(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribeAggregateTrades(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products)
 }
 
@@ -714,7 +714,7 @@ func (go100XClient *Go100XWSClient) SubscribeAggregateTrades(messageId string, p
 //
 // Returns:
 //   - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) UnsubscribeAggregateTrades(messageId string, products []*types.Product) error {
+func (go100XClient *RyskV2WSClient) UnsubscribeAggregateTrades(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribeAggregateTrades(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products)
 }
 
@@ -727,7 +727,7 @@ func (go100XClient *Go100XWSClient) UnsubscribeAggregateTrades(messageId string,
 //
 // Returns:
 //   - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) subscribeUnsubscribeAggregateTrades(messageId string, method types.WSMethod, products []*types.Product) error {
+func (go100XClient *RyskV2WSClient) subscribeUnsubscribeAggregateTrades(messageId string, method types.WSMethod, products []*types.Product) error {
 	// Create @aggTrade params.
 	var params []string
 	for _, product := range products {
@@ -754,7 +754,7 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribeAggregateTrades(messageI
 //
 // Returns:
 //   - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) SubscribeSingleTrades(messageId string, products []*types.Product) error {
+func (go100XClient *RyskV2WSClient) SubscribeSingleTrades(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribeSingleTrades(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products)
 }
 
@@ -766,7 +766,7 @@ func (go100XClient *Go100XWSClient) SubscribeSingleTrades(messageId string, prod
 //
 // Returns:
 //   - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) UnubscribeSingleTrades(messageId string, products []*types.Product) error {
+func (go100XClient *RyskV2WSClient) UnubscribeSingleTrades(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribeSingleTrades(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products)
 }
 
@@ -779,7 +779,7 @@ func (go100XClient *Go100XWSClient) UnubscribeSingleTrades(messageId string, pro
 //
 // Returns:
 //   - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) subscribeUnsubscribeSingleTrades(messageId string, method types.WSMethod, products []*types.Product) error {
+func (go100XClient *RyskV2WSClient) subscribeUnsubscribeSingleTrades(messageId string, method types.WSMethod, products []*types.Product) error {
 	// Create @trade params.
 	var params []string
 	for _, product := range products {
@@ -807,7 +807,7 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribeSingleTrades(messageId s
 //
 // Returns:
 //   - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) SubscribeKlineData(messageId string, products []*types.Product, intervals []types.Interval) error {
+func (go100XClient *RyskV2WSClient) SubscribeKlineData(messageId string, products []*types.Product, intervals []types.Interval) error {
 	return go100XClient.subscribeUnsubscribeKlineData(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products, intervals)
 }
 
@@ -820,7 +820,7 @@ func (go100XClient *Go100XWSClient) SubscribeKlineData(messageId string, product
 //
 // Returns:
 //   - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) UnsubscribeKlineData(messageId string, products []*types.Product, intervals []types.Interval) error {
+func (go100XClient *RyskV2WSClient) UnsubscribeKlineData(messageId string, products []*types.Product, intervals []types.Interval) error {
 	return go100XClient.subscribeUnsubscribeKlineData(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products, intervals)
 }
 
@@ -834,7 +834,7 @@ func (go100XClient *Go100XWSClient) UnsubscribeKlineData(messageId string, produ
 //
 // Returns:
 //   - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) subscribeUnsubscribeKlineData(messageId string, method types.WSMethod, products []*types.Product, intervals []types.Interval) error {
+func (go100XClient *RyskV2WSClient) subscribeUnsubscribeKlineData(messageId string, method types.WSMethod, products []*types.Product, intervals []types.Interval) error {
 	// Create @klines params.
 	var params []string
 	for _, product := range products {
@@ -866,7 +866,7 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribeKlineData(messageId stri
 //
 // Returns:
 // - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) SubscribePartialBookDepth(messageId string, products []*types.Product, limits []types.Limit, granularities []int64) error {
+func (go100XClient *RyskV2WSClient) SubscribePartialBookDepth(messageId string, products []*types.Product, limits []types.Limit, granularities []int64) error {
 	return go100XClient.subscribeUnsubscribePartialBookDepth(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products, limits, granularities)
 }
 
@@ -881,7 +881,7 @@ func (go100XClient *Go100XWSClient) SubscribePartialBookDepth(messageId string, 
 //
 // Returns:
 // - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) UnsubscribePartialBookDepth(messageId string, products []*types.Product, limits []types.Limit, granularities []int64) error {
+func (go100XClient *RyskV2WSClient) UnsubscribePartialBookDepth(messageId string, products []*types.Product, limits []types.Limit, granularities []int64) error {
 	return go100XClient.subscribeUnsubscribePartialBookDepth(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products, limits, granularities)
 }
 
@@ -896,7 +896,7 @@ func (go100XClient *Go100XWSClient) UnsubscribePartialBookDepth(messageId string
 //
 // Returns:
 // - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) subscribeUnsubscribePartialBookDepth(messageId string, method types.WSMethod, products []*types.Product, limits []types.Limit, granularities []int64) error {
+func (go100XClient *RyskV2WSClient) subscribeUnsubscribePartialBookDepth(messageId string, method types.WSMethod, products []*types.Product, limits []types.Limit, granularities []int64) error {
 	// Create @depth params.
 	var params []string
 	for _, product := range products {
@@ -929,7 +929,7 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribePartialBookDepth(message
 //
 // Returns:
 // - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) Subscribe24hrPriceChangeStatistics(messageId string, products []*types.Product) error {
+func (go100XClient *RyskV2WSClient) Subscribe24hrPriceChangeStatistics(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribe24hrPriceChangeStatistics(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_SUBSCRIBE, products)
 }
 
@@ -943,7 +943,7 @@ func (go100XClient *Go100XWSClient) Subscribe24hrPriceChangeStatistics(messageId
 //
 // Returns:
 // - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) Unsubscribe24hrPriceChangeStatistics(messageId string, products []*types.Product) error {
+func (go100XClient *RyskV2WSClient) Unsubscribe24hrPriceChangeStatistics(messageId string, products []*types.Product) error {
 	return go100XClient.subscribeUnsubscribe24hrPriceChangeStatistics(messageId, constants.WS_METHOD_MARKET_DATA_STREAMS_UNSUBSCRIBE, products)
 }
 
@@ -956,7 +956,7 @@ func (go100XClient *Go100XWSClient) Unsubscribe24hrPriceChangeStatistics(message
 //
 // Returns:
 // - error: An error if the operation fails, nil otherwise.
-func (go100XClient *Go100XWSClient) subscribeUnsubscribe24hrPriceChangeStatistics(messageId string, method types.WSMethod, products []*types.Product) error {
+func (go100XClient *RyskV2WSClient) subscribeUnsubscribe24hrPriceChangeStatistics(messageId string, method types.WSMethod, products []*types.Product) error {
 	// Create @ticker params.
 	var params []string
 	for _, product := range products {
@@ -975,16 +975,16 @@ func (go100XClient *Go100XWSClient) subscribeUnsubscribe24hrPriceChangeStatistic
 	return utils.SendRPCRequest(go100XClient.StreamConnection, request)
 }
 
-// ApproveUSDB approves 100x to spend USDB on your behalf.
+// ApproveUSDC approves Rysk V2 to spend USDC on your behalf.
 //
 // Parameters:
 //   - ctx: The context.Context for the Ethereum transaction.
-//   - amount: The amount of USDB tokens to approve, specified as a *big.Int.
+//   - amount: The amount of USDC tokens to approve, specified as a *big.Int.
 //
 // Returns:
 //   - A pointer to a geth_types.Transaction representing the Ethereum transaction.
 //   - An error if the Ethereum transaction fails or encounters an issue.
-func (go100XClient *Go100XWSClient) ApproveUSDB(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
+func (go100XClient *RyskV2WSClient) ApproveUSDC(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
 	// Parse ABI
 	parsedABI, _ := abi.JSON(strings.NewReader(constants.ERC20_ABI))
 
@@ -992,13 +992,13 @@ func (go100XClient *Go100XWSClient) ApproveUSDB(ctx context.Context, amount *big
 	data, _ := parsedABI.Pack("approve", go100XClient.ciao, amount)
 
 	// Get transaction parameters
-	nonce, gasPrice, chainID, gasLimit, err := utils.GetTransactionParams(ctx, go100XClient.EthClient, go100XClient.privateKey, &go100XClient.address, &go100XClient.usdb, &data)
+	nonce, gasPrice, chainID, gasLimit, err := utils.GetTransactionParams(ctx, go100XClient.EthClient, go100XClient.privateKey, &go100XClient.address, &go100XClient.usdc, &data)
 	if err != nil {
 		return nil, err
 	}
 
 	// Create a new transaction
-	tx := geth_types.NewTransaction(nonce, go100XClient.usdb, big.NewInt(0), gasLimit, gasPrice, data)
+	tx := geth_types.NewTransaction(nonce, go100XClient.usdc, big.NewInt(0), gasLimit, gasPrice, data)
 
 	// Sign transaction
 	signedTx, _ := geth_types.SignTx(tx, geth_types.NewEIP155Signer(chainID), go100XClient.privateKey)
@@ -1012,21 +1012,21 @@ func (go100XClient *Go100XWSClient) ApproveUSDB(ctx context.Context, amount *big
 	return signedTx, nil
 }
 
-// DepositUSDB sends USDB to 100x.
+// DepositUSDC sends USDC to Rysk V2.
 //
 // Parameters:
 //   - ctx: The context.Context for the Ethereum transaction.
-//   - amount: The amount of USDB tokens to deposit, specified as a *big.Int.
+//   - amount: The amount of USDC tokens to deposit, specified as a *big.Int.
 //
 // Returns:
 //   - A pointer to a geth_types.Transaction representing the Ethereum transaction.
 //   - An error if the Ethereum transaction fails or encounters an issue.
-func (go100XClient *Go100XWSClient) DepositUSDB(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
+func (go100XClient *RyskV2WSClient) DepositUSDC(ctx context.Context, amount *big.Int) (*geth_types.Transaction, error) {
 	// Parse ABI
 	parsedABI, _ := abi.JSON(strings.NewReader(constants.CIAO_ABI))
 
 	// Pack transaction data
-	data, _ := parsedABI.Pack("deposit", go100XClient.address, uint8(go100XClient.SubAccountId), amount, go100XClient.usdb)
+	data, _ := parsedABI.Pack("deposit", go100XClient.address, uint8(go100XClient.SubAccountId), amount, go100XClient.usdc)
 
 	// Get transaction parameters
 	nonce, gasPrice, chainID, gasLimit, err := utils.GetTransactionParams(ctx, go100XClient.EthClient, go100XClient.privateKey, &go100XClient.address, &go100XClient.ciao, &data)
@@ -1058,7 +1058,7 @@ func (go100XClient *Go100XWSClient) DepositUSDB(ctx context.Context, amount *big
 // Returns:
 //   - A pointer to a geth_types.Receipt containing the transaction receipt once the transaction is mined.
 //   - An error if the transaction fails to be mined or encounters an issue.
-func (go100XClient *Go100XWSClient) WaitTransaction(ctx context.Context, transaction *geth_types.Transaction) (*geth_types.Receipt, error) {
+func (go100XClient *RyskV2WSClient) WaitTransaction(ctx context.Context, transaction *geth_types.Transaction) (*geth_types.Receipt, error) {
 	receipt, err := bind.WaitMined(ctx, go100XClient.EthClient, transaction)
 	if err != nil {
 		return nil, err
@@ -1071,7 +1071,7 @@ func (go100XClient *Go100XWSClient) WaitTransaction(ctx context.Context, transac
 // Returns:
 //   - A pointer to an http.Response containing the response from the API call.
 //   - An error if the API call fails or if the response is not as expected.
-func (go100XClient *Go100XWSClient) addReferee() (*http.Response, error) {
+func (go100XClient *RyskV2WSClient) addReferee() (*http.Response, error) {
 	// Generate EIP712 signature.
 	signature, err := utils.SignMessage(
 		go100XClient.domain,

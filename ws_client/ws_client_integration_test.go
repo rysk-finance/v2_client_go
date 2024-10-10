@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eldief/go100x/constants"
-	"github.com/eldief/go100x/types"
 	"github.com/joho/godotenv"
+	"github.com/rysk-finance/v2_client_go/constants"
+	"github.com/rysk-finance/v2_client_go/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -26,7 +26,7 @@ type WsClientIntegrationTestSuite struct {
 	suite.Suite
 	PrivateKeys    string
 	RpcUrl         string
-	Go100XWSClient *Go100XWSClient
+	RyskV2WSClient *RyskV2WSClient
 }
 
 func (s *WsClientIntegrationTestSuite) SetupSuite() {
@@ -34,7 +34,7 @@ func (s *WsClientIntegrationTestSuite) SetupSuite() {
 		fmt.Println("Error loading .env file:", err)
 		return
 	}
-	s.Go100XWSClient, _ = NewGo100XWSClient(&Go100XWSClientConfiguration{
+	s.RyskV2WSClient, _ = NewRyskV2WSClient(&RyskV2WSClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
@@ -43,8 +43,8 @@ func (s *WsClientIntegrationTestSuite) SetupSuite() {
 }
 
 func (s *WsClientIntegrationTestSuite) TearDownSuite() {
-	s.Go100XWSClient.RPCConnection.Close()
-	s.Go100XWSClient.StreamConnection.Close()
+	s.RyskV2WSClient.RPCConnection.Close()
+	s.RyskV2WSClient.StreamConnection.Close()
 }
 
 func TestRunSuiteIntegration_WsClientIntegrationTestSuite(t *testing.T) {
@@ -52,11 +52,11 @@ func TestRunSuiteIntegration_WsClientIntegrationTestSuite(t *testing.T) {
 }
 
 func (s *WsClientIntegrationTestSuite) TestIntegration_ListProducts() {
-	err := s.Go100XWSClient.ListProducts("LIST_PRODUCTS")
+	err := s.RyskV2WSClient.ListProducts("LIST_PRODUCTS")
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -76,11 +76,11 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_ListProducts() {
 }
 
 func (s *WsClientIntegrationTestSuite) TestIntegration_GetProduct() {
-	err := s.Go100XWSClient.GetProduct("GET_PRODUCT", &constants.PRODUCT_ETH_PERP)
+	err := s.RyskV2WSClient.GetProduct("GET_PRODUCT", &constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -99,11 +99,11 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_GetProduct() {
 }
 
 func (s *WsClientIntegrationTestSuite) TestIntegration_ServerTime() {
-	err := s.Go100XWSClient.ServerTime("SERVER_TIME")
+	err := s.RyskV2WSClient.ServerTime("SERVER_TIME")
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -122,11 +122,11 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_ServerTime() {
 }
 
 func (s *WsClientIntegrationTestSuite) TestIntegration_Login() {
-	err := s.Go100XWSClient.Login("LOGIN")
+	err := s.RyskV2WSClient.Login("LOGIN")
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -147,11 +147,11 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_Login() {
 func (s *WsClientIntegrationTestSuite) TestIntegration_SessionStatus() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.SessionStatus("SESSION_STATUS")
+	err := s.RyskV2WSClient.SessionStatus("SESSION_STATUS")
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -173,11 +173,11 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_SubAccountList() {
 	s.TestIntegration_Login()
 	s.TestIntegration_ApproveSigner()
 
-	err := s.Go100XWSClient.SubAccountList("SUB_ACCOUNT_LIST")
+	err := s.RyskV2WSClient.SubAccountList("SUB_ACCOUNT_LIST")
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -198,14 +198,14 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_SubAccountList() {
 func (s *WsClientIntegrationTestSuite) TestIntegration_ApproveSigner() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.ApproveSigner("APPROVE_SIGNER", &types.ApproveRevokeSignerRequest{
-		ApprovedSigner: s.Go100XWSClient.addressString,
+	err := s.RyskV2WSClient.ApproveSigner("APPROVE_SIGNER", &types.ApproveRevokeSignerRequest{
+		ApprovedSigner: s.RyskV2WSClient.addressString,
 		Nonce:          time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -226,14 +226,14 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_ApproveSigner() {
 func (s *WsClientIntegrationTestSuite) TestIntegration_RevokeSigner() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.RevokeSigner("REVOKE_SIGNER", &types.ApproveRevokeSignerRequest{
-		ApprovedSigner: s.Go100XWSClient.addressString,
+	err := s.RyskV2WSClient.RevokeSigner("REVOKE_SIGNER", &types.ApproveRevokeSignerRequest{
+		ApprovedSigner: s.RyskV2WSClient.addressString,
 		Nonce:          time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -253,7 +253,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_RevokeSigner() {
 
 func (s *WsClientIntegrationTestSuite) TestIntegration_NewOrder() {
 	s.TestIntegration_Login()
-	s.TestIntegration_ApproveDepositUSDBWaitingTxs()
+	s.TestIntegration_ApproveDepositUSDCWaitingTxs()
 
 	// get market price
 	request, err := http.NewRequest(
@@ -287,7 +287,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_NewOrder() {
 	new(big.Float).Mul(big.NewFloat(priceFloat), new(big.Float).SetFloat64(1e18)).Int(price)
 
 	// get product increment
-	err = s.Go100XWSClient.GetProduct("GET_PRODUCT", &constants.PRODUCT_ETH_PERP)
+	err = s.RyskV2WSClient.GetProduct("GET_PRODUCT", &constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
 
 	var productUnmarshaled struct {
@@ -295,7 +295,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_NewOrder() {
 	}
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -330,7 +330,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_NewOrder() {
 	adjustedPrice := new(big.Int).Sub(price, remainder)
 
 	// Limit buy 0.01 ETH for market price, valid for 1 day
-	err = s.Go100XWSClient.NewOrder("NEW_ORDER", &types.NewOrderRequest{
+	err = s.RyskV2WSClient.NewOrder("NEW_ORDER", &types.NewOrderRequest{
 		Product:     &constants.PRODUCT_ETH_PERP,
 		IsBuy:       true,
 		OrderType:   constants.ORDER_TYPE_LIMIT,
@@ -343,7 +343,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_NewOrder() {
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -364,7 +364,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_NewOrder() {
 func (s *WsClientIntegrationTestSuite) TestIntegration_ListOpenOrders() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.ListOpenOrders("LIST_OPEN_ORDERS", &types.ListOrdersRequest{
+	err := s.RyskV2WSClient.ListOpenOrders("LIST_OPEN_ORDERS", &types.ListOrdersRequest{
 		Product:   &constants.PRODUCT_ETH_PERP,
 		Ids:       []string{},
 		StartTime: time.Now().Add(-24 * time.Hour).UnixMilli(),
@@ -374,7 +374,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_ListOpenOrders() {
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -394,7 +394,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_ListOpenOrders() {
 
 func (s *WsClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 	s.TestIntegration_Login()
-	s.TestIntegration_ApproveDepositUSDBWaitingTxs()
+	s.TestIntegration_ApproveDepositUSDCWaitingTxs()
 
 	// get market price
 	request, err := http.NewRequest(
@@ -429,7 +429,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 	price = new(big.Int).Mul(new(big.Int).Div(price, big.NewInt(100)), big.NewInt(110))
 
 	// get product increment
-	err = s.Go100XWSClient.GetProduct("GET_PRODUCT", &constants.PRODUCT_ETH_PERP)
+	err = s.RyskV2WSClient.GetProduct("GET_PRODUCT", &constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
 
 	var productUnmarshaled struct {
@@ -437,7 +437,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 	}
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -472,7 +472,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 	adjustedPrice := new(big.Int).Sub(price, remainder)
 
 	// new order at 10% market premium
-	err = s.Go100XWSClient.NewOrder("NEW_ORDER", &types.NewOrderRequest{
+	err = s.RyskV2WSClient.NewOrder("NEW_ORDER", &types.NewOrderRequest{
 		Product:     &constants.PRODUCT_ETH_PERP,
 		IsBuy:       true,
 		OrderType:   constants.ORDER_TYPE_LIMIT,
@@ -489,7 +489,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 	}
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -516,14 +516,14 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 	}
 
 	// cancel order
-	err = s.Go100XWSClient.CancelOrder("CANCEL_ORDER", &types.CancelOrderRequest{
+	err = s.RyskV2WSClient.CancelOrder("CANCEL_ORDER", &types.CancelOrderRequest{
 		Product:    &constants.PRODUCT_ETH_PERP,
 		IdToCancel: newOrderUnmarshaled.ID,
 	})
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -544,11 +544,11 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 func (s *WsClientIntegrationTestSuite) TestIntegration_CancelAllOpenOrders() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.CancelAllOpenOrders("CANCEL_ALL_OPEN_ORDERS", &constants.PRODUCT_ETH_PERP)
+	err := s.RyskV2WSClient.CancelAllOpenOrders("CANCEL_ALL_OPEN_ORDERS", &constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -569,7 +569,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_CancelAllOpenOrders() {
 func (s *WsClientIntegrationTestSuite) TestIntegration_OrderBook() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.OrderBook("ORDER_BOOK", &types.OrderBookRequest{
+	err := s.RyskV2WSClient.OrderBook("ORDER_BOOK", &types.OrderBookRequest{
 		Product:     &constants.PRODUCT_ETH_PERP,
 		Granularity: 10,
 		Limit:       constants.LIMIT_FIVE,
@@ -577,7 +577,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_OrderBook() {
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -598,7 +598,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_OrderBook() {
 func (s *WsClientIntegrationTestSuite) TestIntegration_GetPerpetualPosition() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.GetPerpetualPosition("GET_PERPETUAL_POSITION", []*types.Product{
+	err := s.RyskV2WSClient.GetPerpetualPosition("GET_PERPETUAL_POSITION", []*types.Product{
 		&constants.PRODUCT_ETH_PERP,
 		&constants.PRODUCT_BTC_PERP,
 		&constants.PRODUCT_SOL_PERP,
@@ -606,7 +606,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_GetPerpetualPosition() {
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -627,11 +627,11 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_GetPerpetualPosition() {
 func (s *WsClientIntegrationTestSuite) TestIntegration_GetSpotBalances() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.GetSpotBalances("GET_SPOT_BALANCES", []string{})
+	err := s.RyskV2WSClient.GetSpotBalances("GET_SPOT_BALANCES", []string{})
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -652,11 +652,11 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_GetSpotBalances() {
 func (s *WsClientIntegrationTestSuite) TestIntegration_AccountUpdates() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.AccountUpdates("ACCOUNT_UPDATES")
+	err := s.RyskV2WSClient.AccountUpdates("ACCOUNT_UPDATES")
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.RPCConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.RPCConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -676,11 +676,11 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_AccountUpdates() {
 func (s *WsClientIntegrationTestSuite) TestIntegration_SubscribeAggregateTrades() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.SubscribeAggregateTrades("SUBSCRIBE_AGGREGATE_TRADES", []*types.Product{&constants.PRODUCT_ETH_PERP})
+	err := s.RyskV2WSClient.SubscribeAggregateTrades("SUBSCRIBE_AGGREGATE_TRADES", []*types.Product{&constants.PRODUCT_ETH_PERP})
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.StreamConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.StreamConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -700,11 +700,11 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_SubscribeAggregateTrades(
 func (s *WsClientIntegrationTestSuite) TestIntegration_UnsubscribeAggregateTrades() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.UnsubscribeAggregateTrades("UNSUBSCRIBE_AGGREGATE_TRADES", []*types.Product{&constants.PRODUCT_ETH_PERP})
+	err := s.RyskV2WSClient.UnsubscribeAggregateTrades("UNSUBSCRIBE_AGGREGATE_TRADES", []*types.Product{&constants.PRODUCT_ETH_PERP})
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.StreamConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.StreamConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -724,11 +724,11 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_UnsubscribeAggregateTrade
 func (s *WsClientIntegrationTestSuite) TestIntegration_SubscribeSingleTrade() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.SubscribeSingleTrades("SUBSCRIBE_SINGLE_TRADE", []*types.Product{&constants.PRODUCT_ETH_PERP})
+	err := s.RyskV2WSClient.SubscribeSingleTrades("SUBSCRIBE_SINGLE_TRADE", []*types.Product{&constants.PRODUCT_ETH_PERP})
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.StreamConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.StreamConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -748,11 +748,11 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_SubscribeSingleTrade() {
 func (s *WsClientIntegrationTestSuite) TestIntegration_UnsubscribeSingleTrade() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.UnsubscribeAggregateTrades("UNSUBSCRIBE_SINGLE_TRADE", []*types.Product{&constants.PRODUCT_ETH_PERP})
+	err := s.RyskV2WSClient.UnsubscribeAggregateTrades("UNSUBSCRIBE_SINGLE_TRADE", []*types.Product{&constants.PRODUCT_ETH_PERP})
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.StreamConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.StreamConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -772,7 +772,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_UnsubscribeSingleTrade() 
 func (s *WsClientIntegrationTestSuite) TestIntegration_SubscribeKlineData() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.SubscribeKlineData("SUBSCRIBE_KLINE_DATA", []*types.Product{&constants.PRODUCT_ETH_PERP}, []types.Interval{
+	err := s.RyskV2WSClient.SubscribeKlineData("SUBSCRIBE_KLINE_DATA", []*types.Product{&constants.PRODUCT_ETH_PERP}, []types.Interval{
 		constants.INTERVAL_15M,
 		constants.INTERVAL_1H,
 		constants.INTERVAL_1M,
@@ -780,7 +780,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_SubscribeKlineData() {
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.StreamConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.StreamConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -800,7 +800,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_SubscribeKlineData() {
 func (s *WsClientIntegrationTestSuite) TestIntegration_UnsubscribeKlineData() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.UnsubscribeKlineData("UNSUBSCRIBE_KLINE_DATA", []*types.Product{&constants.PRODUCT_ETH_PERP}, []types.Interval{
+	err := s.RyskV2WSClient.UnsubscribeKlineData("UNSUBSCRIBE_KLINE_DATA", []*types.Product{&constants.PRODUCT_ETH_PERP}, []types.Interval{
 		constants.INTERVAL_15M,
 		constants.INTERVAL_1H,
 		constants.INTERVAL_1M,
@@ -808,7 +808,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_UnsubscribeKlineData() {
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.StreamConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.StreamConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -828,7 +828,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_UnsubscribeKlineData() {
 func (s *WsClientIntegrationTestSuite) TestIntegration_SubscribePartialBookDepth() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.SubscribePartialBookDepth("SUBSCRIBE_PARTIAL_BOOK_DEPTH",
+	err := s.RyskV2WSClient.SubscribePartialBookDepth("SUBSCRIBE_PARTIAL_BOOK_DEPTH",
 		[]*types.Product{
 			&constants.PRODUCT_ETH_PERP,
 			&constants.PRODUCT_SOL_PERP,
@@ -844,7 +844,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_SubscribePartialBookDepth
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.StreamConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.StreamConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -864,7 +864,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_SubscribePartialBookDepth
 func (s *WsClientIntegrationTestSuite) TestIntegration_UnsubscribePartialBookDepth() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.UnsubscribePartialBookDepth("UNSUBSCRIBE_PARTIAL_BOOK_DEPTH",
+	err := s.RyskV2WSClient.UnsubscribePartialBookDepth("UNSUBSCRIBE_PARTIAL_BOOK_DEPTH",
 		[]*types.Product{
 			&constants.PRODUCT_ETH_PERP,
 			&constants.PRODUCT_SOL_PERP,
@@ -880,7 +880,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_UnsubscribePartialBookDep
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.StreamConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.StreamConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -900,7 +900,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_UnsubscribePartialBookDep
 func (s *WsClientIntegrationTestSuite) TestIntegration_Subscribe24hrPriceChangeStatistics() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.Subscribe24hrPriceChangeStatistics("SUBSCRIBE_24H_PRICE_CHANGE_STATS",
+	err := s.RyskV2WSClient.Subscribe24hrPriceChangeStatistics("SUBSCRIBE_24H_PRICE_CHANGE_STATS",
 		[]*types.Product{
 			&constants.PRODUCT_ETH_PERP,
 			&constants.PRODUCT_SOL_PERP,
@@ -910,7 +910,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_Subscribe24hrPriceChangeS
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.StreamConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.StreamConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -930,7 +930,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_Subscribe24hrPriceChangeS
 func (s *WsClientIntegrationTestSuite) TestIntegration_Unsubscribe24hrPriceChangeStatistics() {
 	s.TestIntegration_Login()
 
-	err := s.Go100XWSClient.Unsubscribe24hrPriceChangeStatistics("UNSUBSCRIBE_24H_PRICE_CHANGE_STATS",
+	err := s.RyskV2WSClient.Unsubscribe24hrPriceChangeStatistics("UNSUBSCRIBE_24H_PRICE_CHANGE_STATS",
 		[]*types.Product{
 			&constants.PRODUCT_ETH_PERP,
 			&constants.PRODUCT_SOL_PERP,
@@ -940,7 +940,7 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_Unsubscribe24hrPriceChang
 	require.NoError(s.T(), err)
 
 	for {
-		_, p, err := s.Go100XWSClient.StreamConnection.ReadMessage()
+		_, p, err := s.RyskV2WSClient.StreamConnection.ReadMessage()
 		require.NoError(s.T(), err)
 
 		var response types.WebsocketResponse
@@ -957,39 +957,39 @@ func (s *WsClientIntegrationTestSuite) TestIntegration_Unsubscribe24hrPriceChang
 	}
 }
 
-func (s *WsClientIntegrationTestSuite) TestIntegration_ApproveUSDBWaitingTx() {
-	transaction, err := s.Go100XWSClient.ApproveUSDB(context.Background(), constants.E22)
+func (s *WsClientIntegrationTestSuite) TestIntegration_ApproveUSDCWaitingTx() {
+	transaction, err := s.RyskV2WSClient.ApproveUSDC(context.Background(), constants.E9)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 
-	receipt, err := s.Go100XWSClient.WaitTransaction(context.Background(), transaction)
+	receipt, err := s.RyskV2WSClient.WaitTransaction(context.Background(), transaction)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), receipt)
 	require.Equal(s.T(), uint64(1), receipt.Status)
 }
 
-func (s *WsClientIntegrationTestSuite) TestIntegration_ApproveDepositUSDBWaitingTxs() {
-	transaction, err := s.Go100XWSClient.ApproveUSDB(context.Background(), constants.E20)
+func (s *WsClientIntegrationTestSuite) TestIntegration_ApproveDepositUSDCWaitingTxs() {
+	transaction, err := s.RyskV2WSClient.ApproveUSDC(context.Background(), constants.E9)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 
-	receipt, err := s.Go100XWSClient.WaitTransaction(context.Background(), transaction)
+	receipt, err := s.RyskV2WSClient.WaitTransaction(context.Background(), transaction)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), receipt)
 	require.Equal(s.T(), uint64(1), receipt.Status)
 
-	transaction, err = s.Go100XWSClient.DepositUSDB(context.Background(), constants.E20)
+	transaction, err = s.RyskV2WSClient.DepositUSDC(context.Background(), constants.E9)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 
-	receipt, err = s.Go100XWSClient.WaitTransaction(context.Background(), transaction)
+	receipt, err = s.RyskV2WSClient.WaitTransaction(context.Background(), transaction)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), receipt)
 	require.Equal(s.T(), uint64(1), receipt.Status)
 }
 
 func (s *WsClientIntegrationTestSuite) TestIntegration_addReferee() {
-	res, err := s.Go100XWSClient.addReferee()
+	res, err := s.RyskV2WSClient.addReferee()
 	require.NoError(s.T(), err)
 	verifyValidJSONResponse(s.T(), res)
 }

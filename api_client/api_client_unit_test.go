@@ -18,13 +18,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eldief/go100x/constants"
-	"github.com/eldief/go100x/types"
-	"github.com/eldief/go100x/utils"
-	"github.com/eldief/go100x/utils/mocks"
 	geth_types "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/joho/godotenv"
+	"github.com/rysk-finance/v2_client_go/constants"
+	"github.com/rysk-finance/v2_client_go/types"
+	"github.com/rysk-finance/v2_client_go/utils"
+	"github.com/rysk-finance/v2_client_go/utils/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -36,7 +36,7 @@ type ApiClientUnitTestSuite struct {
 	Address         string
 	BaseUrl         string
 	RpcUrl          string
-	Go100XApiClient *Go100XAPIClient
+	RyskV2APIClient *RyskV2APIClient
 	EthClient       types.IEthClient
 }
 
@@ -45,7 +45,7 @@ func (s *ApiClientUnitTestSuite) SetupSuite() {
 		fmt.Println("ApiClientUnitTestSuite.SetupSuite: Error loading .env file:", err)
 		return
 	}
-	apiClient, err := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
+	apiClient, err := NewRyskV2APIClient(&RyskV2APIClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
@@ -53,26 +53,26 @@ func (s *ApiClientUnitTestSuite) SetupSuite() {
 	})
 	require.NoError(s.T(), err)
 
-	s.Go100XApiClient = apiClient
-	s.PrivateKey = s.Go100XApiClient.privateKeyString
-	s.Address = utils.AddressFromPrivateKey(s.Go100XApiClient.privateKeyString)
-	s.BaseUrl = s.Go100XApiClient.baseUrl
+	s.RyskV2APIClient = apiClient
+	s.PrivateKey = s.RyskV2APIClient.privateKeyString
+	s.Address = utils.AddressFromPrivateKey(s.RyskV2APIClient.privateKeyString)
+	s.BaseUrl = s.RyskV2APIClient.baseUrl
 	s.EthClient = apiClient.EthClient
 }
 
 func (s *ApiClientUnitTestSuite) SetupTest() {
-	s.Go100XApiClient.privateKeyString = s.PrivateKey
-	s.Go100XApiClient.addressString = s.Address
-	s.Go100XApiClient.baseUrl = s.BaseUrl
-	s.Go100XApiClient.EthClient = s.EthClient
+	s.RyskV2APIClient.privateKeyString = s.PrivateKey
+	s.RyskV2APIClient.addressString = s.Address
+	s.RyskV2APIClient.baseUrl = s.BaseUrl
+	s.RyskV2APIClient.EthClient = s.EthClient
 }
 
 func TestRunSuiteUnit_ApiClientUnitTestSuite(t *testing.T) {
 	suite.Run(t, new(ApiClientUnitTestSuite))
 }
 
-func (s *ApiClientUnitTestSuite) TestUnit_NewGo100XAPIClient() {
-	apiClient, err := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
+func (s *ApiClientUnitTestSuite) TestUnit_NewRyskV2APIClient() {
+	apiClient, err := NewRyskV2APIClient(&RyskV2APIClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
@@ -86,7 +86,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewGo100XAPIClient() {
 	require.Equal(s.T(), utils.AddressFromPrivateKey(strings.TrimPrefix(string(os.Getenv("PRIVATE_KEYS")), "0x")), apiClient.address.String())
 	require.Equal(s.T(), strings.TrimPrefix(string(os.Getenv("PRIVATE_KEYS")), "0x"), hex.EncodeToString(crypto.FromECDSA(apiClient.privateKey)))
 	require.Equal(s.T(), constants.CIAO_ADDRESS[constants.ENVIRONMENT_TESTNET], apiClient.ciao.String())
-	require.Equal(s.T(), constants.USDB_ADDRESS[constants.ENVIRONMENT_TESTNET], apiClient.usdb.String())
+	require.Equal(s.T(), constants.USDC_ADDRESS[constants.ENVIRONMENT_TESTNET], apiClient.usdb.String())
 	require.NotNil(s.T(), apiClient.domain)
 	require.Equal(s.T(), constants.DOMAIN_NAME, apiClient.domain.Name)
 	require.Equal(s.T(), constants.DOMAIN_VERSION, apiClient.domain.Version)
@@ -95,8 +95,8 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewGo100XAPIClient() {
 	require.NotNil(s.T(), apiClient.EthClient)
 }
 
-func (s *ApiClientUnitTestSuite) TestUnit_NewGo100XAPIClient_InvalidPrivateKey() {
-	apiClient, err := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
+func (s *ApiClientUnitTestSuite) TestUnit_NewRyskV2APIClient_InvalidPrivateKey() {
+	apiClient, err := NewRyskV2APIClient(&RyskV2APIClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   "0x123",
 		RpcUrl:       "",
@@ -106,8 +106,8 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewGo100XAPIClient_InvalidPrivateKey()
 	require.Nil(s.T(), apiClient)
 }
 
-func (s *ApiClientUnitTestSuite) TestUnit_NewGo100XAPIClient_InvalidRPCURL() {
-	apiClient, err := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
+func (s *ApiClientUnitTestSuite) TestUnit_NewRyskV2APIClient_InvalidRPCURL() {
+	apiClient, err := NewRyskV2APIClient(&RyskV2APIClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       "",
@@ -118,9 +118,9 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewGo100XAPIClient_InvalidRPCURL() {
 }
 
 func (s *ApiClientUnitTestSuite) TestUnit_Get24hrPriceChangeStatistics_WithBadRequest() {
-	s.Go100XApiClient.baseUrl = "http://\t"
+	s.RyskV2APIClient.baseUrl = "http://\t"
 
-	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&constants.PRODUCT_BLAST_PERP)
+	res, err := s.RyskV2APIClient.Get24hrPriceChangeStatistics(&constants.PRODUCT_ETH_PERP)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -136,10 +136,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_Get24hrPriceChangeStatistics_NoProduct
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&types.Product{})
+	res, err := s.RyskV2APIClient.Get24hrPriceChangeStatistics(&types.Product{})
 	require.Nil(s.T(), err, "[TestUnit_Get24hrPriceChangeStatistics_NoProduct] Error: %v", err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -151,15 +151,15 @@ func (s *ApiClientUnitTestSuite) TestUnit_Get24hrPriceChangeStatistics_WithProdu
 			string(constants.API_ENDPOINT_GET_24H_TICKER_PRICE_CHANGE_STATISTICS),
 			req.URL.Path,
 		)
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.Equal(s.T(), http.MethodGet, req.Method)
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&constants.PRODUCT_BLAST_PERP)
+	res, err := s.RyskV2APIClient.Get24hrPriceChangeStatistics(&constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -169,10 +169,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_Get24hrPriceChangeStatistics_BadBaseUR
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&constants.PRODUCT_BLAST_PERP)
+	res, err := s.RyskV2APIClient.Get24hrPriceChangeStatistics(&constants.PRODUCT_ETH_PERP)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -181,17 +181,17 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetProduct() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(
 			s.T(),
-			string(constants.API_ENDPOINT_GET_PRODUCT)+constants.PRODUCT_BLAST_PERP.Symbol,
+			string(constants.API_ENDPOINT_GET_PRODUCT)+constants.PRODUCT_ETH_PERP.Symbol,
 			req.URL.Path,
 		)
 		require.Equal(s.T(), http.MethodGet, req.Method)
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetProduct(constants.PRODUCT_BLAST_PERP.Symbol)
+	res, err := s.RyskV2APIClient.GetProduct(constants.PRODUCT_ETH_PERP.Symbol)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -201,10 +201,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetProduct_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetProduct(constants.PRODUCT_BLAST_PERP.Symbol)
+	res, err := s.RyskV2APIClient.GetProduct(constants.PRODUCT_ETH_PERP.Symbol)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -213,17 +213,17 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetProductById() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(
 			s.T(),
-			string(constants.API_ENDPOINT_GET_PRODUCT_BY_ID)+strconv.FormatInt(constants.PRODUCT_BLAST_PERP.Id, 10),
+			string(constants.API_ENDPOINT_GET_PRODUCT_BY_ID)+strconv.FormatInt(constants.PRODUCT_ETH_PERP.Id, 10),
 			req.URL.Path,
 		)
 		require.Equal(s.T(), http.MethodGet, req.Method)
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetProductById(constants.PRODUCT_BLAST_PERP.Id)
+	res, err := s.RyskV2APIClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -233,10 +233,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetProductById_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetProductById(constants.PRODUCT_BLAST_PERP.Id)
+	res, err := s.RyskV2APIClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -249,15 +249,15 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData() {
 			req.URL.Path,
 		)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, req.URL.Query().Get("symbol"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
-		Product: &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.GetKlineData(&types.KlineDataRequest{
+		Product: &constants.PRODUCT_ETH_PERP,
 	})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
@@ -271,16 +271,16 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithInterval() {
 			req.URL.Path,
 		)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.Equal(s.T(), string(constants.INTERVAL_15M), req.URL.Query().Get("interval"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
-		Product:  &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.GetKlineData(&types.KlineDataRequest{
+		Product:  &constants.PRODUCT_ETH_PERP,
 		Interval: constants.INTERVAL_15M,
 	})
 	require.NoError(s.T(), err)
@@ -295,16 +295,16 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithStartTime() {
 			req.URL.Path,
 		)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.Equal(s.T(), strconv.FormatInt(123, 10), req.URL.Query().Get("startTime"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
-		Product:   &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.GetKlineData(&types.KlineDataRequest{
+		Product:   &constants.PRODUCT_ETH_PERP,
 		StartTime: 123,
 	})
 	require.NoError(s.T(), err)
@@ -319,16 +319,16 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithEndTime() {
 			req.URL.Path,
 		)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.Equal(s.T(), strconv.FormatInt(123, 10), req.URL.Query().Get("endTime"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
-		Product: &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.GetKlineData(&types.KlineDataRequest{
+		Product: &constants.PRODUCT_ETH_PERP,
 		EndTime: 123,
 	})
 	require.NoError(s.T(), err)
@@ -343,16 +343,16 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_WithLimit() {
 			req.URL.Path,
 		)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.Equal(s.T(), strconv.FormatInt(123, 10), req.URL.Query().Get("limit"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
-		Product: &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.GetKlineData(&types.KlineDataRequest{
+		Product: &constants.PRODUCT_ETH_PERP,
 		Limit:   123,
 	})
 	require.NoError(s.T(), err)
@@ -364,11 +364,11 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetKlineData_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
-		Product: &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.GetKlineData(&types.KlineDataRequest{
+		Product: &constants.PRODUCT_ETH_PERP,
 	})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
@@ -385,10 +385,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListProducts() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListProducts()
+	res, err := s.RyskV2APIClient.ListProducts()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -398,10 +398,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListProducts_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListProducts()
+	res, err := s.RyskV2APIClient.ListProducts()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -414,15 +414,15 @@ func (s *ApiClientUnitTestSuite) TestUnit_OrderBook() {
 			req.URL.Path,
 		)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, req.URL.Query().Get("symbol"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
-		Product: &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.OrderBook(&types.OrderBookRequest{
+		Product: &constants.PRODUCT_ETH_PERP,
 	})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
@@ -436,16 +436,16 @@ func (s *ApiClientUnitTestSuite) TestUnit_OrderBook_WithGranularity() {
 			req.URL.Path,
 		)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.Equal(s.T(), strconv.FormatInt(1, 10), req.URL.Query().Get("granularity"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
-		Product:     &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.OrderBook(&types.OrderBookRequest{
+		Product:     &constants.PRODUCT_ETH_PERP,
 		Granularity: 1,
 	})
 	require.NoError(s.T(), err)
@@ -460,16 +460,16 @@ func (s *ApiClientUnitTestSuite) TestUnit_OrderBook_WithLimit() {
 			req.URL.Path,
 		)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.Equal(s.T(), strconv.FormatInt(5, 10), req.URL.Query().Get("limit"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
-		Product: &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.OrderBook(&types.OrderBookRequest{
+		Product: &constants.PRODUCT_ETH_PERP,
 		Limit:   constants.LIMIT_FIVE,
 	})
 	require.NoError(s.T(), err)
@@ -481,11 +481,11 @@ func (s *ApiClientUnitTestSuite) TestUnit_OrderBook_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
-		Product: &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.OrderBook(&types.OrderBookRequest{
+		Product: &constants.PRODUCT_ETH_PERP,
 	})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
@@ -502,10 +502,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_ServerTime() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ServerTime()
+	res, err := s.RyskV2APIClient.ServerTime()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -515,10 +515,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_ServerTime_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ServerTime()
+	res, err := s.RyskV2APIClient.ServerTime()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -543,20 +543,20 @@ func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), http.MethodPost, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_APPROVE_REVOKE_SIGNER), req.URL.Path)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.ApprovedSigner)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, requestBody.ApprovedSigner)
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, requestBody.Account)
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
 		require.Equal(s.T(), nonce, requestBody.Nonce)
 		require.True(s.T(), requestBody.IsApproved)
 		require.NotEmpty(s.T(), requestBody.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: s.Go100XApiClient.addressString,
+	res, err := s.RyskV2APIClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: s.RyskV2APIClient.addressString,
 		Nonce:          nonce,
 	})
 	require.NoError(s.T(), err)
@@ -570,7 +570,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner_BadAddress() {
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
+	res, err := s.RyskV2APIClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "",
 		Nonce:          time.Now().UnixMicro(),
 	})
@@ -583,11 +583,11 @@ func (s *ApiClientUnitTestSuite) TestUnit_ApproveSigner_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: s.Go100XApiClient.addressString,
+	res, err := s.RyskV2APIClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: s.RyskV2APIClient.addressString,
 		Nonce:          time.Now().UnixMicro(),
 	})
 	require.Error(s.T(), err)
@@ -614,20 +614,20 @@ func (s *ApiClientUnitTestSuite) TestUnit_Revokeigner() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), http.MethodPost, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_APPROVE_REVOKE_SIGNER), req.URL.Path)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.ApprovedSigner)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, requestBody.ApprovedSigner)
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, requestBody.Account)
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
 		require.Equal(s.T(), nonce, requestBody.Nonce)
 		require.False(s.T(), requestBody.IsApproved)
 		require.NotEmpty(s.T(), requestBody.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: s.Go100XApiClient.addressString,
+	res, err := s.RyskV2APIClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: s.RyskV2APIClient.addressString,
 		Nonce:          nonce,
 	})
 	require.NoError(s.T(), err)
@@ -641,7 +641,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_RevokeSigner_BadAddress() {
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
+	res, err := s.RyskV2APIClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
 		ApprovedSigner: "",
 		Nonce:          time.Now().UnixMicro(),
 	})
@@ -654,11 +654,11 @@ func (s *ApiClientUnitTestSuite) TestUnit_RevokeSigner_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: s.Go100XApiClient.addressString,
+	res, err := s.RyskV2APIClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: s.RyskV2APIClient.addressString,
 		Nonce:          time.Now().UnixMicro(),
 	})
 	require.Error(s.T(), err)
@@ -684,19 +684,19 @@ func (s *ApiClientUnitTestSuite) TestUnit_Withdraw() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), http.MethodPost, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_WITHDRAW), req.URL.Path)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
-		require.Equal(s.T(), constants.USDB_ADDRESS[constants.ENVIRONMENT_TESTNET], requestBody.Asset)
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, requestBody.Account)
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
+		require.Equal(s.T(), constants.USDC_ADDRESS[constants.ENVIRONMENT_TESTNET], requestBody.Asset)
 		require.Equal(s.T(), "456", requestBody.Quantity)
 		require.Equal(s.T(), nonce, requestBody.Nonce)
 		require.NotEmpty(s.T(), requestBody.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
+	res, err := s.RyskV2APIClient.Withdraw(&types.WithdrawRequest{
 		Quantity: "456",
 		Nonce:    nonce,
 	})
@@ -709,10 +709,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_Withdraw_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
+	res, err := s.RyskV2APIClient.Withdraw(&types.WithdrawRequest{
 		Quantity: "456",
 		Nonce:    time.Now().UnixMicro(),
 	})
@@ -725,10 +725,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_Withdraw_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
+	res, err := s.RyskV2APIClient.Withdraw(&types.WithdrawRequest{
 		Quantity: "456",
 		Nonce:    time.Now().UnixMicro(),
 	})
@@ -760,8 +760,8 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewOrder() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), http.MethodPost, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_NEW_ORDER), req.URL.Path)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, requestBody.Account)
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), strconv.FormatInt(requestBody.SubAccountId, 10))
 		require.Equal(s.T(), int64(1006), requestBody.ProductId)
 		require.True(s.T(), requestBody.IsBuy)
 		require.Equal(s.T(), int64(1), requestBody.OrderType)
@@ -774,11 +774,11 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewOrder() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
-		Product:     &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.NewOrder(&types.NewOrderRequest{
+		Product:     &constants.PRODUCT_ETH_PERP,
 		IsBuy:       true,
 		OrderType:   types.OrderType(1),
 		TimeInForce: types.TimeInForce(1),
@@ -796,11 +796,11 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewOrder_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
-		Product:     &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.NewOrder(&types.NewOrderRequest{
+		Product:     &constants.PRODUCT_ETH_PERP,
 		IsBuy:       true,
 		OrderType:   types.OrderType(1),
 		TimeInForce: types.TimeInForce(1),
@@ -818,11 +818,11 @@ func (s *ApiClientUnitTestSuite) TestUnit_NewOrder_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
-		Product:     &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.NewOrder(&types.NewOrderRequest{
+		Product:     &constants.PRODUCT_ETH_PERP,
 		IsBuy:       true,
 		OrderType:   types.OrderType(1),
 		TimeInForce: types.TimeInForce(1),
@@ -863,8 +863,8 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace() {
 		require.Equal(s.T(), http.MethodPost, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_CANCEL_REPLACE_ORDER), req.URL.Path)
 		require.Equal(s.T(), "order123", requestBody.IdToCancel)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.NewOrder.Account)
-		require.Equal(s.T(), s.Go100XApiClient.SubAccountId, requestBody.NewOrder.SubAccountId)
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, requestBody.NewOrder.Account)
+		require.Equal(s.T(), s.RyskV2APIClient.SubAccountId, requestBody.NewOrder.SubAccountId)
 		require.Equal(s.T(), int64(1006), requestBody.NewOrder.ProductId)
 		require.True(s.T(), requestBody.NewOrder.IsBuy)
 		require.Equal(s.T(), int64(1), requestBody.NewOrder.OrderType)
@@ -877,10 +877,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
+	res, err := s.RyskV2APIClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
 		IdToCancel: "order123",
 		NewOrder: &types.NewOrderRequest{
 			Product:     &types.Product{Id: 1006},
@@ -902,10 +902,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
+	res, err := s.RyskV2APIClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
 		IdToCancel: "order123",
 		NewOrder: &types.NewOrderRequest{
 			Product:     &types.Product{Id: 1006},
@@ -927,10 +927,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrderAndReplace_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
+	res, err := s.RyskV2APIClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
 		IdToCancel: "order123",
 		NewOrder: &types.NewOrderRequest{
 			Product:     &types.Product{Id: 1006},
@@ -964,18 +964,18 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrder() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), http.MethodDelete, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_CANCEL_ORDER), req.URL.Path)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
-		require.Equal(s.T(), s.Go100XApiClient.SubAccountId, requestBody.SubAccountId)
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, requestBody.Account)
+		require.Equal(s.T(), s.RyskV2APIClient.SubAccountId, requestBody.SubAccountId)
 		require.Equal(s.T(), int64(1006), requestBody.ProductId)
 		require.Equal(s.T(), "order123", requestBody.OrderId)
 		require.NotEmpty(s.T(), requestBody.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
+	res, err := s.RyskV2APIClient.CancelOrder(&types.CancelOrderRequest{
 		Product:    &types.Product{Id: 1006},
 		IdToCancel: "order123",
 	})
@@ -988,10 +988,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrder_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
+	res, err := s.RyskV2APIClient.CancelOrder(&types.CancelOrderRequest{
 		Product:    &types.Product{Id: 1006},
 		IdToCancel: "order123",
 	})
@@ -1004,10 +1004,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelOrder_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
+	res, err := s.RyskV2APIClient.CancelOrder(&types.CancelOrderRequest{
 		Product:    &types.Product{Id: 1006},
 		IdToCancel: "order123",
 	})
@@ -1031,18 +1031,18 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelAllOpenOrders() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), http.MethodDelete, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_CANCEL_ALL_OPEN_ORDERS), req.URL.Path)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
-		require.Equal(s.T(), s.Go100XApiClient.SubAccountId, requestBody.SubAccountId)
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, requestBody.Account)
+		require.Equal(s.T(), s.RyskV2APIClient.SubAccountId, requestBody.SubAccountId)
 		require.Equal(s.T(), int64(1006), requestBody.ProductId)
 		require.NotEmpty(s.T(), requestBody.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
 	product := &types.Product{Id: 1006}
-	res, err := s.Go100XApiClient.CancelAllOpenOrders(product)
+	res, err := s.RyskV2APIClient.CancelAllOpenOrders(product)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -1052,11 +1052,11 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelAllOpenOrders_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
 	product := &types.Product{Id: 1006}
-	res, err := s.Go100XApiClient.CancelAllOpenOrders(product)
+	res, err := s.RyskV2APIClient.CancelAllOpenOrders(product)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1066,11 +1066,11 @@ func (s *ApiClientUnitTestSuite) TestUnit_CancelAllOpenOrders_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
 	product := &types.Product{Id: 1006}
-	res, err := s.Go100XApiClient.CancelAllOpenOrders(product)
+	res, err := s.RyskV2APIClient.CancelAllOpenOrders(product)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1079,16 +1079,16 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetSpotBalances() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_GET_SPOT_BALANCES), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetSpotBalances()
+	res, err := s.RyskV2APIClient.GetSpotBalances()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -1098,10 +1098,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetSpotBalances_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetSpotBalances()
+	res, err := s.RyskV2APIClient.GetSpotBalances()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1111,10 +1111,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetSpotBalances_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetSpotBalances()
+	res, err := s.RyskV2APIClient.GetSpotBalances()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1123,17 +1123,17 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPosition() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_GET_PERPETUAL_POSITION), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetPerpetualPosition(&constants.PRODUCT_BLAST_PERP)
+	res, err := s.RyskV2APIClient.GetPerpetualPosition(&constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -1143,10 +1143,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPosition_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetPerpetualPosition(&constants.PRODUCT_BLAST_PERP)
+	res, err := s.RyskV2APIClient.GetPerpetualPosition(&constants.PRODUCT_ETH_PERP)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1156,10 +1156,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPosition_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetPerpetualPosition(&constants.PRODUCT_BLAST_PERP)
+	res, err := s.RyskV2APIClient.GetPerpetualPosition(&constants.PRODUCT_ETH_PERP)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1168,16 +1168,16 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPositionAllProducts() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_GET_PERPETUAL_POSITION), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetPerpetualPositionAllProducts()
+	res, err := s.RyskV2APIClient.GetPerpetualPositionAllProducts()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -1187,10 +1187,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPositionAllProducts_BadAdd
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetPerpetualPositionAllProducts()
+	res, err := s.RyskV2APIClient.GetPerpetualPositionAllProducts()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1200,10 +1200,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_GetPerpetualPositionAllProducts_BadBas
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.GetPerpetualPositionAllProducts()
+	res, err := s.RyskV2APIClient.GetPerpetualPositionAllProducts()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1212,16 +1212,16 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListApprovedSigners() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_APPROVED_SIGNERS), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListApprovedSigners()
+	res, err := s.RyskV2APIClient.ListApprovedSigners()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -1231,10 +1231,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListApprovedSigners_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListApprovedSigners()
+	res, err := s.RyskV2APIClient.ListApprovedSigners()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1244,10 +1244,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListApprovedSigners_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListApprovedSigners()
+	res, err := s.RyskV2APIClient.ListApprovedSigners()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1256,17 +1256,17 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrders() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_OPEN_ORDERS), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOpenOrders(&constants.PRODUCT_BLAST_PERP)
+	res, err := s.RyskV2APIClient.ListOpenOrders(&constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -1276,10 +1276,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrders_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOpenOrders(&constants.PRODUCT_BLAST_PERP)
+	res, err := s.RyskV2APIClient.ListOpenOrders(&constants.PRODUCT_ETH_PERP)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1289,10 +1289,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrders_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOpenOrders(&constants.PRODUCT_BLAST_PERP)
+	res, err := s.RyskV2APIClient.ListOpenOrders(&constants.PRODUCT_ETH_PERP)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1301,16 +1301,16 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrdersAllProducts() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_OPEN_ORDERS), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOpenOrdersAllProducts()
+	res, err := s.RyskV2APIClient.ListOpenOrdersAllProducts()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -1320,10 +1320,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrdersAllProducts_BadAddress()
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOpenOrdersAllProducts()
+	res, err := s.RyskV2APIClient.ListOpenOrdersAllProducts()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1333,10 +1333,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOpenOrdersAllProducts_BadBaseURL()
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOpenOrdersAllProducts()
+	res, err := s.RyskV2APIClient.ListOpenOrdersAllProducts()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1345,19 +1345,19 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrders() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_ORDERS), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.Equal(s.T(), "123", req.URL.Query().Get("ids"))
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
-		Product: &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.ListOrders(&types.ListOrdersRequest{
+		Product: &constants.PRODUCT_ETH_PERP,
 		Ids:     []string{"123"},
 	})
 	require.NoError(s.T(), err)
@@ -1368,20 +1368,20 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrders_MultipleIds() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_ORDERS), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
-		require.Equal(s.T(), constants.PRODUCT_BLAST_PERP.Symbol, req.URL.Query().Get("symbol"))
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), constants.PRODUCT_ETH_PERP.Symbol, req.URL.Query().Get("symbol"))
 		require.Contains(s.T(), req.URL.Query()["ids"], "123")
 		require.Contains(s.T(), req.URL.Query()["ids"], "456")
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
-		Product: &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.ListOrders(&types.ListOrdersRequest{
+		Product: &constants.PRODUCT_ETH_PERP,
 		Ids:     []string{"123", "456"},
 	})
 	require.NoError(s.T(), err)
@@ -1393,11 +1393,11 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrders_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
-		Product: &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.ListOrders(&types.ListOrdersRequest{
+		Product: &constants.PRODUCT_ETH_PERP,
 		Ids:     []string{"123"},
 	})
 	require.Error(s.T(), err)
@@ -1409,11 +1409,11 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrders_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
-		Product: &constants.PRODUCT_BLAST_PERP,
+	res, err := s.RyskV2APIClient.ListOrders(&types.ListOrdersRequest{
+		Product: &constants.PRODUCT_ETH_PERP,
 		Ids:     []string{"123"},
 	})
 	require.Error(s.T(), err)
@@ -1424,17 +1424,17 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrdersAllProducts() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_ORDERS), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
 		require.Equal(s.T(), "123", req.URL.Query().Get("ids"))
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOrdersAllProducts([]string{"123"})
+	res, err := s.RyskV2APIClient.ListOrdersAllProducts([]string{"123"})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -1443,18 +1443,18 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrdersAllProducts_MultipleIds() {
 	handler := func(w http.ResponseWriter, req *http.Request) {
 		require.Equal(s.T(), string(constants.API_ENDPOINT_LIST_ORDERS), req.URL.Path)
 		require.Equal(s.T(), http.MethodGet, req.Method)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, req.URL.Query().Get("account"))
-		require.Equal(s.T(), strconv.FormatInt(s.Go100XApiClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, req.URL.Query().Get("account"))
+		require.Equal(s.T(), strconv.FormatInt(s.RyskV2APIClient.SubAccountId, 10), req.URL.Query().Get("subAccountId"))
 		require.Contains(s.T(), req.URL.Query()["ids"], "123")
 		require.Contains(s.T(), req.URL.Query()["ids"], "456")
 		require.NotEmpty(s.T(), req.URL.Query().Get("signature"))
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOrdersAllProducts([]string{"123", "456"})
+	res, err := s.RyskV2APIClient.ListOrdersAllProducts([]string{"123", "456"})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -1464,10 +1464,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrdersAllProducts_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOrdersAllProducts([]string{"123"})
+	res, err := s.RyskV2APIClient.ListOrdersAllProducts([]string{"123"})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1477,106 +1477,106 @@ func (s *ApiClientUnitTestSuite) TestUnit_ListOrdersAllProducts_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.ListOrdersAllProducts([]string{"123"})
+	res, err := s.RyskV2APIClient.ListOrdersAllProducts([]string{"123"})
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
 
-func (s *ApiClientUnitTestSuite) TestUnit_ApproveUSDB() {
+func (s *ApiClientUnitTestSuite) TestUnit_ApproveUSDC() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XApiClient.EthClient = mockEthClient
+	s.RyskV2APIClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
 	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
 
-	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2APIClient.ApproveUSDC(context.Background(), big.NewInt(1000))
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 }
 
-func (s *ApiClientUnitTestSuite) TestUnit_ApproveUSDB_ErrorGettingParameters() {
+func (s *ApiClientUnitTestSuite) TestUnit_ApproveUSDC_ErrorGettingParameters() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XApiClient.EthClient = mockEthClient
+	s.RyskV2APIClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
 	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), fmt.Errorf("error getting parameters"))
 
-	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2APIClient.ApproveUSDC(context.Background(), big.NewInt(1000))
 	require.Error(s.T(), err)
 	require.Nil(s.T(), transaction)
 }
 
-func (s *ApiClientUnitTestSuite) TestUnit_ApproveUSDB_ErrorSendTransaction() {
+func (s *ApiClientUnitTestSuite) TestUnit_ApproveUSDC_ErrorSendTransaction() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XApiClient.EthClient = mockEthClient
+	s.RyskV2APIClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
 	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
 	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send transaction"))
 
-	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2APIClient.ApproveUSDC(context.Background(), big.NewInt(1000))
 	require.Error(s.T(), err)
 	require.Nil(s.T(), transaction)
 }
 
-func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDB() {
+func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDC() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XApiClient.EthClient = mockEthClient
+	s.RyskV2APIClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
 	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
 
-	transaction, err := s.Go100XApiClient.DepositUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2APIClient.DepositUSDC(context.Background(), big.NewInt(1000))
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 }
 
-func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDB_ErrorApproveSigner() {
-	s.Go100XApiClient.addressString = ""
-	transaction, err := s.Go100XApiClient.DepositUSDB(context.Background(), big.NewInt(1000))
+func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDC_ErrorApproveSigner() {
+	s.RyskV2APIClient.addressString = ""
+	transaction, err := s.RyskV2APIClient.DepositUSDC(context.Background(), big.NewInt(1000))
 	require.Error(s.T(), err)
 	require.Nil(s.T(), transaction)
 }
 
-func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDB_ErrorGettingParameters() {
+func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDC_ErrorGettingParameters() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XApiClient.EthClient = mockEthClient
+	s.RyskV2APIClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
 	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), fmt.Errorf("error getting parameters"))
 
-	transaction, err := s.Go100XApiClient.DepositUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2APIClient.DepositUSDC(context.Background(), big.NewInt(1000))
 	require.Error(s.T(), err)
 	require.Nil(s.T(), transaction)
 }
 
-func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDB_ErrorSendTransaction() {
+func (s *ApiClientUnitTestSuite) TestUnit_DepositUSDC_ErrorSendTransaction() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XApiClient.EthClient = mockEthClient
+	s.RyskV2APIClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
 	mockEthClient.On("EstimateGas", mock.Anything, mock.Anything).Return(uint64(21000), nil)
 	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(fmt.Errorf("failed to send transaction"))
 
-	transaction, err := s.Go100XApiClient.DepositUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2APIClient.DepositUSDC(context.Background(), big.NewInt(1000))
 	require.Error(s.T(), err)
 	require.Nil(s.T(), transaction)
 }
 
 func (s *ApiClientUnitTestSuite) TestUnit_WaitTransaction() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XApiClient.EthClient = mockEthClient
+	s.RyskV2APIClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
@@ -1584,18 +1584,18 @@ func (s *ApiClientUnitTestSuite) TestUnit_WaitTransaction() {
 	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
 	mockEthClient.On("TransactionReceipt", mock.Anything, mock.Anything).Return(&geth_types.Receipt{}, nil)
 
-	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2APIClient.ApproveUSDC(context.Background(), big.NewInt(1000))
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 
-	receipt, err := s.Go100XApiClient.WaitTransaction(context.Background(), transaction)
+	receipt, err := s.RyskV2APIClient.WaitTransaction(context.Background(), transaction)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), receipt)
 }
 
 func (s *ApiClientUnitTestSuite) TestUnit_WaitTransaction_WaitMinedError() {
 	mockEthClient := new(mocks.MockEthClient)
-	s.Go100XApiClient.EthClient = mockEthClient
+	s.RyskV2APIClient.EthClient = mockEthClient
 	mockEthClient.On("PendingNonceAt", mock.Anything, mock.Anything).Return(uint64(1), nil)
 	mockEthClient.On("SuggestGasPrice", mock.Anything).Return(big.NewInt(1000000000), nil)
 	mockEthClient.On("NetworkID", mock.Anything).Return(big.NewInt(1), nil)
@@ -1603,7 +1603,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_WaitTransaction_WaitMinedError() {
 	mockEthClient.On("SendTransaction", mock.Anything, mock.Anything).Return(nil)
 	mockEthClient.On("TransactionReceipt", mock.Anything, mock.Anything).Return((*geth_types.Receipt)(nil), fmt.Errorf("failed to wait transaction"))
 
-	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), big.NewInt(1000))
+	transaction, err := s.RyskV2APIClient.ApproveUSDC(context.Background(), big.NewInt(1000))
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 
@@ -1613,7 +1613,7 @@ func (s *ApiClientUnitTestSuite) TestUnit_WaitTransaction_WaitMinedError() {
 		cancel()
 	}()
 
-	receipt, err := s.Go100XApiClient.WaitTransaction(ctx, transaction)
+	receipt, err := s.RyskV2APIClient.WaitTransaction(ctx, transaction)
 	require.Error(s.T(), err)
 	require.Nil(s.T(), receipt)
 }
@@ -1633,16 +1633,16 @@ func (s *ApiClientUnitTestSuite) TestUnit_addReferee() {
 		require.NoError(s.T(), err)
 		require.Equal(s.T(), http.MethodPost, req.Method)
 		require.Equal(s.T(), string(constants.API_ENDPOINT_ADD_REFEREE), req.URL.Path)
-		require.Equal(s.T(), s.Go100XApiClient.addressString, requestBody.Account)
+		require.Equal(s.T(), s.RyskV2APIClient.addressString, requestBody.Account)
 		require.Equal(s.T(), "eldief", requestBody.Code)
 		require.NotEmpty(s.T(), requestBody.Signature)
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = mockHttpServer.URL
+	s.RyskV2APIClient.baseUrl = mockHttpServer.URL
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.addReferee()
+	res, err := s.RyskV2APIClient.addReferee()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 }
@@ -1652,10 +1652,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_addReferee_BadAddress() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.addressString = ""
+	s.RyskV2APIClient.addressString = ""
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.addReferee()
+	res, err := s.RyskV2APIClient.addReferee()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }
@@ -1665,10 +1665,10 @@ func (s *ApiClientUnitTestSuite) TestUnit_addReferee_BadBaseURL() {
 		w.WriteHeader(http.StatusOK)
 	}
 	mockHttpServer := httptest.NewServer(http.HandlerFunc(handler))
-	s.Go100XApiClient.baseUrl = "://invalid-url"
+	s.RyskV2APIClient.baseUrl = "://invalid-url"
 	defer mockHttpServer.Close()
 
-	res, err := s.Go100XApiClient.addReferee()
+	res, err := s.RyskV2APIClient.addReferee()
 	require.Error(s.T(), err)
 	require.Nil(s.T(), res)
 }

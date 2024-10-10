@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eldief/go100x/constants"
-	"github.com/eldief/go100x/types"
 	"github.com/joho/godotenv"
+	"github.com/rysk-finance/v2_client_go/constants"
+	"github.com/rysk-finance/v2_client_go/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -27,7 +27,7 @@ type ApiClientIntegrationTestSuite struct {
 	suite.Suite
 	PrivateKeys     string
 	RpcUrl          string
-	Go100XApiClient *Go100XAPIClient
+	RyskV2ApiClient *RyskV2APIClient
 }
 
 func (s *ApiClientIntegrationTestSuite) SetupSuite() {
@@ -35,13 +35,13 @@ func (s *ApiClientIntegrationTestSuite) SetupSuite() {
 		fmt.Println("Error loading .env file:", err)
 		return
 	}
-	apiClient, _ := NewGo100XAPIClient(&Go100XAPIClientConfiguration{
+	apiClient, _ := NewRyskV2APIClient(&RyskV2APIClientConfiguration{
 		Env:          constants.ENVIRONMENT_TESTNET,
 		PrivateKey:   string(os.Getenv("PRIVATE_KEYS")),
 		RpcUrl:       os.Getenv("RPC_URL"),
 		SubAccountId: 1,
 	})
-	s.Go100XApiClient = apiClient
+	s.RyskV2ApiClient = apiClient
 }
 
 func (s *ApiClientIntegrationTestSuite) SetupTest() {
@@ -53,14 +53,14 @@ func TestRunSuiteIntegration_ApiClientIntegrationTestSuite(t *testing.T) {
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_Get24hrPriceChangeStatistics_NoProduct() {
-	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&types.Product{})
+	res, err := s.RyskV2ApiClient.Get24hrPriceChangeStatistics(&types.Product{})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_Get24hrPriceChangeStatistics_WithNonExistingProduct() {
-	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&types.Product{
+	res, err := s.RyskV2ApiClient.Get24hrPriceChangeStatistics(&types.Product{
 		Id:     69420,
 		Symbol: "69420",
 	})
@@ -69,28 +69,28 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_Get24hrPriceChangeStatis
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_Get24hrPriceChangeStatistics_WithProduct() {
-	res, err := s.Go100XApiClient.Get24hrPriceChangeStatistics(&constants.PRODUCT_ETH_PERP)
+	res, err := s.RyskV2ApiClient.Get24hrPriceChangeStatistics(&constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_GetProduct() {
-	res, err := s.Go100XApiClient.GetProduct(constants.PRODUCT_ETH_PERP.Symbol)
+	res, err := s.RyskV2ApiClient.GetProduct(constants.PRODUCT_ETH_PERP.Symbol)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_GetProductById() {
-	res, err := s.Go100XApiClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
+	res, err := s.RyskV2ApiClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_GetKlineData() {
-	res, err := s.Go100XApiClient.GetKlineData(&types.KlineDataRequest{
+	res, err := s.RyskV2ApiClient.GetKlineData(&types.KlineDataRequest{
 		Product:   &constants.PRODUCT_BTC_PERP,
 		Interval:  constants.INTERVAL_D1,
 		StartTime: time.Now().Add(-24 * time.Hour).UnixMilli(),
@@ -102,14 +102,14 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_GetKlineData() {
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListProducts() {
-	res, err := s.Go100XApiClient.ListProducts()
+	res, err := s.RyskV2ApiClient.ListProducts()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_OrderBook() {
-	res, err := s.Go100XApiClient.OrderBook(&types.OrderBookRequest{
+	res, err := s.RyskV2ApiClient.OrderBook(&types.OrderBookRequest{
 		Product:     &constants.PRODUCT_ETH_PERP,
 		Granularity: 0,
 		Limit:       constants.LIMIT_FIVE,
@@ -120,15 +120,15 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_OrderBook() {
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ServerTime() {
-	res, err := s.Go100XApiClient.ServerTime()
+	res, err := s.RyskV2ApiClient.ServerTime()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveSigner() {
-	res, err := s.Go100XApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: s.Go100XApiClient.addressString,
+	res, err := s.RyskV2ApiClient.ApproveSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: s.RyskV2ApiClient.addressString,
 		Nonce:          time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
@@ -136,7 +136,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveSigner() {
 	verifyValidJSONResponse(s.T(), res)
 
 	// verify approval granted
-	res, err = s.Go100XApiClient.ListApprovedSigners()
+	res, err = s.RyskV2ApiClient.ListApprovedSigners()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 
@@ -154,9 +154,9 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveSigner() {
 	require.NoError(s.T(), err)
 
 	for _, signer := range unmarshaled {
-		if signer.Account == strings.ToLower(s.Go100XApiClient.addressString) &&
-			signer.Subaccount == uint8(s.Go100XApiClient.SubAccountId) &&
-			signer.Signer == strings.ToLower(s.Go100XApiClient.addressString) {
+		if signer.Account == strings.ToLower(s.RyskV2ApiClient.addressString) &&
+			signer.Subaccount == uint8(s.RyskV2ApiClient.SubAccountId) &&
+			signer.Signer == strings.ToLower(s.RyskV2ApiClient.addressString) {
 			require.True(s.T(), signer.Approved)
 			return
 		}
@@ -165,8 +165,8 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveSigner() {
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_RevokeSigner() {
-	res, err := s.Go100XApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
-		ApprovedSigner: s.Go100XApiClient.addressString,
+	res, err := s.RyskV2ApiClient.RevokeSigner(&types.ApproveRevokeSignerRequest{
+		ApprovedSigner: s.RyskV2ApiClient.addressString,
 		Nonce:          time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
@@ -174,7 +174,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_RevokeSigner() {
 	verifyValidJSONResponse(s.T(), res)
 
 	// verify approval revoked
-	res, err = s.Go100XApiClient.ListApprovedSigners()
+	res, err = s.RyskV2ApiClient.ListApprovedSigners()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 
@@ -192,9 +192,9 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_RevokeSigner() {
 	require.NoError(s.T(), err)
 
 	for _, signer := range unmarshaled {
-		if signer.Account == strings.ToLower(s.Go100XApiClient.addressString) &&
-			signer.Subaccount == uint8(s.Go100XApiClient.SubAccountId) &&
-			signer.Signer == strings.ToLower(s.Go100XApiClient.addressString) {
+		if signer.Account == strings.ToLower(s.RyskV2ApiClient.addressString) &&
+			signer.Subaccount == uint8(s.RyskV2ApiClient.SubAccountId) &&
+			signer.Signer == strings.ToLower(s.RyskV2ApiClient.addressString) {
 			require.False(s.T(), signer.Approved)
 			return
 		}
@@ -203,11 +203,11 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_RevokeSigner() {
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_Withdraw() {
-	s.TestIntegration_ApproveDepositUSDBWaitingTxs()
+	s.TestIntegration_ApproveDepositUSDCWaitingTxs()
 
 	// withdraw
-	res, err := s.Go100XApiClient.Withdraw(&types.WithdrawRequest{
-		Quantity: constants.E20.String(),
+	res, err := s.RyskV2ApiClient.Withdraw(&types.WithdrawRequest{
+		Quantity: constants.E8.String(),
 		Nonce:    time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
@@ -216,7 +216,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_Withdraw() {
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_NewOrder() {
-	s.TestIntegration_ApproveDepositUSDBWaitingTxs()
+	s.TestIntegration_ApproveDepositUSDCWaitingTxs()
 
 	// get market price
 	request, err := http.NewRequest(
@@ -250,7 +250,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_NewOrder() {
 	new(big.Float).Mul(big.NewFloat(priceFloat), new(big.Float).SetFloat64(1e18)).Int(price)
 
 	// get product increment
-	res, err = s.Go100XApiClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
+	res, err = s.RyskV2ApiClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 
@@ -272,7 +272,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_NewOrder() {
 	adjustedPrice := new(big.Int).Sub(price, remainder)
 
 	// Limit buy 0.01 ETH for market price, valid for 1 day
-	res, err = s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
+	res, err = s.RyskV2ApiClient.NewOrder(&types.NewOrderRequest{
 		Product:     &constants.PRODUCT_ETH_PERP,
 		IsBuy:       true,
 		OrderType:   constants.ORDER_TYPE_LIMIT,
@@ -288,7 +288,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_NewOrder() {
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() {
-	s.TestIntegration_ApproveDepositUSDBWaitingTxs()
+	s.TestIntegration_ApproveDepositUSDCWaitingTxs()
 
 	// get market price
 	req, err := http.NewRequest(
@@ -324,7 +324,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() 
 	price = new(big.Int).Mul(new(big.Int).Div(price, big.NewInt(100)), big.NewInt(120))
 
 	// get product increment
-	res, err = s.Go100XApiClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
+	res, err = s.RyskV2ApiClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 
@@ -346,13 +346,13 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() 
 	adjustedPrice := new(big.Int).Sub(price, remainder)
 
 	// new order at 10% market premium
-	res, err = s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
+	res, err = s.RyskV2ApiClient.NewOrder(&types.NewOrderRequest{
 		Product:     &constants.PRODUCT_ETH_PERP,
 		IsBuy:       false,
 		OrderType:   constants.ORDER_TYPE_LIMIT,
 		TimeInForce: constants.TIME_IN_FORCE_GTC,
 		Price:       adjustedPrice.String(),
-		Quantity:    constants.E18.String(),
+		Quantity:    constants.E16.String(),
 		Expiration:  time.Now().Add(24 * time.Hour).UnixMilli(),
 		Nonce:       time.Now().UnixMicro(),
 	})
@@ -370,7 +370,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() 
 	require.NoError(s.T(), err)
 
 	// cancel and replace
-	res, err = s.Go100XApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
+	res, err = s.RyskV2ApiClient.CancelOrderAndReplace(&types.CancelOrderAndReplaceRequest{
 		IdToCancel: order.ID,
 		NewOrder: &types.NewOrderRequest{
 			Product:     &constants.PRODUCT_ETH_PERP,
@@ -389,7 +389,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrderAndReplace() 
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrder() {
-	s.TestIntegration_ApproveDepositUSDBWaitingTxs()
+	s.TestIntegration_ApproveDepositUSDCWaitingTxs()
 
 	// get market price
 	req, err := http.NewRequest(
@@ -425,7 +425,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 	price = new(big.Int).Mul(new(big.Int).Div(price, big.NewInt(100)), big.NewInt(110))
 
 	// get product increment
-	res, err = s.Go100XApiClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
+	res, err = s.RyskV2ApiClient.GetProductById(constants.PRODUCT_ETH_PERP.Id)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 
@@ -447,17 +447,18 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 	adjustedPrice := new(big.Int).Sub(price, remainder)
 
 	// new order at 10% market premium
-	res, err = s.Go100XApiClient.NewOrder(&types.NewOrderRequest{
+	res, err = s.RyskV2ApiClient.NewOrder(&types.NewOrderRequest{
 		Product:     &constants.PRODUCT_ETH_PERP,
 		IsBuy:       true,
-		OrderType:   constants.ORDER_TYPE_LIMIT,
+		OrderType:   constants.ORDER_TYPE_LIMIT_MAKER,
 		TimeInForce: constants.TIME_IN_FORCE_GTC,
 		Price:       adjustedPrice.String(),
-		Quantity:    constants.E16.String(),
+		Quantity:    constants.E18.String(),
 		Expiration:  time.Now().Add(24 * time.Hour).UnixMilli(),
 		Nonce:       time.Now().UnixMicro(),
 	})
 	require.NoError(s.T(), err)
+	verifyValidJSONResponse(s.T(), res)
 	require.Equal(s.T(), 200, res.StatusCode)
 
 	body, err = io.ReadAll(res.Body)
@@ -472,7 +473,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 	require.NotEmpty(s.T(), idToCancel)
 
 	// cancel order
-	res, err = s.Go100XApiClient.CancelOrder(&types.CancelOrderRequest{
+	res, err = s.RyskV2ApiClient.CancelOrder(&types.CancelOrderRequest{
 		Product:    &constants.PRODUCT_ETH_PERP,
 		IdToCancel: idToCancel,
 	})
@@ -482,56 +483,56 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelOrder() {
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_CancelAllOpenOrders() {
-	res, err := s.Go100XApiClient.CancelAllOpenOrders(&constants.PRODUCT_ETH_PERP)
+	res, err := s.RyskV2ApiClient.CancelAllOpenOrders(&constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_GetSpotBalances() {
-	res, err := s.Go100XApiClient.GetSpotBalances()
+	res, err := s.RyskV2ApiClient.GetSpotBalances()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_GetPerpetualPosition() {
-	res, err := s.Go100XApiClient.GetPerpetualPosition(&constants.PRODUCT_BLAST_PERP)
+	res, err := s.RyskV2ApiClient.GetPerpetualPosition(&constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_GetPerpetualPositionAllProducts() {
-	res, err := s.Go100XApiClient.GetPerpetualPositionAllProducts()
+	res, err := s.RyskV2ApiClient.GetPerpetualPositionAllProducts()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListApproveSigners() {
-	res, err := s.Go100XApiClient.ListApprovedSigners()
+	res, err := s.RyskV2ApiClient.ListApprovedSigners()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOpenOrders() {
-	res, err := s.Go100XApiClient.ListOpenOrders(&constants.PRODUCT_BLAST_PERP)
+	res, err := s.RyskV2ApiClient.ListOpenOrders(&constants.PRODUCT_ETH_PERP)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOpenOrdersAllProducts() {
-	res, err := s.Go100XApiClient.ListOpenOrdersAllProducts()
+	res, err := s.RyskV2ApiClient.ListOpenOrdersAllProducts()
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrders_EmptyIds() {
-	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
+	res, err := s.RyskV2ApiClient.ListOrders(&types.ListOrdersRequest{
 		Product: &constants.PRODUCT_BTC_PERP,
 		Ids:     []string{},
 	})
@@ -541,7 +542,7 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrders_EmptyIds() {
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrders() {
-	res, err := s.Go100XApiClient.ListOrders(&types.ListOrdersRequest{
+	res, err := s.RyskV2ApiClient.ListOrders(&types.ListOrdersRequest{
 		Product: &constants.PRODUCT_BTC_PERP,
 		Ids:     []string{"123", "456", "789"},
 	})
@@ -551,52 +552,52 @@ func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrders() {
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrdersAllProducts() {
-	res, err := s.Go100XApiClient.ListOrdersAllProducts([]string{"123", "456", "789"})
+	res, err := s.RyskV2ApiClient.ListOrdersAllProducts([]string{"123", "456", "789"})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_ListOrdersAllProducts_EmptyIds() {
-	res, err := s.Go100XApiClient.ListOrdersAllProducts([]string{})
+	res, err := s.RyskV2ApiClient.ListOrdersAllProducts([]string{})
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 200, res.StatusCode)
 	verifyValidJSONResponse(s.T(), res)
 }
 
-func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveUSDBWaitingTx() {
-	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), constants.E22)
+func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveUSDCWaitingTx() {
+	transaction, err := s.RyskV2ApiClient.ApproveUSDC(context.Background(), constants.E9)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 
-	receipt, err := s.Go100XApiClient.WaitTransaction(context.Background(), transaction)
+	receipt, err := s.RyskV2ApiClient.WaitTransaction(context.Background(), transaction)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), receipt)
 	require.Equal(s.T(), uint64(1), receipt.Status)
 }
 
-func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveDepositUSDBWaitingTxs() {
-	transaction, err := s.Go100XApiClient.ApproveUSDB(context.Background(), constants.E20)
+func (s *ApiClientIntegrationTestSuite) TestIntegration_ApproveDepositUSDCWaitingTxs() {
+	transaction, err := s.RyskV2ApiClient.ApproveUSDC(context.Background(), constants.E9)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 
-	receipt, err := s.Go100XApiClient.WaitTransaction(context.Background(), transaction)
+	receipt, err := s.RyskV2ApiClient.WaitTransaction(context.Background(), transaction)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), receipt)
 	require.Equal(s.T(), uint64(1), receipt.Status)
 
-	transaction, err = s.Go100XApiClient.DepositUSDB(context.Background(), constants.E20)
+	transaction, err = s.RyskV2ApiClient.DepositUSDC(context.Background(), constants.E9)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), transaction)
 
-	receipt, err = s.Go100XApiClient.WaitTransaction(context.Background(), transaction)
+	receipt, err = s.RyskV2ApiClient.WaitTransaction(context.Background(), transaction)
 	require.NoError(s.T(), err)
 	require.NotNil(s.T(), receipt)
 	require.Equal(s.T(), uint64(1), receipt.Status)
 }
 
 func (s *ApiClientIntegrationTestSuite) TestIntegration_addReferee() {
-	res, err := s.Go100XApiClient.addReferee()
+	res, err := s.RyskV2ApiClient.addReferee()
 	require.NoError(s.T(), err)
 	verifyValidJSONResponse(s.T(), res)
 }

@@ -1,8 +1,8 @@
 package main
 
 import (
-	rest_examples "github.com/eldief/go100x/examples/rest"
-	websocket_examples "github.com/eldief/go100x/examples/websocket"
+	rest_examples "github.com/rysk-finance/v2_client_go/examples/rest"
+	websocket_examples "github.com/rysk-finance/v2_client_go/examples/websocket"
 )
 
 // Comment not needed examples and run 'go run examples/main.go'

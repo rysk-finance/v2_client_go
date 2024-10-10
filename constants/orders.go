@@ -3,7 +3,7 @@ package constants
 import (
 	"math/big"
 
-	"github.com/eldief/go100x/types"
+	"github.com/rysk-finance/v2_client_go/types"
 )
 
 const (
@@ -43,15 +43,10 @@ const (
 )
 
 var (
-	E27 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(1_000_000_000))
-	E26 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(100_000_000))
-	E25 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(10_000_000))
-	E24 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(1_000_000))
-	E23 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(100_000))
-	E22 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(10_000))
-	E21 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(1_000))
-	E20 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(100))
-	E19 = new(big.Int).Mul(big.NewInt(1e18), big.NewInt(10))
+	E22 = new(big.Int).Mul(big.NewInt(1e4), big.NewInt(1e18))
+	E21 = new(big.Int).Mul(big.NewInt(1e3), big.NewInt(1e18))
+	E20 = new(big.Int).Mul(big.NewInt(1e2), big.NewInt(1e18))
+	E19 = new(big.Int).Mul(big.NewInt(1e1), big.NewInt(1e18))
 	E18 = big.NewInt(1e18)
 	E17 = big.NewInt(1e17)
 	E16 = big.NewInt(1e16)
@@ -61,4 +56,11 @@ var (
 	E12 = big.NewInt(1e12)
 	E11 = big.NewInt(1e11)
 	E10 = big.NewInt(1e10)
+	E9  = big.NewInt(1e9)
+	E8  = big.NewInt(1e8)
+	E7  = big.NewInt(1e7)
+	E6  = big.NewInt(1e6)
+	E5  = big.NewInt(1e5)
+	E4  = big.NewInt(1e4)
+	E3  = big.NewInt(1e3)
 )
