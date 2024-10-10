@@ -2,14 +2,6 @@ module github.com/rysk-finance/v2_client_go
 
 go 1.22.2
 
-retract (
-	v1.0.4 // Release tag conflict.
-	v1.0.3 // Contains signature error.
-	v1.0.2 // Contains signature error.
-	v1.0.1 // Contains signature error.
-	v1.0.0 // Contains signature error.
-)
-
 require (
 	github.com/ethereum/go-ethereum v1.14.3
 	github.com/gorilla/websocket v1.5.1
