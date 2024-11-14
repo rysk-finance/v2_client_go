@@ -5,13 +5,13 @@ import "github.com/rysk-finance/v2_client_go/types"
 const WS_JSON_RPC string = "2.0"
 
 var WS_RPC_URL = map[types.Environment]string{
-	ENVIRONMENT_MAINNET: "wss://arbitrum-api.prod.rysk.finance/v1/ws/operate",
-	ENVIRONMENT_TESTNET: "wss://arbitrum-api.staging.rysk.finance/v1/ws/operate",
+	ENVIRONMENT_MAINNET: "wss://api.rysk.finance/v1/ws/operate",
+	ENVIRONMENT_TESTNET: "wss://api.staging.rysk.finance/v1/ws/operate",
 }
 
 var WS_STREAM_URL = map[types.Environment]string{
-	ENVIRONMENT_MAINNET: "wss://arbitrum-stream.prod.rysk.finance/",
-	ENVIRONMENT_TESTNET: "wss://arbitrum-stream.staging.rysk.finance/",
+	ENVIRONMENT_MAINNET: "wss://stream.rysk.finance/",
+	ENVIRONMENT_TESTNET: "wss://stream.staging.rysk.finance/",
 }
 
 const (
