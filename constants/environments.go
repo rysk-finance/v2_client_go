@@ -11,7 +11,7 @@ const (
 )
 
 var CHAIN_ID = map[types.Environment]*math.HexOrDecimal256{
-	ENVIRONMENT_MAINNET: nil,
+	ENVIRONMENT_MAINNET: math.NewHexOrDecimal256(42161),
 	ENVIRONMENT_TESTNET: math.NewHexOrDecimal256(421614),
 }
 
